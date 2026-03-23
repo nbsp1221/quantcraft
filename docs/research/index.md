@@ -1,0 +1,26 @@
+# Research
+
+Use this directory for time-scoped competitive research, ecosystem scans, and comparative studies that inform `quantcraft` planning.
+
+## Metadata
+
+- index_kind: research-status-map
+- default_read: Research docs are advisory inputs, not canonical implementation contracts. Promote conclusions into a product spec, design doc, or execution plan before using them to drive implementation.
+
+## Overview Reports
+
+| Document | Status | Canonical | Applicability | Read When | Notes |
+| --- | --- | --- | --- | --- | --- |
+| [`2026-03-23-python-quant-library-landscape.md`](2026-03-23-python-quant-library-landscape.md) | current | no | competitive research overview and roadmap framing | Before prioritizing post-MVP backtest, paper-trading, or UX/DX expansion. | Overview report for the Python quant/backtesting ecosystem as of 2026-03-23. Includes comparison matrix, strategic interpretation, and links to priority library dossiers. |
+
+## Library Dossiers
+
+| Document | Status | Canonical | Applicability | Read When | Notes |
+| --- | --- | --- | --- | --- | --- |
+| [`libraries/backtesting-py.md`](libraries/backtesting-py.md) | current | no | library-specific research | Before copying the ergonomics or reporting patterns of `backtesting.py` into `quantcraft`. | Advisory dossier for the bar-native, single-asset research tool with a strong imperative strategy API. |
+| [`libraries/backtrader.md`](libraries/backtrader.md) | current | no | library-specific research | Before evaluating multi-data, multi-timeframe, analyzer, or broker-adapter surface ideas. | Advisory dossier for the broad classic Python backtesting framework. |
+| [`libraries/vectorbt.md`](libraries/vectorbt.md) | current | no | library-specific research | Before planning vectorized research UX, parameter sweeps, or notebook-first analytics. | Advisory dossier for the dataframe- and portfolio-centric research stack. |
+| [`libraries/nautilustrader.md`](libraries/nautilustrader.md) | current | no | library-specific research | Before planning shared-kernel backtest, paper, and live parity or higher-realism execution semantics. | Advisory dossier for the closest current architectural north-star in the comparison set. |
+| [`libraries/freqtrade.md`](libraries/freqtrade.md) | current | no | library-specific research | Before planning exchange-operator workflows, anti-bias tooling, or crypto-first runtime breadth. | Advisory dossier for the crypto trading platform with backtest, dry-run, and live workflows. |
+| [`libraries/lumibot.md`](libraries/lumibot.md) | current | no | library-specific research | Before planning same-code backtest/live UX or broker-facing Python strategy ergonomics. | Advisory dossier for the Python library that emphasizes same-code backtesting and live trading. |
+| [`libraries/pybroker.md`](libraries/pybroker.md) | current | no | library-specific research | Before planning multi-symbol research workflows, ML integration, or walk-forward-oriented backtest UX. | Advisory dossier for the research framework that combines rule-based and model-based workflows. |
