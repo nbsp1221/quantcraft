@@ -52,7 +52,13 @@ Shared support belongs in explicitly named cross-cutting areas only:
 
 ## Current State
 
-The current codebase is still in a pre-domain state centered on exchange-backed market data. The harness setup adds the repository rules and document system before broader domain expansion.
+The current codebase is no longer only a market-data skeleton. It now includes:
+
+- exchange-backed market-data utilities
+- an implemented Backtest MVP
+- an implemented `quantcraft.research` ergonomics surface on top of that backtest baseline
+
+The harness still matters because the long-lived architecture remains broader than the currently shipped feature set.
 
 The current approved top-level architecture is tracked in:
 
@@ -73,9 +79,9 @@ The current approved architecture fixes the following top-level decisions:
   - never the reverse
 - `shared` remains intentionally small and must not absorb business concepts
 
-Active trading-kernel and slice-level contract details are tracked separately:
+Active future trading-kernel planning and current slice-level contracts are tracked separately:
 
-- [`docs/design-docs/trading-kernel-contract-draft-ko.md`](docs/design-docs/trading-kernel-contract-draft-ko.md): long-lived trading-kernel contract draft
+- [`docs/design-docs/trading-kernel-contract-draft-ko.md`](docs/design-docs/trading-kernel-contract-draft-ko.md): future-only long-lived trading-kernel contract draft
 - [`docs/product-specs/backtest.md`](docs/product-specs/backtest.md): current backtest product-spec entry
 
 ## Test Layout

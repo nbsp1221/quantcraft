@@ -27,7 +27,7 @@ The repository uses four distinct document classes for this area:
 1. [quantcraft-architecture.md](quantcraft-architecture.md)
    - approved top-level architecture
 2. [trading-kernel-contract-draft-ko.md](trading-kernel-contract-draft-ko.md)
-   - long-lived trading-kernel contract draft
+   - future-only long-lived trading-kernel contract draft
 3. [architecture-governance.md](architecture-governance.md)
    - approved governance and promotion policy
 4. [../product-specs/backtest-mvp.md](../product-specs/backtest-mvp.md)
@@ -42,6 +42,8 @@ This split prevents agents from conflating:
 - harness policy
 - current implemented scope
 - approved expansion scope
+
+The draft trading-kernel document must not override the current implemented-scope product specs. Agents should read it only when planning future shared trading semantics beyond the shipped baseline.
 
 ## What We Enforce Mechanically Now
 

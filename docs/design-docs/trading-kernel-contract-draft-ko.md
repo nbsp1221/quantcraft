@@ -3,8 +3,18 @@
 ## 상태
 
 - 상태: `draft`
-- 목적: `trading` 커널의 공통 의미론과 전략/이벤트 계약을 한국어로 정리하는 작업 문서
-- 범위: backtest, paper, live가 공유해야 하는 거래 의미론과 MVP 제약
+- 목적: 아직 닫히지 않은 `trading` 커널의 장기 공통 의미론을 한국어로 정리하는 future-only 작업 문서
+- 범위: backtest, paper, live가 장기적으로 공유할 거래 의미론 후보와 미확정 쟁점
+
+## 이 문서를 읽는 방법
+
+이 문서는 현재 구현 truth를 정의하는 canonical 문서가 아니다.
+
+- 현재 구현된 backtest 동작은 [`../product-specs/backtest-mvp.md`](../product-specs/backtest-mvp.md)를 따른다.
+- 현재 구현된 research ergonomics 표면은 [`../product-specs/research-ergonomics.md`](../product-specs/research-ergonomics.md)를 따른다.
+- 최상위 구조와 경계는 [`quantcraft-architecture.md`](quantcraft-architecture.md)를 따른다.
+
+즉 이 문서는 `지금 당장 구현을 바꿀 current contract`가 아니라, 이후 paper/live 확장이나 장기 trading contract 정리 시 참고할 future-only draft다.
 
 ## 왜 별도 문서로 분리하는가
 
@@ -13,7 +23,7 @@
 - 아키텍처 문서는 경계와 책임을 다룬다.
 - 이 문서는 전략 API, 이벤트 shape, 백테스트와 엔진의 연결 방식처럼 `trading`에 특화된 계약을 다룬다.
 
-이 둘을 한 문서에 계속 쌓아두면 에이전트가 최상위 구조와 거래 세부 계약을 같은 수준의 규칙으로 오해하기 쉽다.
+이 둘을 한 문서에 계속 쌓아두면 에이전트가 최상위 구조, 현재 구현된 contract, 미래 공통 contract를 같은 수준의 규칙으로 오해하기 쉽다.
 
 ## 공통 거래 의미론에 대한 핵심 원칙
 
@@ -228,6 +238,10 @@ canonical book/event object는 `in-memory core contract`로 본다.
 
 - [`../product-specs/backtest-mvp.md`](../product-specs/backtest-mvp.md)
 
+현재 research ergonomics용 좁은 기본값은 다음 문서에서 추적한다.
+
+- [`../product-specs/research-ergonomics.md`](../product-specs/research-ergonomics.md)
+
 ## 한 줄 요약
 
-`trading`은 backtest, paper, live가 공유하는 공통 거래 커널이며, 내부 엔진은 `tick/event-driven`, 전략 계약은 `self` 기반 `on_tick / on_bar`와 `OrderIntent`, canonical 입력은 `L2 snapshot`이라는 점을 먼저 고정한다.
+`trading`은 backtest, paper, live가 장기적으로 공유해야 하는 공통 거래 커널이라는 방향을 설명하는 future-only draft이며, 현재 구현 truth는 product spec들이 우선한다.
