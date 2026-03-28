@@ -76,19 +76,16 @@ Current summary semantics:
 class Rsi3070Strategy(Strategy):
     def init(self) -> None:
         self.rsi = ta.rsi(self.data.close, length=2)
-        self.in_position = False
 
     def on_bar(self, bar) -> None:
-        if (not self.in_position) and not qc.is_na(self.rsi[0]) and self.rsi[0] < 30:
+        if (not self.position.is_open) and not qc.is_na(self.rsi[0]) and self.rsi[0] < 30:
             self.buy(symbol=bar.symbol, quantity=1)
-            self.in_position = True
-        elif self.in_position and not qc.is_na(self.rsi[0]) and self.rsi[0] > 70:
+        elif self.position.is_open and not qc.is_na(self.rsi[0]) and self.rsi[0] > 70:
             self.sell(symbol=bar.symbol, quantity=1)
-            self.in_position = False
 ```
 
 In the current long-only backtest path, repeated `sell()` calls while flat are treated as exit-only no-ops, not short entries.
-For one-position strategies like this RSI example, track local state explicitly when you do not intend long increases.
+For one-position strategies like this RSI example, prefer `self.position.is_open` over local booleans when current position state is all you need.
 
 The supporting notebook demonstrates the same flow in executable form:
 

@@ -107,6 +107,31 @@ class SellWhileFlatStrategy(Strategy):
         self.sell(symbol=bar.symbol, quantity=1.0, tag="flat-exit-ignored")
 
 
+class PositionViewProbeStrategy(Strategy):
+    def __init__(self) -> None:
+        super().__init__()
+        self._seen_bars = 0
+        self.position_snapshots: list[tuple[bool, float, float]] = []
+
+    def on_bar(self, bar) -> None:
+        self._seen_bars += 1
+        self.position_snapshots.append(
+            (
+                self.position.is_open,
+                self.position.quantity,
+                self.position.average_entry_price,
+            )
+        )
+        if self._seen_bars == 1:
+            self.buy(symbol=bar.symbol, quantity=2.0, tag="entry")
+        elif self._seen_bars == 2:
+            self.buy(symbol=bar.symbol, quantity=1.0, tag="increase")
+        elif self._seen_bars == 3:
+            self.sell(symbol=bar.symbol, quantity=1.0, tag="partial-exit")
+        elif self._seen_bars == 4:
+            self.sell(symbol=bar.symbol, quantity=2.0, tag="full-exit")
+
+
 class FakeExchangeClient:
     def __init__(self, *, pages: list[list[list[float]]]) -> None:
         self.pages = pages[:]
@@ -534,3 +559,42 @@ def test_backtest_runner_handles_unguarded_exit_signals_before_and_after_entry()
     assert result.summary.total_trades == 1
     assert result.summary.total_fills == 2
     assert result.final_state.position_quantity == 0.0
+
+
+def test_backtest_runner_exposes_position_view_during_on_bar() -> None:
+    rows = tuple(
+        OHLCVBar(
+            timestamp=timestamp,
+            open=price,
+            high=price + 1.0,
+            low=price - 1.0,
+            close=price + 0.5,
+            volume=10.0,
+        )
+        for timestamp, price in (
+            (60, 100.0),
+            (120, 110.0),
+            (180, 120.0),
+            (240, 130.0),
+            (300, 140.0),
+        )
+    )
+    strategy = PositionViewProbeStrategy()
+
+    run_backtest(
+        symbol="BTC/USDT",
+        bar_type="time",
+        bar_spec="1m",
+        rows=rows,
+        strategy=strategy,
+        initial_cash=10_000.0,
+        costs=CostConfig(tick_size=1.0, slippage_ticks=0.0, fee_rate=0.0),
+    )
+
+    assert strategy.position_snapshots == [
+        (False, 0.0, 0.0),
+        (True, 2.0, 110.0),
+        (True, 3.0, 113.333333333333),
+        (True, 2.0, 113.333333333333),
+        (False, 0.0, 0.0),
+    ]

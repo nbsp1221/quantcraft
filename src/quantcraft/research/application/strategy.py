@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from quantcraft.research.application._runtime import PositionView
 from quantcraft.research.domain import OHLCVDataView, SeriesView
 from quantcraft.trading.domain.events import BarEvent
 from quantcraft.trading.domain.intents import OrderIntent, OrderType
@@ -20,6 +21,7 @@ class Strategy(ABC):
             close=SeriesView(()),
             volume=SeriesView(()),
         )
+        self.position = PositionView()
 
     def init(self) -> None:
         return None

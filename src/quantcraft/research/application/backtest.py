@@ -128,7 +128,7 @@ def run_backtest(
             continue
 
         if isinstance(event, BarEvent):
-            runtime.handle_bar(event)
+            runtime.handle_bar(event, state=state)
             total_bars += 1
             if latest_mark_price is not None:
                 marked_state = _mark_state_to_market(state, mark_price=latest_mark_price)

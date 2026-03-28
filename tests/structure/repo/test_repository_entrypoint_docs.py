@@ -48,3 +48,8 @@ def test_current_docs_describe_closed_trade_and_fill_count_summary_terms() -> No
     assert "`sell()` while flat is treated as a no-op" in research_spec
     assert "a `sell` intent while flat is treated as an exit-only no-op" in backtest_spec
     assert "repeated `sell()` calls while flat are treated as exit-only no-ops" in quickstart
+    assert "`self.position`" in research_spec
+    assert "`self.position.is_open`" in research_spec
+    assert "`self.position.quantity`" in research_spec
+    assert "`self.position.average_entry_price`" in research_spec
+    assert "self.position.is_open" in quickstart

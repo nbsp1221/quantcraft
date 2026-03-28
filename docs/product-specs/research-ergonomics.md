@@ -99,6 +99,7 @@ This slice does not add:
 Approved public surface:
 
 - `self.data.*`
+- `self.position`
 - `self.buy()`
 - `self.sell()`
 - `ta.*`
@@ -110,9 +111,37 @@ Current order semantics for this slice:
 - `buy()` means long entry or long increase
 - `sell()` means long exit in the current long-only MVP scope, not short entry
 - `sell()` while flat is treated as a no-op in the current long-only backtest path
-- one-position strategies that do not intend long increases should track local state explicitly under the current API
 
 Examples and quickstarts must explain that `sell()` is an exit operation in the current scope.
+
+### Strategy Position View
+
+The approved public strategy-state view is:
+
+- `self.position`
+
+`self.position` is a small read-only runtime view that is meaningful for strategy decisions in `on_bar()`.
+
+Approved fields:
+
+- `self.position.is_open`
+- `self.position.quantity`
+- `self.position.average_entry_price`
+
+Flat-state semantics:
+
+- `self.position.is_open == False`
+- `self.position.quantity == 0.0`
+- `self.position.average_entry_price == 0.0`
+
+This slice does not expose:
+
+- account objects
+- portfolio objects
+- `cash`
+- `equity`
+- `market_value`
+- `unrealized_pnl`
 
 ### Strategy Initialization And Evaluation
 
