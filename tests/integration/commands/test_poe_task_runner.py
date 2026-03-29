@@ -15,7 +15,7 @@ def test_poe_help_lists_required_tasks() -> None:
     )
 
     output = result.stdout + result.stderr
-    for task_name in ["lint", "format", "typecheck", "test", "test-live", "verify"]:
+    for task_name in ["lint", "format", "typecheck", "test", "test-live", "coverage", "verify"]:
         assert task_name in output
 
 
@@ -33,6 +33,7 @@ def test_poe_verify_dry_run_succeeds() -> None:
         "ruff check .",
         "mypy src",
         "pytest -q",
+        "uv run python scripts/coverage_check.py",
         "uv build",
         "uv run python scripts/repo_check.py",
         "uv run python scripts/notebook_validate.py",

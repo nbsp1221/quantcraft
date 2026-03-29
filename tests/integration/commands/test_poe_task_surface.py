@@ -17,6 +17,7 @@ def test_pyproject_defines_required_poe_tasks() -> None:
         "test-structure",
         "test-smoke",
         "test-live",
+        "coverage",
         "build",
         "repo-check",
         "notebook-validate",
@@ -31,6 +32,8 @@ def test_agenda_docs_reference_poe_task_layer_and_keep_entrypoints() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "uv run poe verify" in readme
+    assert "uv run poe coverage" in readme
     assert "uv run poe format" in readme
     assert "repo-local harness commands" in agents
+    assert "uv run poe coverage" in agents
     assert "uv run poe verify" in agents

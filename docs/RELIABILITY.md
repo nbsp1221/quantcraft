@@ -22,6 +22,7 @@ Tier A work requires stronger human gate and must not be treated as agent-autono
 Current baseline verification commands:
 
 - `uv run poe verify`
+- `uv run poe coverage`
 - `uv run poe format`
 - `uv run poe test-live`
 - `uv run pytest -q`
@@ -31,8 +32,18 @@ Current baseline verification commands:
 
 Low-level repository commands remain available for direct use:
 
+- `uv run python scripts/coverage_check.py`
 - `uv run python scripts/repo_check.py`
 - `uv run python scripts/notebook_validate.py`
 - `uv run python scripts/live_smoke.py`
 
 `uv run poe` is the preferred developer entry point for common local workflows. It is a harnessed convenience layer above the repo-local scripts.
+
+## Coverage Guardrail
+
+The repository treats coverage as a repo-local reliability floor for source code under `src/quantcraft`.
+
+- global source line coverage must stay at or above `90%`
+- files under `src/quantcraft/trading/domain/` must remain at `100%` line coverage
+
+This is a risk-based guardrail for agent work, not a substitute for contract tests or structure checks.

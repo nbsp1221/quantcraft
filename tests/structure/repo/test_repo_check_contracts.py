@@ -69,11 +69,12 @@ test-integration = "pytest tests/integration -q"
 test-structure = "pytest tests/structure -q"
 test-smoke = "pytest tests/smoke/local -q"
 test-live = "pytest tests/smoke/live -q"
+coverage = "uv run python scripts/coverage_check.py"
 build = "uv build"
 repo-check = "uv run python scripts/repo_check.py"
 notebook-validate = "uv run python scripts/notebook_validate.py"
 live-smoke = "uv run python scripts/live_smoke.py"
-verify = ["lint", "typecheck", "test", "build", "repo-check", "notebook-validate"]
+verify = ["lint", "typecheck", "test", "coverage", "build", "repo-check", "notebook-validate"]
 """.strip(),
         encoding="utf-8",
     )
@@ -155,11 +156,12 @@ test-integration = "pytest tests/integration -q"
 test-structure = "pytest tests/structure -q"
 test-smoke = "pytest tests/smoke/local -q"
 test-live = "pytest tests/smoke/live -q"
+coverage = "uv run python scripts/coverage_check.py"
 build = "uv build"
 repo-check = "uv run python scripts/repo_check.py"
 notebook-validate = "uv run python scripts/notebook_validate.py"
 live-smoke = "uv run python scripts/live_smoke.py"
-verify = ["lint", "typecheck", "test", "build", "repo-check", "notebook-validate"]
+verify = ["lint", "typecheck", "test", "coverage", "build", "repo-check", "notebook-validate"]
 """.strip(),
         encoding="utf-8",
     )
@@ -205,11 +207,12 @@ test-integration = "pytest tests/integration -q"
 test-structure = "pytest tests/structure -q"
 test-smoke = "pytest tests/smoke/local -q"
 test-live = "pytest tests/smoke/live -q"
+coverage = "uv run python scripts/coverage_check.py"
 build = "uv build"
 repo-check = "uv run python scripts/repo_check.py"
 notebook-validate = "uv run python scripts/notebook_validate.py"
 live-smoke = "uv run python scripts/live_smoke.py"
-verify = ["lint", "typecheck", "test", "build", "repo-check", "notebook-validate"]
+verify = ["lint", "typecheck", "test", "coverage", "build", "repo-check", "notebook-validate"]
 """.strip(),
         encoding="utf-8",
     )

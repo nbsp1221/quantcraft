@@ -14,6 +14,7 @@ REQUIRED_POE_TASKS = [
     "test-structure",
     "test-smoke",
     "test-live",
+    "coverage",
     "build",
     "repo-check",
     "notebook-validate",
@@ -30,6 +31,7 @@ def write_minimal_repo_docs(tmp_path) -> None:
     (tmp_path / "AGENTS.md").write_text(
         (
             "uv run poe verify\n"
+            "uv run poe coverage\n"
             "repo-local harness commands\n"
             "docs/design-docs/index.md\n"
         ),
@@ -115,8 +117,10 @@ def write_minimal_repo_docs(tmp_path) -> None:
     (references_dir / "tooling.md").write_text(
         (
             "uv run poe verify\n"
+            "uv run poe coverage\n"
             "uv run poe format\n"
             "uv run poe test-live\n"
+            "uv run python scripts/coverage_check.py\n"
             "uv run python scripts/repo_check.py\n"
             "uv run python scripts/notebook_validate.py\n"
             "uv run python scripts/live_smoke.py\n"
@@ -165,10 +169,16 @@ def test_poe_task_surface_is_documented() -> None:
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     tooling = (ROOT / "docs" / "references" / "tooling.md").read_text(encoding="utf-8")
 
-    for command in ["uv run poe verify", "uv run poe format", "uv run poe test-live"]:
+    for command in [
+        "uv run poe verify",
+        "uv run poe coverage",
+        "uv run poe format",
+        "uv run poe test-live",
+    ]:
         assert command in agents or command in tooling
     assert "project.scripts" not in agents
     for command in [
+        "uv run python scripts/coverage_check.py",
         "uv run python scripts/repo_check.py",
         "uv run python scripts/notebook_validate.py",
         "uv run python scripts/live_smoke.py",
@@ -225,11 +235,12 @@ test-integration = "pytest tests/integration -q"
 test-structure = "pytest tests/structure -q"
 test-smoke = "pytest tests/smoke/local -q"
 test-live = "pytest tests/smoke/live -q"
+coverage = "uv run python scripts/coverage_check.py"
 build = "uv build"
 repo-check = "uv run python scripts/repo_check.py"
 notebook-validate = "uv run python scripts/notebook_validate.py"
 live-smoke = "uv run python scripts/live_smoke.py"
-verify = ["lint", "typecheck", "test", "build", "repo-check", "notebook-validate"]
+verify = ["lint", "typecheck", "test", "coverage", "build", "repo-check", "notebook-validate"]
 """.strip(),
         encoding="utf-8",
     )

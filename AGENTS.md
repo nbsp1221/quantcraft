@@ -24,6 +24,7 @@ Low-level repo-local harness commands remain the stable direct surface:
 - `uv run pytest -q`
 - `uv run ruff check .`
 - `uv run mypy src`
+- `uv run python scripts/coverage_check.py`
 - `uv build`
 - `uv run python scripts/repo_check.py`
 - `uv run python scripts/notebook_validate.py`
@@ -40,6 +41,7 @@ Use `uv run poe` as the developer task layer on top of those repo-local harness 
 - `uv run poe test-structure`
 - `uv run poe test-smoke`
 - `uv run poe test-live`
+- `uv run poe coverage`
 - `uv run poe build`
 - `uv run poe repo-check`
 - `uv run poe notebook-validate`

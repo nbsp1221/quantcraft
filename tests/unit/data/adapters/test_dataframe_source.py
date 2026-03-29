@@ -58,6 +58,48 @@ def test_dataframe_source_rejects_naive_timestamps() -> None:
         source.load()
 
 
+def test_dataframe_source_rejects_unparseable_timestamp_strings() -> None:
+    source = DataFrameDataSource(
+        frame=FakeDataFrame(
+            [
+                {
+                    "timestamp": "not-a-timestamp",
+                    "open": 1.0,
+                    "high": 2.0,
+                    "low": 0.5,
+                    "close": 1.5,
+                }
+            ]
+        ),
+        symbol="BTC/USDT:USDT",
+        timeframe="1h",
+    )
+
+    with pytest.raises(ValueError, match="explicitly parseable"):
+        source.load()
+
+
+def test_dataframe_source_rejects_non_datetime_non_string_timestamps() -> None:
+    source = DataFrameDataSource(
+        frame=FakeDataFrame(
+            [
+                {
+                    "timestamp": 123,
+                    "open": 1.0,
+                    "high": 2.0,
+                    "low": 0.5,
+                    "close": 1.5,
+                }
+            ]
+        ),
+        symbol="BTC/USDT:USDT",
+        timeframe="1h",
+    )
+
+    with pytest.raises(ValueError, match="timezone-aware or explicitly parseable"):
+        source.load()
+
+
 def test_dataframe_source_normalizes_missing_volume_to_zero() -> None:
     source = DataFrameDataSource(
         frame=FakeDataFrame(
@@ -108,6 +150,27 @@ def test_dataframe_source_rejects_metadata_columns_from_input() -> None:
     )
 
     with pytest.raises(ValueError, match="symbol/timeframe columns are not allowed"):
+        source.load()
+
+
+def test_dataframe_source_rejects_non_numeric_price_fields() -> None:
+    source = DataFrameDataSource(
+        frame=FakeDataFrame(
+            [
+                {
+                    "timestamp": datetime(2026, 1, 1, 0, 0, tzinfo=UTC),
+                    "open": "bad-number",
+                    "high": 2.0,
+                    "low": 0.5,
+                    "close": 1.5,
+                }
+            ]
+        ),
+        symbol="BTC/USDT:USDT",
+        timeframe="1h",
+    )
+
+    with pytest.raises(ValueError, match="open must be numeric"):
         source.load()
 
 

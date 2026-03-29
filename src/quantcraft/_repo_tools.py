@@ -150,6 +150,7 @@ REQUIRED_POE_TASKS = (
     "test-structure",
     "test-smoke",
     "test-live",
+    "coverage",
     "build",
     "repo-check",
     "notebook-validate",
@@ -671,8 +672,10 @@ def collect_doc_issues(root: Path) -> list[str]:
     tooling = tooling_path.read_text(encoding="utf-8") if tooling_path.exists() else ""
     for command in (
         "uv run poe verify",
+        "uv run poe coverage",
         "uv run poe format",
         "uv run poe test-live",
+        "uv run python scripts/coverage_check.py",
         "uv run python scripts/repo_check.py",
         "uv run python scripts/notebook_validate.py",
         "uv run python scripts/live_smoke.py",

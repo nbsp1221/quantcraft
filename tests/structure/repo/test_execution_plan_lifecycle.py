@@ -99,6 +99,7 @@ def test_current_exec_plan_docs_use_explicit_lifecycle_metadata() -> None:
     assert "_None currently active_" in active_index
     assert "2026-03-25-implemented-scope-sync.md" not in active_index
     assert "2026-03-24-research-ergonomics-implementation.md" not in active_index
+    assert "2026-03-30-coverage-harness-implementation.md" not in active_index
     assert "- status: completed" in completed_harness_plan
     assert "Slice 5: complete" in completed_harness_plan
     assert "- status: completed" in completed_plan
@@ -107,6 +108,7 @@ def test_current_exec_plan_docs_use_explicit_lifecycle_metadata() -> None:
     assert "2026-03-22-harness-quality-improvement.md" not in active_index
     assert "2026-03-22-harness-quality-improvement.md" in completed_index
     assert "2026-03-25-implemented-scope-sync.md" in completed_index
+    assert "2026-03-30-coverage-harness-implementation.md" in completed_index
 
 
 def test_collect_plan_lifecycle_issues_flags_status_directory_mismatch(tmp_path: Path) -> None:

@@ -147,6 +147,35 @@ def test_limit_sell_fills_across_multiple_levels_without_beating_limit() -> None
     )
 
 
+def test_matching_skips_zero_liquidity_levels() -> None:
+    fill = match_order_intent(
+        OrderIntent(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=1.0,
+            order_type="limit",
+            limit_price=102.0,
+        ),
+        TickEvent(
+            timestamp=60,
+            symbol="BTC/USDT",
+            bids=((99.0, math.inf),),
+            asks=((101.0, 0.0), (102.0, 1.0)),
+            last=100.0,
+        ),
+        CostConfig(tick_size=0.5, slippage_ticks=0.0, fee_rate=0.0),
+    )
+
+    assert fill == FillEvent(
+        symbol="BTC/USDT",
+        side="buy",
+        quantity=1.0,
+        price=102.0,
+        timestamp=60,
+        fee=0.0,
+    )
+
+
 def test_matching_rejects_symbol_mismatch_between_intent_and_tick() -> None:
     with pytest.raises(ValueError, match="symbol mismatch"):
         match_order_intent(
