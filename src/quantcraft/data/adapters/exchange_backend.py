@@ -3,9 +3,10 @@ from __future__ import annotations
 import contextlib
 import os
 from collections.abc import Iterator
-from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, cast
+
+from quantcraft.data.domain import TimeBar
 
 
 @contextlib.contextmanager
@@ -40,16 +41,6 @@ __all__ = [
 class MarketType(StrEnum):
     SPOT = "spot"
     USDM = "usdm"
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class TimeBar:
-    timestamp: int
-    open: float
-    high: float
-    low: float
-    close: float
-    volume: float
 
 
 class Exchange:

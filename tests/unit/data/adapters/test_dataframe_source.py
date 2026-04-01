@@ -1,10 +1,9 @@
 from __future__ import annotations
 
+import importlib
 from datetime import UTC, datetime
 
 import pytest
-
-from quantcraft.data import DataFrameDataSource, OHLCVBar
 
 
 class FakeDataFrame:
@@ -17,8 +16,23 @@ class FakeDataFrame:
         return self._records
 
 
+def _dataframe_source_type() -> type:
+    data_module = importlib.import_module("quantcraft.data")
+    return getattr(data_module, "DataFrameDataSource")
+
+
+def _time_bar_type() -> type:
+    data_module = importlib.import_module("quantcraft.data")
+    return getattr(data_module, "TimeBar")
+
+
+def _bar_series_type() -> type:
+    data_module = importlib.import_module("quantcraft.data")
+    return getattr(data_module, "BarSeries")
+
+
 def test_dataframe_source_requires_minimal_schema() -> None:
-    source = DataFrameDataSource(
+    source = _dataframe_source_type()(
         frame=FakeDataFrame(
             [
                 {
@@ -38,7 +52,7 @@ def test_dataframe_source_requires_minimal_schema() -> None:
 
 
 def test_dataframe_source_rejects_naive_timestamps() -> None:
-    source = DataFrameDataSource(
+    source = _dataframe_source_type()(
         frame=FakeDataFrame(
             [
                 {
@@ -59,7 +73,7 @@ def test_dataframe_source_rejects_naive_timestamps() -> None:
 
 
 def test_dataframe_source_rejects_unparseable_timestamp_strings() -> None:
-    source = DataFrameDataSource(
+    source = _dataframe_source_type()(
         frame=FakeDataFrame(
             [
                 {
@@ -80,7 +94,7 @@ def test_dataframe_source_rejects_unparseable_timestamp_strings() -> None:
 
 
 def test_dataframe_source_rejects_non_datetime_non_string_timestamps() -> None:
-    source = DataFrameDataSource(
+    source = _dataframe_source_type()(
         frame=FakeDataFrame(
             [
                 {
@@ -100,8 +114,8 @@ def test_dataframe_source_rejects_non_datetime_non_string_timestamps() -> None:
         source.load()
 
 
-def test_dataframe_source_normalizes_missing_volume_to_zero() -> None:
-    source = DataFrameDataSource(
+def test_dataframe_source_materializes_bar_series_with_time_bar_rows() -> None:
+    source = _dataframe_source_type()(
         frame=FakeDataFrame(
             [
                 {
@@ -118,9 +132,15 @@ def test_dataframe_source_normalizes_missing_volume_to_zero() -> None:
     )
 
     bars = source.load()
+    bar_series_type = _bar_series_type()
+    time_bar_type = _time_bar_type()
 
-    assert bars == (
-        OHLCVBar(
+    assert isinstance(bars, bar_series_type)
+    assert bars.symbol == "BTC/USDT:USDT"
+    assert bars.timeframe == "1h"
+    assert bars.bar_type == "time"
+    assert bars.rows == (
+        time_bar_type(
             timestamp=int(datetime(2026, 1, 1, 0, 0, tzinfo=UTC).timestamp() * 1000),
             open=1.0,
             high=2.0,
@@ -132,7 +152,7 @@ def test_dataframe_source_normalizes_missing_volume_to_zero() -> None:
 
 
 def test_dataframe_source_rejects_metadata_columns_from_input() -> None:
-    source = DataFrameDataSource(
+    source = _dataframe_source_type()(
         frame=FakeDataFrame(
             [
                 {
@@ -154,7 +174,7 @@ def test_dataframe_source_rejects_metadata_columns_from_input() -> None:
 
 
 def test_dataframe_source_rejects_non_numeric_price_fields() -> None:
-    source = DataFrameDataSource(
+    source = _dataframe_source_type()(
         frame=FakeDataFrame(
             [
                 {
@@ -175,6 +195,7 @@ def test_dataframe_source_rejects_non_numeric_price_fields() -> None:
 
 
 def test_dataframe_source_rejects_empty_constructor_metadata() -> None:
+    dataframe_source_type = _dataframe_source_type()
     frame = FakeDataFrame(
         [
             {
@@ -188,14 +209,14 @@ def test_dataframe_source_rejects_empty_constructor_metadata() -> None:
     )
 
     with pytest.raises(ValueError, match="symbol must be non-empty"):
-        DataFrameDataSource(
+        dataframe_source_type(
             frame=frame,
             symbol="",
             timeframe="1h",
         )
 
     with pytest.raises(ValueError, match="timeframe must be non-empty"):
-        DataFrameDataSource(
+        dataframe_source_type(
             frame=frame,
             symbol="BTC/USDT:USDT",
             timeframe="",

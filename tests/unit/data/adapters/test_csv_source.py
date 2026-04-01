@@ -1,15 +1,29 @@
 from __future__ import annotations
 
+import importlib
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from quantcraft.data import CSVDataSource, OHLCVBar
-
 
 def _write_csv(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
+
+
+def _csv_source_type() -> type:
+    data_module = importlib.import_module("quantcraft.data")
+    return getattr(data_module, "CSVDataSource")
+
+
+def _time_bar_type() -> type:
+    data_module = importlib.import_module("quantcraft.data")
+    return getattr(data_module, "TimeBar")
+
+
+def _bar_series_type() -> type:
+    data_module = importlib.import_module("quantcraft.data")
+    return getattr(data_module, "BarSeries")
 
 
 def test_csv_source_requires_minimal_schema(tmp_path: Path) -> None:
@@ -20,7 +34,7 @@ def test_csv_source_requires_minimal_schema(tmp_path: Path) -> None:
         "2026-01-01T00:00:00+00:00,1,2,0.5\n",
     )
 
-    source = CSVDataSource(
+    source = _csv_source_type()(
         path=csv_path,
         symbol="BTC/USDT:USDT",
         timeframe="1h",
@@ -38,7 +52,7 @@ def test_csv_source_rejects_naive_timestamps(tmp_path: Path) -> None:
         "2026-01-01T00:00:00,1,2,0.5,1.5\n",
     )
 
-    source = CSVDataSource(
+    source = _csv_source_type()(
         path=csv_path,
         symbol="BTC/USDT:USDT",
         timeframe="1h",
@@ -48,7 +62,7 @@ def test_csv_source_rejects_naive_timestamps(tmp_path: Path) -> None:
         source.load()
 
 
-def test_csv_source_normalizes_missing_volume_to_zero(tmp_path: Path) -> None:
+def test_csv_source_materializes_bar_series_with_time_bar_rows(tmp_path: Path) -> None:
     csv_path = tmp_path / "bars.csv"
     _write_csv(
         csv_path,
@@ -56,16 +70,22 @@ def test_csv_source_normalizes_missing_volume_to_zero(tmp_path: Path) -> None:
         "2026-01-01T00:00:00+09:00,1,2,0.5,1.5\n",
     )
 
-    source = CSVDataSource(
+    source = _csv_source_type()(
         path=csv_path,
         symbol="BTC/USDT:USDT",
         timeframe="1h",
     )
 
     bars = source.load()
+    bar_series_type = _bar_series_type()
+    time_bar_type = _time_bar_type()
 
-    assert bars == (
-        OHLCVBar(
+    assert isinstance(bars, bar_series_type)
+    assert bars.symbol == "BTC/USDT:USDT"
+    assert bars.timeframe == "1h"
+    assert bars.bar_type == "time"
+    assert bars.rows == (
+        time_bar_type(
             timestamp=int(datetime(2025, 12, 31, 15, 0, tzinfo=UTC).timestamp() * 1000),
             open=1.0,
             high=2.0,
@@ -84,7 +104,7 @@ def test_csv_source_rejects_symbol_column_from_input(tmp_path: Path) -> None:
         "2026-01-01T00:00:00+00:00,1,2,0.5,1.5,BTC/USDT:USDT\n",
     )
 
-    source = CSVDataSource(
+    source = _csv_source_type()(
         path=csv_path,
         symbol="BTC/USDT:USDT",
         timeframe="1h",
@@ -102,15 +122,17 @@ def test_csv_source_rejects_empty_constructor_metadata(tmp_path: Path) -> None:
         "2026-01-01T00:00:00+00:00,1,2,0.5,1.5\n",
     )
 
+    csv_source_type = _csv_source_type()
+
     with pytest.raises(ValueError, match="symbol must be non-empty"):
-        CSVDataSource(
+        csv_source_type(
             path=csv_path,
             symbol="",
             timeframe="1h",
         )
 
     with pytest.raises(ValueError, match="timeframe must be non-empty"):
-        CSVDataSource(
+        csv_source_type(
             path=csv_path,
             symbol="BTC/USDT:USDT",
             timeframe="",

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantcraft.data import OHLCVBar
-from quantcraft.research.adapters.synthetic_events import convert_ohlcv_to_backtest_events
+from quantcraft.data import BarSeries
+from quantcraft.research.adapters.synthetic_events import convert_bar_series_to_backtest_events
 from quantcraft.research.application._runtime import _StrategyDriver
 from quantcraft.research.application.strategy import Strategy
 from quantcraft.trading.domain.costs import CostConfig
@@ -54,12 +54,9 @@ class BacktestResult:
     summary: BacktestSummary
 
 
-def run_backtest(
+def _run_backtest(
     *,
-    symbol: str,
-    bar_type: str,
-    bar_spec: object,
-    rows: tuple[OHLCVBar, ...],
+    bars: BarSeries,
     strategy: Strategy,
     initial_cash: float,
     costs: CostConfig,
@@ -76,12 +73,7 @@ def run_backtest(
     current_tick_timestamp: int | None = None
     latest_mark_price: float | None = None
 
-    events = convert_ohlcv_to_backtest_events(
-        symbol=symbol,
-        bar_type=bar_type,
-        bar_spec=bar_spec,
-        rows=rows,
-    )
+    events = convert_bar_series_to_backtest_events(bars=bars)
 
     for event in events:
         if isinstance(event, TickEvent):

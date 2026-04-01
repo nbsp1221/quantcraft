@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 
-from quantcraft.data import OHLCVBar
+from quantcraft.data import BarSeries, TimeBar
 from quantcraft.trading.domain.events import BarEvent, TickEvent
 
 _UNBOUNDED_LEVEL_SIZE = math.inf
@@ -11,22 +11,17 @@ _UNBOUNDED_LEVEL_SIZE = math.inf
 SyntheticEvent = TickEvent | BarEvent
 
 
-def infer_intrabar_prices(bar: OHLCVBar) -> tuple[float, float, float, float]:
+def infer_intrabar_prices(bar: TimeBar) -> tuple[float, float, float, float]:
     if bar.close >= bar.open:
         return (bar.open, bar.low, bar.high, bar.close)
 
     return (bar.open, bar.high, bar.low, bar.close)
 
 
-def convert_ohlcv_to_backtest_events(
-    *,
-    symbol: str,
-    bar_type: str,
-    bar_spec: object,
-    rows: tuple[OHLCVBar, ...],
-) -> tuple[SyntheticEvent, ...]:
+def convert_bar_series_to_backtest_events(*, bars: BarSeries) -> tuple[SyntheticEvent, ...]:
+    rows = bars.rows
     if any(current.timestamp >= nxt.timestamp for current, nxt in zip(rows, rows[1:])):
-        raise ValueError("out-of-order OHLCV rows")
+        raise ValueError("out-of-order time bars")
 
     events: list[SyntheticEvent] = []
 
@@ -35,7 +30,7 @@ def convert_ohlcv_to_backtest_events(
             events.append(
                 TickEvent(
                     timestamp=row.timestamp,
-                    symbol=symbol,
+                    symbol=bars.symbol,
                     bids=((price, _UNBOUNDED_LEVEL_SIZE),),
                     asks=((price, _UNBOUNDED_LEVEL_SIZE),),
                     last=price,
@@ -44,9 +39,9 @@ def convert_ohlcv_to_backtest_events(
 
         events.append(
             BarEvent(
-                bar_type=bar_type,
-                bar_spec=bar_spec,
-                symbol=symbol,
+                bar_type=bars.bar_type,
+                bar_spec=bars.timeframe,
+                symbol=bars.symbol,
                 timestamp=row.timestamp,
                 open=row.open,
                 high=row.high,

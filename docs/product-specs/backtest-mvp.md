@@ -26,17 +26,35 @@ This MVP intentionally reduces feature scope without downgrading the core engine
 
 ## Included Scope
 
+### Public Backtest Entry
+
+The current preferred user-facing backtest entry lives in the `research` surface:
+
+- `quantcraft.research.BacktestEngine`
+
+Approved current paths:
+
+- `BacktestEngine(...).run(bars=..., strategy=...)`
+- `BacktestEngine(...).run(source=..., strategy=...)`
+
+`run_backtest(...)` is not part of the public `quantcraft.research` surface in this slice.
+
 ### Data And Input
 
 - single symbol
 - single timeframe
 - OHLCV as the external stored format
+- canonical public data types:
+  - `quantcraft.data.TimeBar`
+  - `quantcraft.data.BarSeries`
+- `BarSeries.rows` is `tuple[TimeBar, ...]`
+- `BarSeries.bar_type` is fixed to `"time"` in this slice
 - an OHLCV-to-synthetic-L2 adapter in the backtest path
 
 Responsibility split:
 
-- `data`: load, normalize, and provide OHLCV
-- `research`: orchestrate the backtest, convert OHLCV into synthetic events, and summarize results
+- `data`: load, normalize, and provide `BarSeries`
+- `research`: orchestrate the backtest, convert `BarSeries` into synthetic events, and summarize results
 - `trading`: process events, interpret orders, match fills, and apply state transitions
 
 ### Strategy Surface

@@ -6,10 +6,10 @@ from typing import cast
 
 import pytest
 
+from quantcraft.data import BarSeries, TimeBar
+from quantcraft.research import BacktestEngine
 from quantcraft.research import Strategy as PublicStrategy
-from quantcraft.research.adapters.synthetic_events import OHLCVBar
 from quantcraft.research.application._runtime import _StrategyDriver
-from quantcraft.research.application.backtest import run_backtest
 from quantcraft.research.application.strategy import Strategy
 from quantcraft.trading.domain.costs import CostConfig
 from quantcraft.trading.domain.events import BarEvent
@@ -66,6 +66,20 @@ class RecordsInitCallsStrategy(Strategy):
 
 def _runtime(strategy: Strategy) -> _StrategyDriver:
     return _StrategyDriver(strategy)
+
+
+def _make_bar_series(
+    rows: tuple[TimeBar, ...],
+    *,
+    symbol: str = "BTC/USDT",
+    timeframe: str = "1m",
+) -> BarSeries:
+    return BarSeries(
+        symbol=symbol,
+        timeframe=timeframe,
+        bar_type="time",
+        rows=rows,
+    )
 
 
 def test_strategy_surface_is_self_based_and_on_bar_is_the_first_hook() -> None:
@@ -127,26 +141,27 @@ def test_init_cannot_create_orders() -> None:
         strategy.init()
 
 
-def test_run_backtest_calls_init_once_before_processing() -> None:
+def test_backtest_engine_calls_init_once_before_processing() -> None:
     strategy = RecordsInitCallsStrategy()
 
-    run_backtest(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=(
-            OHLCVBar(
-                timestamp=60,
-                open=100.0,
-                high=105.0,
-                low=95.0,
-                close=104.0,
-                volume=10.0,
-            ),
-        ),
-        strategy=strategy,
+    engine = BacktestEngine(
         initial_cash=1_000.0,
         costs=CostConfig(tick_size=0.1, slippage_ticks=1.0, fee_rate=0.001),
+    )
+    engine.run(
+        bars=_make_bar_series(
+            (
+                TimeBar(
+                    timestamp=60,
+                    open=100.0,
+                    high=105.0,
+                    low=95.0,
+                    close=104.0,
+                    volume=10.0,
+                ),
+            )
+        ),
+        strategy=strategy,
     )
 
     assert strategy.init_calls == 1

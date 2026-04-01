@@ -67,13 +67,35 @@ The official user-facing research ergonomics surface lives under `quantcraft.res
 Recommended import:
 
 ```python
-from quantcraft.research import Strategy, ta, qc, run_backtest
+from quantcraft.research import BacktestEngine, Strategy, ta, qc
 ```
 
 This slice does not promote:
 
 - root-level kitchen-sink imports such as `from quantcraft import ta, qc`
 - a fragmented public surface spread across many submodules
+
+### Backtest Entry Surface
+
+The preferred public execution entry for the current research surface is:
+
+- `BacktestEngine`
+
+Approved execution paths:
+
+- `BacktestEngine(...).run(bars=..., strategy=...)`
+- `BacktestEngine(...).run(source=..., strategy=...)`
+
+Current rules:
+
+- `bars` must be `quantcraft.data.BarSeries`
+- the canonical single-bar type is `quantcraft.data.TimeBar`
+- `BarSeries.rows` must be `tuple[quantcraft.data.TimeBar, ...]`
+- `source.load()` returns `BarSeries`
+- the engine does not expose public `bar_type`
+- the current historical backtest path fixes bar type internally to `time`
+
+`run_backtest(...)` is not part of the public `quantcraft.research` or `quantcraft.research.application` surface for this slice.
 
 ## Strategy Contract
 
@@ -475,7 +497,8 @@ The quickstart should walk through this flow:
 1. subclass `Strategy`
 2. bind indicators in `init()`
 3. evaluate signals and place orders in `on_bar()`
-4. call `run_backtest(...)`
+4. create a `BacktestEngine(...)`
+5. call `engine.run(...)`
 5. inspect the summary and result object
 6. inspect equity curve and trade log in the notebook
 

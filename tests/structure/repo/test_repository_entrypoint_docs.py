@@ -25,16 +25,25 @@ def test_readme_current_scope_mentions_implemented_backtest_research_and_data_su
     assert "`quantcraft.data`" in pre_setup_section
     for marker in ["`CCXTDataSource`", "`CSVDataSource`", "`DataFrameDataSource`"]:
         assert marker in pre_setup_section
-    for marker in ["`Strategy`", "`run_backtest`", "`ta`", "`qc`"]:
+    for marker in ["`TimeBar`", "`BarSeries`"]:
         assert marker in pre_setup_section
+    for marker in ["`Strategy`", "`BacktestEngine`", "`ta`", "`qc`"]:
+        assert marker in pre_setup_section
+    assert "`run_backtest`" not in pre_setup_section
+    assert "`BacktestEngine.run(bars=..., strategy=...)`" in pre_setup_section
+    assert "`BacktestEngine.run(source=..., strategy=...)`" in pre_setup_section
     assert "automatic historical pagination" in pre_setup_section
 
 
-def test_current_docs_describe_closed_trade_and_fill_count_summary_terms() -> None:
+def test_current_docs_describe_closed_trade_and_fill_count_summary_terms_and_new_engine_surface(
+) -> None:
     research_spec = (ROOT / "docs" / "product-specs" / "research-ergonomics.md").read_text(
         encoding="utf-8"
     )
     backtest_spec = (ROOT / "docs" / "product-specs" / "backtest-mvp.md").read_text(
+        encoding="utf-8"
+    )
+    data_ingestion_spec = (ROOT / "docs" / "product-specs" / "data-ingestion.md").read_text(
         encoding="utf-8"
     )
     quickstart = (ROOT / "docs" / "references" / "research-ergonomics-quickstart.md").read_text(
@@ -53,3 +62,27 @@ def test_current_docs_describe_closed_trade_and_fill_count_summary_terms() -> No
     assert "`self.position.quantity`" in research_spec
     assert "`self.position.average_entry_price`" in research_spec
     assert "self.position.is_open" in quickstart
+    assert "`BacktestEngine`" in research_spec
+    assert "`BacktestEngine(...).run(bars=..., strategy=...)`" in research_spec
+    assert "`BacktestEngine(...).run(source=..., strategy=...)`" in research_spec
+    assert "`BacktestEngine(...).run(bars=..., strategy=...)`" in backtest_spec
+    assert "`BacktestEngine(...).run(source=..., strategy=...)`" in backtest_spec
+    assert "`quantcraft.data.TimeBar`" in research_spec
+    assert "`quantcraft.data.BarSeries`" in research_spec
+    assert "`quantcraft.data.TimeBar`" in backtest_spec
+    assert "`quantcraft.data.BarSeries`" in backtest_spec
+    assert "`run_backtest(...)` remains available as a compatibility surface" not in research_spec
+    assert "`run_backtest(...)` remains available as a compatibility surface" not in backtest_spec
+    assert "source.load() returns `BarSeries`" in data_ingestion_spec
+    assert "`CCXTDataSource.load()` returns `BarSeries`" in data_ingestion_spec
+    assert "`CSVDataSource.load()` returns `BarSeries`" in data_ingestion_spec
+    assert "`DataFrameDataSource.load()` returns `BarSeries`" in data_ingestion_spec
+    assert "`BarSeries.rows` is `tuple[TimeBar, ...]`" in data_ingestion_spec
+    assert "`BarSeries.bar_type` is fixed to `\"time\"`" in data_ingestion_spec
+    assert (
+        "from quantcraft.research import BacktestEngine, Strategy, ta, qc, run_backtest"
+        not in quickstart
+    )
+    assert "from quantcraft.data import BarSeries, DataFrameDataSource, TimeBar" in quickstart
+    assert "run(bars=" in quickstart
+    assert "run(source=" in quickstart

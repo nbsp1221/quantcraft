@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from quantcraft.data.adapters.dataframe_source import DataFrameDataSource
-from quantcraft.data.domain import HistoricalDataSource, OHLCVBar
+from quantcraft.data.domain import BarSeries, HistoricalDataSource
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -20,7 +20,7 @@ class CSVDataSource(HistoricalDataSource):
         if not self.timeframe:
             raise ValueError("timeframe must be non-empty")
 
-    def load(self) -> tuple[OHLCVBar, ...]:
+    def load(self) -> BarSeries:
         with self.path.open("r", encoding="utf-8", newline="") as handle:
             rows = list(csv.DictReader(handle))
 

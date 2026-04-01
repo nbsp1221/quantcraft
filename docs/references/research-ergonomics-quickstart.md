@@ -5,7 +5,7 @@ This quickstart is the canonical first-run path for the current implemented `Res
 ## Canonical Import Path
 
 ```python
-from quantcraft.research import Strategy, ta, qc, run_backtest
+from quantcraft.research import BacktestEngine, Strategy, ta, qc
 ```
 
 The public research API for this slice is the `quantcraft.research` import above. The lower-layer imports below are current supporting setup types used to construct backtest inputs; they are not part of the research public surface.
@@ -13,11 +13,11 @@ The public research API for this slice is the `quantcraft.research` import above
 ## Minimal Setup
 
 ```python
-from quantcraft.research import Strategy, ta, qc, run_backtest
-from quantcraft.data import DataFrameDataSource
+from quantcraft.research import BacktestEngine, Strategy, ta, qc
+from quantcraft.data import BarSeries, DataFrameDataSource, TimeBar
 from quantcraft.trading.domain.costs import CostConfig
 
-rows = DataFrameDataSource(
+source = DataFrameDataSource(
     frame=[
         {"timestamp": "1970-01-01T00:01:00+00:00", "open": 5.0, "high": 5.0, "low": 5.0, "close": 5.0, "volume": 1.0},
         {"timestamp": "1970-01-01T00:02:00+00:00", "open": 4.0, "high": 4.0, "low": 4.0, "close": 4.0, "volume": 1.0},
@@ -27,10 +27,27 @@ rows = DataFrameDataSource(
     ],
     symbol="BTC/USDT",
     timeframe="1m",
-).load()
+)
+
+source_bars = source.load()
+
+bars = BarSeries(
+    symbol="BTC/USDT",
+    timeframe="1m",
+    bar_type="time",
+    rows=(
+        TimeBar(timestamp=60_000, open=5.0, high=5.0, low=5.0, close=5.0, volume=1.0),
+        TimeBar(timestamp=120_000, open=4.0, high=4.0, low=4.0, close=4.0, volume=1.0),
+    ),
+)
 
 costs = CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001)
 ```
+
+Current ingestion rule:
+
+- `source.load()` returns `BarSeries`
+- source.load() returns `BarSeries`
 
 ## Primary Example: SMA crossover
 
@@ -47,14 +64,19 @@ class SmaCrossStrategy(Strategy):
             self.sell(symbol=bar.symbol, quantity=1)
 
 
-result = run_backtest(
-    symbol="BTC/USDT",
-    bar_type="time",
-    bar_spec="1m",
-    rows=rows,
-    strategy=SmaCrossStrategy(),
+engine = BacktestEngine(
     initial_cash=1_000.0,
     costs=costs,
+)
+
+result = engine.run(
+    source=source,
+    strategy=SmaCrossStrategy(),
+)
+
+materialized_result = engine.run(
+    bars=bars,
+    strategy=SmaCrossStrategy(),
 )
 ```
 
@@ -92,7 +114,8 @@ The supporting notebook demonstrates the same flow in executable form:
 - subclass `Strategy`
 - bind indicators in `init()`
 - evaluate signals and place orders in `on_bar()`
-- call `run_backtest(...)`
+- create `BacktestEngine(...)`
+- call `engine.run(source=..., strategy=...)` or `engine.run(bars=..., strategy=...)`
 - inspect summary and equity curve
 
 See:

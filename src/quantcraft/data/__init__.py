@@ -1,12 +1,34 @@
 from __future__ import annotations
 
-from quantcraft.data.adapters import CCXTDataSource, CSVDataSource, DataFrameDataSource
-from quantcraft.data.domain import HistoricalDataSource, OHLCVBar
+from quantcraft.data.domain import BarSeries, HistoricalDataSource, TimeBar
 
 __all__ = [
+    "BarSeries",
     "CCXTDataSource",
     "CSVDataSource",
     "DataFrameDataSource",
     "HistoricalDataSource",
-    "OHLCVBar",
+    "TimeBar",
 ]
+
+
+def __getattr__(name: str) -> object:
+    if name in {"BarSeries", "HistoricalDataSource", "TimeBar"}:
+        return globals()[name]
+
+    if name == "CCXTDataSource":
+        from quantcraft.data.adapters.ccxt_source import CCXTDataSource
+
+        return CCXTDataSource
+
+    if name == "CSVDataSource":
+        from quantcraft.data.adapters.csv_source import CSVDataSource
+
+        return CSVDataSource
+
+    if name == "DataFrameDataSource":
+        from quantcraft.data.adapters.dataframe_source import DataFrameDataSource
+
+        return DataFrameDataSource
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

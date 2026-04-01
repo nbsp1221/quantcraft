@@ -48,8 +48,8 @@ This implemented slice closes that gap without introducing storage, scheduling, 
 This implemented slice includes:
 
 - public historical `DataSource` objects under `quantcraft.data`
-- normalization into the same typed OHLCV bar sequence already accepted by the current backtest path
-- the ingestion path that feeds those bars into the current backtest workflow
+- normalization into `quantcraft.data.BarSeries`
+- the ingestion path that feeds those datasets into the current backtest workflow
 
 ## Out Of Scope
 
@@ -82,7 +82,7 @@ The minimal public contract for this slice is intentionally small:
 
 1. create a source object
 2. call `load()`
-3. receive the typed OHLCV bar sequence
+3. receive `BarSeries`
 
 For `CCXTDataSource`, `load()` now assembles historical ranges automatically through internal pagination when a bounded historical query is requested.
 
@@ -119,20 +119,29 @@ This gives `quantcraft` three practical first-run paths:
 2. load historical bars from a local CSV file
 3. pass already-prepared research data from a dataframe-like workflow
 
-## Typed Bar Reuse And Ownership
+## Dataset And Bar Ownership
 
-All official sources must return the same typed OHLCV bar sequence that the current backtest path already accepts.
+All official sources must return the same self-describing historical dataset:
 
-Agents must treat this as a reuse requirement:
+- `quantcraft.data.BarSeries`
 
-- do not invent a second public historical bar type for ingestion
-- normalize all supported sources into the existing backtest-compatible typed OHLCV bar shape
+Current dataset rules:
+
+- `source.load()` returns `BarSeries`
+- source.load() returns `BarSeries`
+- `CCXTDataSource.load()` returns `BarSeries`
+- `CSVDataSource.load()` returns `BarSeries`
+- `DataFrameDataSource.load()` returns `BarSeries`
+- `BarSeries.rows` is `tuple[TimeBar, ...]`
+- `BarSeries.bar_type` is fixed to `"time"`
+- this slice supports time bars only
 
 Ownership rule:
 
-- the canonical normalized OHLCV bar type for this slice belongs to `data.domain`
-- `research` consumes that type
-- `shared` must not be used as a shortcut location for this business shape
+- the canonical normalized single-bar type for this slice is `quantcraft.data.TimeBar`
+- the canonical engine-facing dataset type for this slice is `quantcraft.data.BarSeries`
+- `research` consumes those types
+- `shared` must not be used as a shortcut location for these business shapes
 
 ## Historical-Only Scope
 
@@ -236,7 +245,7 @@ The target mental model is:
 
 1. create a `DataSource`
 2. call `load()`
-3. receive typed OHLCV bars
+3. receive `BarSeries`
 4. pass those bars into the current backtest path
 
 Illustrative direction:
@@ -245,7 +254,8 @@ Illustrative direction:
 from datetime import UTC, datetime, timedelta
 
 from quantcraft.data import CCXTDataSource
-from quantcraft.research import Strategy, run_backtest, ta, qc
+from quantcraft.trading.domain.costs import CostConfig
+from quantcraft.research import BacktestEngine, Strategy, ta, qc
 
 
 class RsiStrategy(Strategy):
@@ -274,13 +284,18 @@ bars = CCXTDataSource(
     end=end,
 ).load()
 
-result = run_backtest(
-    strategy_cls=RsiStrategy,
-    bars=bars,
+engine = BacktestEngine(
     initial_cash=10_000,
-    fee_rate=0.0004,
-    tick_size=0.1,
-    slippage_ticks=1,
+    costs=CostConfig(
+        fee_rate=0.0004,
+        tick_size=0.1,
+        slippage_ticks=1,
+    ),
+)
+
+result = engine.run(
+    bars=bars,
+    strategy=RsiStrategy(),
 )
 ```
 
@@ -291,8 +306,8 @@ This example is a target API illustration for the next slice, not the current im
 This slice is complete when:
 
 1. users can import `CCXTDataSource`, `CSVDataSource`, and `DataFrameDataSource` from `quantcraft.data`
-2. all three sources load historical inputs into the existing backtest-compatible typed OHLCV bar sequence
-3. the current backtest path can consume those bars without introducing a second ingestion-only bar type
+2. all three sources load historical inputs into `BarSeries`
+3. the current backtest path can consume those datasets without introducing a second ingestion-only bar type
 4. the first documented and tested exchange-backed path works for Binance via `ccxt`
 5. CSV/DataFrame ingestion enforces the documented schema and UTC timestamp rules
 6. canonical docs and quickstart materials reflect the shipped behavior clearly

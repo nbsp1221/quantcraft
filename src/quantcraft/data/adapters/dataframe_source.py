@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Protocol, cast
 
-from quantcraft.data.domain import HistoricalDataSource, OHLCVBar
+from quantcraft.data.domain import BarSeries, HistoricalDataSource, TimeBar
 
 
 class _RecordsFrame(Protocol):
@@ -24,9 +24,14 @@ class DataFrameDataSource(HistoricalDataSource):
         if not self.timeframe:
             raise ValueError("timeframe must be non-empty")
 
-    def load(self) -> tuple[OHLCVBar, ...]:
+    def load(self) -> BarSeries:
         rows = _coerce_rows(self.frame)
-        return tuple(_normalize_row(row) for row in rows)
+        return BarSeries(
+            symbol=self.symbol,
+            timeframe=self.timeframe,
+            bar_type="time",
+            rows=tuple(_normalize_row(row) for row in rows),
+        )
 
 
 def _coerce_rows(
@@ -38,10 +43,10 @@ def _coerce_rows(
     return list(frame)
 
 
-def _normalize_row(row: Mapping[str, object]) -> OHLCVBar:
+def _normalize_row(row: Mapping[str, object]) -> TimeBar:
     _validate_required_columns(row)
 
-    return OHLCVBar(
+    return TimeBar(
         timestamp=_normalize_timestamp(row["timestamp"]),
         open=_as_float(row["open"], field="open"),
         high=_as_float(row["high"], field="high"),

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import importlib
+
 import pytest
 
 import quantcraft.data.adapters.exchange_backend as exchange_backend
-from quantcraft.data import CCXTDataSource, OHLCVBar
 
 
 class FakeExchangeClient:
@@ -58,6 +59,21 @@ class FakeExchangeClient:
         return self.rows
 
 
+def _ccxt_source_type() -> type:
+    data_module = importlib.import_module("quantcraft.data")
+    return getattr(data_module, "CCXTDataSource")
+
+
+def _time_bar_type() -> type:
+    data_module = importlib.import_module("quantcraft.data")
+    return getattr(data_module, "TimeBar")
+
+
+def _bar_series_type() -> type:
+    data_module = importlib.import_module("quantcraft.data")
+    return getattr(data_module, "BarSeries")
+
+
 def test_ccxt_source_loads_binance_usdm_bars(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -70,7 +86,7 @@ def test_ccxt_source_loads_binance_usdm_bars(
 
     monkeypatch.setattr(exchange_backend, "_make_ccxt_exchange", lambda **_: fake_client)
 
-    source = CCXTDataSource(
+    source = _ccxt_source_type()(
         exchange="binance",
         market="usdm",
         symbol="BTC/USDT:USDT",
@@ -81,8 +97,15 @@ def test_ccxt_source_loads_binance_usdm_bars(
 
     bars = source.load()
 
-    assert bars == (
-        OHLCVBar(
+    bar_series_type = _bar_series_type()
+    time_bar_type = _time_bar_type()
+
+    assert isinstance(bars, bar_series_type)
+    assert bars.symbol == "BTC/USDT:USDT"
+    assert bars.timeframe == "1h"
+    assert bars.bar_type == "time"
+    assert bars.rows == (
+        time_bar_type(
             timestamp=1_700_000_000_000,
             open=1.0,
             high=2.0,
@@ -106,7 +129,7 @@ def test_ccxt_source_does_not_hard_block_other_supported_exchanges(
 
     monkeypatch.setattr(exchange_backend.ccxt, "bitget", fake_exchange)
 
-    source = CCXTDataSource(
+    source = _ccxt_source_type()(
         exchange="bitget",
         market="spot",
         symbol="BTC/USDT",
@@ -115,7 +138,7 @@ def test_ccxt_source_does_not_hard_block_other_supported_exchanges(
 
     bars = source.load()
 
-    assert bars[0].close == 1.5
+    assert bars.rows[0].close == 1.5
 
 
 def test_ccxt_source_paginates_until_backend_exhausted_and_deduplicates_rows(
@@ -138,7 +161,7 @@ def test_ccxt_source_paginates_until_backend_exhausted_and_deduplicates_rows(
 
     monkeypatch.setattr(exchange_backend, "_make_ccxt_exchange", lambda **_: fake_client)
 
-    source = CCXTDataSource(
+    source = _ccxt_source_type()(
         exchange="binance",
         market="spot",
         symbol="BTC/USDT",
@@ -148,7 +171,7 @@ def test_ccxt_source_paginates_until_backend_exhausted_and_deduplicates_rows(
 
     bars = source.load()
 
-    assert tuple(bar.timestamp for bar in bars) == (
+    assert tuple(bar.timestamp for bar in bars.rows) == (
         1_700_000_000_000,
         1_700_000_300_000,
         1_700_000_600_000,
@@ -176,7 +199,7 @@ def test_ccxt_source_treats_limit_as_total_returned_row_cap(
 
     monkeypatch.setattr(exchange_backend, "_make_ccxt_exchange", lambda **_: fake_client)
 
-    source = CCXTDataSource(
+    source = _ccxt_source_type()(
         exchange="binance",
         market="spot",
         symbol="BTC/USDT",
@@ -187,12 +210,12 @@ def test_ccxt_source_treats_limit_as_total_returned_row_cap(
 
     bars = source.load()
 
-    assert tuple(bar.timestamp for bar in bars) == (
+    assert tuple(bar.timestamp for bar in bars.rows) == (
         1_700_000_000_000,
         1_700_000_300_000,
         1_700_000_600_000,
     )
-    assert len(bars) == 3
+    assert len(bars.rows) == 3
 
 
 def test_ccxt_source_accepts_provider_native_bounded_timeframes(
@@ -209,7 +232,7 @@ def test_ccxt_source_accepts_provider_native_bounded_timeframes(
 
     monkeypatch.setattr(exchange_backend, "_make_ccxt_exchange", lambda **_: fake_client)
 
-    source = CCXTDataSource(
+    source = _ccxt_source_type()(
         exchange="binance",
         market="spot",
         symbol="BTC/USDT",
@@ -219,7 +242,7 @@ def test_ccxt_source_accepts_provider_native_bounded_timeframes(
 
     bars = source.load()
 
-    assert tuple(bar.timestamp for bar in bars) == (1_700_000_000_000,)
+    assert tuple(bar.timestamp for bar in bars.rows) == (1_700_000_000_000,)
 
 
 def test_ccxt_source_accepts_provider_native_monthly_timeframe_for_bounded_queries(
@@ -236,7 +259,7 @@ def test_ccxt_source_accepts_provider_native_monthly_timeframe_for_bounded_queri
 
     monkeypatch.setattr(exchange_backend, "_make_ccxt_exchange", lambda **_: fake_client)
 
-    source = CCXTDataSource(
+    source = _ccxt_source_type()(
         exchange="binance",
         market="spot",
         symbol="BTC/USDT",
@@ -246,7 +269,7 @@ def test_ccxt_source_accepts_provider_native_monthly_timeframe_for_bounded_queri
 
     bars = source.load()
 
-    assert tuple(bar.timestamp for bar in bars) == (1_700_000_000_000,)
+    assert tuple(bar.timestamp for bar in bars.rows) == (1_700_000_000_000,)
 
 
 def test_ccxt_source_returns_all_rows_even_when_final_page_is_short(
@@ -267,7 +290,7 @@ def test_ccxt_source_returns_all_rows_even_when_final_page_is_short(
 
     monkeypatch.setattr(exchange_backend, "_make_ccxt_exchange", lambda **_: fake_client)
 
-    source = CCXTDataSource(
+    source = _ccxt_source_type()(
         exchange="binance",
         market="spot",
         symbol="BTC/USDT",
@@ -277,7 +300,7 @@ def test_ccxt_source_returns_all_rows_even_when_final_page_is_short(
 
     bars = source.load()
 
-    assert tuple(bar.timestamp for bar in bars) == (
+    assert tuple(bar.timestamp for bar in bars.rows) == (
         1_700_000_000_000,
         1_700_000_300_000,
         1_700_000_600_000,
@@ -302,7 +325,7 @@ def test_ccxt_source_excludes_rows_at_or_beyond_end(
 
     monkeypatch.setattr(exchange_backend, "_make_ccxt_exchange", lambda **_: fake_client)
 
-    source = CCXTDataSource(
+    source = _ccxt_source_type()(
         exchange="binance",
         market="spot",
         symbol="BTC/USDT",
@@ -313,7 +336,7 @@ def test_ccxt_source_excludes_rows_at_or_beyond_end(
 
     bars = source.load()
 
-    assert tuple(bar.timestamp for bar in bars) == (
+    assert tuple(bar.timestamp for bar in bars.rows) == (
         1_700_000_000_000,
         1_700_000_300_000,
     )

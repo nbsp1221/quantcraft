@@ -52,3 +52,5 @@ Current historical plans are stored in:
 - `docs/plans/2026-03-28-trade-summary-semantics-implementation.md`
 - `docs/plans/2026-03-29-strategy-position-view-design.md`
 - `docs/plans/2026-03-29-strategy-position-view-implementation.md`
+- `docs/plans/2026-03-30-backtest-engine-design.md`
+- `docs/plans/2026-03-30-backtest-engine-implementation.md`

@@ -6,12 +6,12 @@ from pathlib import Path
 import pytest
 
 import quantcraft.data.adapters.exchange_backend as exchange_backend
-from quantcraft.data import CCXTDataSource, OHLCVBar
+from quantcraft.data import BarSeries, CCXTDataSource, TimeBar
+from quantcraft.research import BacktestEngine
 from quantcraft.research.application.backtest import (
     BacktestResult,
     BacktestSummary,
     ExposureSummary,
-    run_backtest,
 )
 from quantcraft.research.application.strategy import Strategy
 from quantcraft.trading.domain.costs import CostConfig
@@ -150,19 +150,69 @@ class FakeExchangeClient:
         return []
 
 
-def test_backtest_runner_produces_deterministic_trade_log_and_summary() -> None:
+class InMemoryBarSeriesSource:
+    def load(self) -> BarSeries:
+        return _fixture_bar_series()
+
+
+class InMemoryDuckTypedSource:
+    def load(self) -> object:
+        return type(
+            "DuckBars",
+            (),
+            {
+                "symbol": "BTC/USDT",
+                "timeframe": "1m",
+                "bar_type": "time",
+                "rows": _fixture_rows(),
+            },
+        )()
+
+
+def _fixture_rows() -> tuple[TimeBar, ...]:
     fixture_path = Path(__file__).with_name("fixtures") / "backtest_ohlcv_fixture.json"
     payload = json.loads(fixture_path.read_text())
-    rows = tuple(OHLCVBar(**row) for row in payload)
+    return tuple(TimeBar(**row) for row in payload)
 
-    result = run_backtest(
-        symbol="BTC/USDT",
+
+def _make_bar_series(
+    rows: tuple[TimeBar, ...],
+    *,
+    symbol: str = "BTC/USDT",
+    timeframe: str = "1m",
+) -> BarSeries:
+    return BarSeries(
+        symbol=symbol,
+        timeframe=timeframe,
         bar_type="time",
-        bar_spec="1m",
         rows=rows,
+    )
+
+
+def _fixture_bar_series() -> BarSeries:
+    return _make_bar_series(_fixture_rows())
+
+
+def _run_engine_backtest(
+    *,
+    bars: BarSeries,
+    strategy: Strategy,
+    initial_cash: float = 1_000.0,
+    costs: CostConfig | None = None,
+) -> BacktestResult:
+    used_costs = costs or CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001)
+    return BacktestEngine(initial_cash=initial_cash, costs=used_costs).run(
+        bars=bars,
+        strategy=strategy,
+    )
+
+
+def test_backtest_runner_produces_deterministic_trade_log_and_summary() -> None:
+    bars = _fixture_bar_series()
+
+    result = _run_engine_backtest(
+        bars=bars,
         strategy=DeterministicEntryExitStrategy(),
-        initial_cash=1_000.0,
-        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
     )
 
     assert result == BacktestResult(
@@ -220,6 +270,81 @@ def test_backtest_runner_produces_deterministic_trade_log_and_summary() -> None:
     assert result.summary.ending_equity == 1003.774
 
 
+def test_backtest_engine_runs_materialized_bar_series() -> None:
+    bars = _fixture_bar_series()
+
+    result = BacktestEngine(
+        initial_cash=1_000.0,
+        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
+    ).run(
+        bars=bars,
+        strategy=DeterministicEntryExitStrategy(),
+    )
+
+    assert isinstance(result, BacktestResult)
+    assert result.summary.total_trades == 1
+
+
+def test_backtest_engine_runs_source_that_loads_bar_series() -> None:
+    source = InMemoryBarSeriesSource()
+
+    result = BacktestEngine(
+        initial_cash=1_000.0,
+        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
+    ).run(
+        source=source,
+        strategy=DeterministicEntryExitStrategy(),
+    )
+
+    assert isinstance(result, BacktestResult)
+    assert result.summary.total_trades == 1
+
+
+def test_backtest_engine_rejects_missing_and_duplicate_inputs() -> None:
+    engine = BacktestEngine(
+        initial_cash=1_000.0,
+        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
+    )
+    source = InMemoryBarSeriesSource()
+    bars = _fixture_bar_series()
+
+    with pytest.raises(ValueError, match="provide exactly one of bars or source"):
+        engine.run(strategy=DeterministicEntryExitStrategy())
+
+    with pytest.raises(ValueError, match="provide exactly one of bars or source"):
+        engine.run(
+            bars=bars,
+            source=source,
+            strategy=DeterministicEntryExitStrategy(),
+        )
+
+
+def test_backtest_engine_rejects_non_bar_series_bars_input() -> None:
+    engine = BacktestEngine(
+        initial_cash=1_000.0,
+        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
+    )
+
+    with pytest.raises(ValueError, match="bars must be a BarSeries instance"):
+        engine.run(
+            bars=("not", "a", "bar-series"),  # type: ignore[arg-type]
+            strategy=DeterministicEntryExitStrategy(),
+        )
+
+
+def test_backtest_engine_rejects_source_results_that_are_not_bar_series() -> None:
+    engine = BacktestEngine(
+        initial_cash=1_000.0,
+        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
+    )
+
+    with pytest.raises(ValueError, match="bars must be a BarSeries instance"):
+        engine.run(
+            source=InMemoryDuckTypedSource(),
+            strategy=DeterministicEntryExitStrategy(),
+        )
+
+
 def test_backtest_runner_accepts_paginated_ccxt_source_rows(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -239,7 +364,7 @@ def test_backtest_runner_accepts_paginated_ccxt_source_rows(
     )
     monkeypatch.setattr(exchange_backend, "_make_ccxt_exchange", lambda **_: fake_client)
 
-    rows = CCXTDataSource(
+    bars = CCXTDataSource(
         exchange="binance",
         market="spot",
         symbol="BTC/USDT",
@@ -247,35 +372,21 @@ def test_backtest_runner_accepts_paginated_ccxt_source_rows(
         start=60_000,
     ).load()
 
-    result = run_backtest(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
+    result = _run_engine_backtest(
+        bars=bars,
         strategy=DeterministicEntryExitStrategy(),
-        initial_cash=1_000.0,
-        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
     )
 
-    assert tuple(row.timestamp for row in rows) == (60_000, 120_000, 180_000)
+    assert tuple(row.timestamp for row in bars.rows) == (60_000, 120_000, 180_000)
     assert len(result.trade_log) == 2
     assert result.summary.total_trades == 1
     assert result.summary.final_equity > 0.0
 
 
 def test_backtest_runner_exposes_expanded_research_result_surface() -> None:
-    fixture_path = Path(__file__).with_name("fixtures") / "backtest_ohlcv_fixture.json"
-    payload = json.loads(fixture_path.read_text())
-    rows = tuple(OHLCVBar(**row) for row in payload)
-
-    result = run_backtest(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
+    result = _run_engine_backtest(
+        bars=_fixture_bar_series(),
         strategy=DeterministicEntryExitStrategy(),
-        initial_cash=1_000.0,
-        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
     )
 
     assert result.equity_curve == (1000.0, 997.889, 1003.774)
@@ -295,18 +406,9 @@ def test_backtest_runner_exposes_expanded_research_result_surface() -> None:
 
 
 def test_backtest_runner_trade_statistics_are_net_of_fees() -> None:
-    fixture_path = Path(__file__).with_name("fixtures") / "backtest_ohlcv_fixture.json"
-    payload = json.loads(fixture_path.read_text())
-    rows = tuple(OHLCVBar(**row) for row in payload)
-
-    result = run_backtest(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
+    result = _run_engine_backtest(
+        bars=_fixture_bar_series(),
         strategy=DeterministicEntryExitStrategy(),
-        initial_cash=1_000.0,
-        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
     )
 
     assert result.summary.realized_pnl == 4.0
@@ -320,18 +422,9 @@ def test_backtest_runner_trade_statistics_are_net_of_fees() -> None:
 
 
 def test_backtest_runner_net_trade_stats_handle_partial_closes() -> None:
-    fixture_path = Path(__file__).with_name("fixtures") / "backtest_ohlcv_fixture.json"
-    payload = json.loads(fixture_path.read_text())
-    rows = tuple(OHLCVBar(**row) for row in payload)
-
-    result = run_backtest(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
+    result = _run_engine_backtest(
+        bars=_fixture_bar_series(),
         strategy=OlderLimitThenNewerMarketExitStrategy(),
-        initial_cash=1_000.0,
-        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
     )
 
     assert len(result.trade_log) == 2
@@ -346,18 +439,9 @@ def test_backtest_runner_net_trade_stats_handle_partial_closes() -> None:
 
 
 def test_backtest_runner_uses_tick_path_not_bar_only_fills() -> None:
-    fixture_path = Path(__file__).with_name("fixtures") / "backtest_ohlcv_fixture.json"
-    payload = json.loads(fixture_path.read_text())
-    rows = tuple(OHLCVBar(**row) for row in payload)
-
-    result = run_backtest(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
+    result = _run_engine_backtest(
+        bars=_fixture_bar_series(),
         strategy=DeterministicEntryExitStrategy(),
-        initial_cash=1_000.0,
-        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
     )
 
     assert tuple(fill.timestamp for fill in result.trade_log) == (120, 180)
@@ -365,20 +449,11 @@ def test_backtest_runner_uses_tick_path_not_bar_only_fills() -> None:
 
 
 def test_backtest_runner_activates_bar_orders_on_the_next_bar() -> None:
-    fixture_path = Path(__file__).with_name("fixtures") / "backtest_ohlcv_fixture.json"
-    payload = json.loads(fixture_path.read_text())
-    rows = tuple(OHLCVBar(**row) for row in payload)
-
     strategy = BuyAndHoldStrategy()
 
-    result = run_backtest(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
+    result = _run_engine_backtest(
+        bars=_fixture_bar_series(),
         strategy=strategy,
-        initial_cash=1_000.0,
-        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
     )
 
     assert tuple(fill.timestamp for fill in result.trade_log) == (120,)
@@ -392,18 +467,9 @@ def test_backtest_runner_activates_bar_orders_on_the_next_bar() -> None:
 
 
 def test_backtest_runner_marks_open_positions_to_latest_market_state() -> None:
-    fixture_path = Path(__file__).with_name("fixtures") / "backtest_ohlcv_fixture.json"
-    payload = json.loads(fixture_path.read_text())
-    rows = tuple(OHLCVBar(**row) for row in payload)
-
-    result = run_backtest(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
+    result = _run_engine_backtest(
+        bars=_fixture_bar_series(),
         strategy=BuyAndHoldStrategy(),
-        initial_cash=1_000.0,
-        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
     )
 
     assert result.final_state == TradingState(
@@ -437,20 +503,11 @@ def test_backtest_runner_marks_open_positions_to_latest_market_state() -> None:
 
 
 def test_unfilled_limit_order_carries_without_creating_trade_log_entries() -> None:
-    fixture_path = Path(__file__).with_name("fixtures") / "backtest_ohlcv_fixture.json"
-    payload = json.loads(fixture_path.read_text())
-    rows = tuple(OHLCVBar(**row) for row in payload)
-
     strategy = NeverFilledLimitStrategy()
 
-    result = run_backtest(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
+    result = _run_engine_backtest(
+        bars=_fixture_bar_series(),
         strategy=strategy,
-        initial_cash=1_000.0,
-        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
     )
 
     assert result.trade_log == ()
@@ -467,20 +524,15 @@ def test_unfilled_limit_order_carries_without_creating_trade_log_entries() -> No
 
 def test_backtest_runner_preserves_older_active_intents_ahead_of_newly_activated_ones() -> None:
     rows = (
-        OHLCVBar(timestamp=60, open=100.0, high=105.0, low=95.0, close=104.0, volume=10.0),
-        OHLCVBar(timestamp=120, open=110.0, high=112.0, low=108.0, close=109.0, volume=12.0),
-        OHLCVBar(timestamp=180, open=109.0, high=114.0, low=107.0, close=113.0, volume=14.0),
-        OHLCVBar(timestamp=240, open=115.0, high=116.0, low=114.0, close=115.0, volume=15.0),
+        TimeBar(timestamp=60, open=100.0, high=105.0, low=95.0, close=104.0, volume=10.0),
+        TimeBar(timestamp=120, open=110.0, high=112.0, low=108.0, close=109.0, volume=12.0),
+        TimeBar(timestamp=180, open=109.0, high=114.0, low=107.0, close=113.0, volume=14.0),
+        TimeBar(timestamp=240, open=115.0, high=116.0, low=114.0, close=115.0, volume=15.0),
     )
 
-    result = run_backtest(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
+    result = _run_engine_backtest(
+        bars=_make_bar_series(rows),
         strategy=OlderLimitThenNewerMarketExitStrategy(),
-        initial_cash=1_000.0,
-        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
     )
 
     assert tuple((fill.side, fill.price, fill.timestamp) for fill in result.trade_log) == (
@@ -492,7 +544,7 @@ def test_backtest_runner_preserves_older_active_intents_ahead_of_newly_activated
 
 def test_backtest_runner_ignores_exit_signals_while_flat() -> None:
     rows = tuple(
-        OHLCVBar(
+        TimeBar(
             timestamp=timestamp,
             open=price,
             high=price + 2.0,
@@ -507,14 +559,9 @@ def test_backtest_runner_ignores_exit_signals_while_flat() -> None:
         )
     )
 
-    result = run_backtest(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
+    result = _run_engine_backtest(
+        bars=_make_bar_series(rows),
         strategy=SellWhileFlatStrategy(),
-        initial_cash=1_000.0,
-        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
     )
 
     assert result.trade_log == ()
@@ -525,7 +572,7 @@ def test_backtest_runner_ignores_exit_signals_while_flat() -> None:
 
 def test_backtest_runner_handles_unguarded_exit_signals_before_and_after_entry() -> None:
     rows = tuple(
-        OHLCVBar(
+        TimeBar(
             timestamp=timestamp,
             open=price,
             high=price + 5.0,
@@ -542,14 +589,9 @@ def test_backtest_runner_handles_unguarded_exit_signals_before_and_after_entry()
         )
     )
 
-    result = run_backtest(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
+    result = _run_engine_backtest(
+        bars=_make_bar_series(rows),
         strategy=RepeatedExitSignalsStrategy(),
-        initial_cash=1_000.0,
-        costs=CostConfig(tick_size=1.0, slippage_ticks=1.0, fee_rate=0.001),
     )
 
     assert tuple((fill.side, fill.timestamp) for fill in result.trade_log) == (
@@ -563,7 +605,7 @@ def test_backtest_runner_handles_unguarded_exit_signals_before_and_after_entry()
 
 def test_backtest_runner_exposes_position_view_during_on_bar() -> None:
     rows = tuple(
-        OHLCVBar(
+        TimeBar(
             timestamp=timestamp,
             open=price,
             high=price + 1.0,
@@ -581,11 +623,8 @@ def test_backtest_runner_exposes_position_view_during_on_bar() -> None:
     )
     strategy = PositionViewProbeStrategy()
 
-    run_backtest(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
+    _run_engine_backtest(
+        bars=_make_bar_series(rows),
         strategy=strategy,
         initial_cash=10_000.0,
         costs=CostConfig(tick_size=1.0, slippage_ticks=0.0, fee_rate=0.0),

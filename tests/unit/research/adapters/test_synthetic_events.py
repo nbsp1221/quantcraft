@@ -7,16 +7,30 @@ from pathlib import Path
 
 import pytest
 
-from quantcraft.data import OHLCVBar
+from quantcraft.data import BarSeries, TimeBar
 from quantcraft.research.adapters.synthetic_events import (
-    convert_ohlcv_to_backtest_events,
+    convert_bar_series_to_backtest_events,
     infer_intrabar_prices,
 )
 from quantcraft.trading.domain.events import BarEvent, TickEvent
 
 
+def _make_bar_series(
+    rows: tuple[TimeBar, ...],
+    *,
+    symbol: str = "BTC/USDT",
+    timeframe: str = "1m",
+) -> BarSeries:
+    return BarSeries(
+        symbol=symbol,
+        timeframe=timeframe,
+        bar_type="time",
+        rows=rows,
+    )
+
+
 def test_bullish_bar_uses_open_low_high_close_path() -> None:
-    bar = OHLCVBar(
+    bar = TimeBar(
         timestamp=60,
         open=100.0,
         high=105.0,
@@ -29,7 +43,7 @@ def test_bullish_bar_uses_open_low_high_close_path() -> None:
 
 
 def test_bearish_bar_uses_open_high_low_close_path() -> None:
-    bar = OHLCVBar(
+    bar = TimeBar(
         timestamp=120,
         open=110.0,
         high=112.0,
@@ -42,7 +56,7 @@ def test_bearish_bar_uses_open_high_low_close_path() -> None:
 
 
 def test_doji_bar_explicitly_uses_open_low_high_close_path() -> None:
-    bar = OHLCVBar(
+    bar = TimeBar(
         timestamp=180,
         open=100.0,
         high=103.0,
@@ -55,28 +69,27 @@ def test_doji_bar_explicitly_uses_open_low_high_close_path() -> None:
 
 
 def test_gap_segment_skips_intermediate_prices() -> None:
-    events = convert_ohlcv_to_backtest_events(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=(
-            OHLCVBar(
-                timestamp=60,
-                open=100.0,
-                high=105.0,
-                low=95.0,
-                close=104.0,
-                volume=10.0,
-            ),
-            OHLCVBar(
-                timestamp=120,
-                open=110.0,
-                high=112.0,
-                low=108.0,
-                close=109.0,
-                volume=12.0,
-            ),
-        ),
+    events = convert_bar_series_to_backtest_events(
+        bars=_make_bar_series(
+            (
+                TimeBar(
+                    timestamp=60,
+                    open=100.0,
+                    high=105.0,
+                    low=95.0,
+                    close=104.0,
+                    volume=10.0,
+                ),
+                TimeBar(
+                    timestamp=120,
+                    open=110.0,
+                    high=112.0,
+                    low=108.0,
+                    close=109.0,
+                    volume=12.0,
+                ),
+            )
+        )
     )
 
     tick_prices = [event.last for event in events if isinstance(event, TickEvent)]
@@ -84,15 +97,15 @@ def test_gap_segment_skips_intermediate_prices() -> None:
     assert tick_prices == [100.0, 95.0, 105.0, 104.0, 110.0, 112.0, 108.0, 109.0]
 
 
-def test_conversion_api_does_not_accept_order_context() -> None:
-    signature = inspect.signature(convert_ohlcv_to_backtest_events)
+def test_conversion_api_accepts_only_bar_series() -> None:
+    signature = inspect.signature(convert_bar_series_to_backtest_events)
 
-    assert tuple(signature.parameters) == ("symbol", "bar_type", "bar_spec", "rows")
+    assert tuple(signature.parameters) == ("bars",)
 
 
-def test_malformed_ohlcv_row_is_rejected_before_event_conversion() -> None:
-    with pytest.raises(ValueError, match="invalid OHLCV row"):
-        OHLCVBar(
+def test_malformed_time_bar_is_rejected_before_event_conversion() -> None:
+    with pytest.raises(ValueError, match="invalid time bar"):
+        TimeBar(
             timestamp=60,
             open=100.0,
             high=99.0,
@@ -102,22 +115,37 @@ def test_malformed_ohlcv_row_is_rejected_before_event_conversion() -> None:
         )
 
 
-def test_out_of_order_ohlcv_rows_are_rejected_before_gap_modeling() -> None:
-    with pytest.raises(ValueError, match="out-of-order OHLCV rows"):
-        convert_ohlcv_to_backtest_events(
-            symbol="BTC/USDT",
-            bar_type="time",
-            bar_spec="1m",
-            rows=(
-                OHLCVBar(
-                    timestamp=120,
-                    open=110.0,
-                    high=112.0,
-                    low=108.0,
-                    close=109.0,
-                    volume=12.0,
-                ),
-                OHLCVBar(
+def test_out_of_order_time_bars_are_rejected_before_gap_modeling() -> None:
+    with pytest.raises(ValueError, match="out-of-order time bars"):
+        convert_bar_series_to_backtest_events(
+            bars=_make_bar_series(
+                (
+                    TimeBar(
+                        timestamp=120,
+                        open=110.0,
+                        high=112.0,
+                        low=108.0,
+                        close=109.0,
+                        volume=12.0,
+                    ),
+                    TimeBar(
+                        timestamp=60,
+                        open=100.0,
+                        high=105.0,
+                        low=95.0,
+                        close=104.0,
+                        volume=10.0,
+                    ),
+                )
+            )
+        )
+
+
+def test_synthetic_ticks_use_unbounded_book_depth_representation() -> None:
+    events = convert_bar_series_to_backtest_events(
+        bars=_make_bar_series(
+            (
+                TimeBar(
                     timestamp=60,
                     open=100.0,
                     high=105.0,
@@ -125,25 +153,8 @@ def test_out_of_order_ohlcv_rows_are_rejected_before_gap_modeling() -> None:
                     close=104.0,
                     volume=10.0,
                 ),
-            ),
+            )
         )
-
-
-def test_synthetic_ticks_use_unbounded_book_depth_representation() -> None:
-    events = convert_ohlcv_to_backtest_events(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=(
-            OHLCVBar(
-                timestamp=60,
-                open=100.0,
-                high=105.0,
-                low=95.0,
-                close=104.0,
-                volume=10.0,
-            ),
-        ),
     )
 
     ticks = tuple(event for event in events if isinstance(event, TickEvent))
@@ -157,20 +168,11 @@ def test_synthetic_ticks_use_unbounded_book_depth_representation() -> None:
 def test_conversion_from_checked_in_fixture_is_deterministic() -> None:
     fixture_path = Path(__file__).with_name("fixtures") / "ohlcv_fixture.json"
     payload = json.loads(fixture_path.read_text())
-    rows = tuple(OHLCVBar(**row) for row in payload)
+    rows = tuple(TimeBar(**row) for row in payload)
+    bars = _make_bar_series(rows)
 
-    first = convert_ohlcv_to_backtest_events(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
-    )
-    second = convert_ohlcv_to_backtest_events(
-        symbol="BTC/USDT",
-        bar_type="time",
-        bar_spec="1m",
-        rows=rows,
-    )
+    first = convert_bar_series_to_backtest_events(bars=bars)
+    second = convert_bar_series_to_backtest_events(bars=bars)
 
     assert first == second
     assert first == (
