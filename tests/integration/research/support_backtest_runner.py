@@ -12,8 +12,7 @@ from quantcraft.trading.domain.costs import CostConfig
 
 
 class DeterministicEntryExitStrategy(Strategy):
-    def __init__(self) -> None:
-        super().__init__()
+    def init(self) -> None:
         self._seen_bars = 0
 
     def on_bar(self, bar) -> None:
@@ -31,8 +30,7 @@ class DeterministicEntryExitStrategy(Strategy):
 
 
 class BuyAndHoldStrategy(Strategy):
-    def __init__(self) -> None:
-        super().__init__()
+    def init(self) -> None:
         self._entered = False
 
     def on_bar(self, bar) -> None:
@@ -44,6 +42,9 @@ class BuyAndHoldStrategy(Strategy):
 class NeverFilledLimitStrategy(Strategy):
     def __init__(self) -> None:
         super().__init__()
+        self._placed = False
+
+    def init(self) -> None:
         self._placed = False
 
     def on_bar(self, bar) -> None:
@@ -59,8 +60,7 @@ class NeverFilledLimitStrategy(Strategy):
 
 
 class OlderLimitThenNewerMarketExitStrategy(Strategy):
-    def __init__(self) -> None:
-        super().__init__()
+    def init(self) -> None:
         self._seen_bars = 0
 
     def on_bar(self, bar) -> None:
@@ -80,8 +80,7 @@ class OlderLimitThenNewerMarketExitStrategy(Strategy):
 
 
 class RepeatedExitSignalsStrategy(Strategy):
-    def __init__(self) -> None:
-        super().__init__()
+    def init(self) -> None:
         self._seen_bars = 0
 
     def on_bar(self, bar) -> None:
@@ -102,8 +101,11 @@ class SellWhileFlatStrategy(Strategy):
 class PositionViewProbeStrategy(Strategy):
     def __init__(self) -> None:
         super().__init__()
-        self._seen_bars = 0
         self.position_snapshots: list[tuple[bool, float, float]] = []
+
+    def init(self) -> None:
+        self._seen_bars = 0
+        self.position_snapshots.clear()
 
     def on_bar(self, bar) -> None:
         self._seen_bars += 1

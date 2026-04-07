@@ -166,6 +166,37 @@ def test_backtest_engine_calls_init_once_before_processing() -> None:
     assert strategy.init_calls == 1
 
 
+def test_backtest_engine_calls_init_for_each_run_on_reused_strategy_instance() -> None:
+    strategy = RecordsInitCallsStrategy()
+    engine = BacktestEngine(
+        initial_cash=1_000.0,
+        costs=CostConfig(tick_size=0.1, slippage_ticks=1.0, fee_rate=0.001),
+    )
+    bars = _make_bar_series(
+        (
+            TimeBar(
+                timestamp=60,
+                open=100.0,
+                high=105.0,
+                low=95.0,
+                close=104.0,
+                volume=10.0,
+            ),
+        )
+    )
+
+    engine.run(
+        bars=bars,
+        strategy=strategy,
+    )
+    engine.run(
+        bars=bars,
+        strategy=strategy,
+    )
+
+    assert strategy.init_calls == 2
+
+
 def test_order_intents_from_on_bar_become_effective_on_the_next_bar() -> None:
     strategy = BuyOnFirstBarStrategy()
     runtime = _runtime(strategy)

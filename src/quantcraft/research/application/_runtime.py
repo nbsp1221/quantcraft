@@ -50,11 +50,8 @@ class _StrategyDriver:
         self._strategy = strategy
 
     def initialize(self) -> None:
-        if self._strategy._initialized:
-            return None
+        self._strategy._reset_runtime_state()
         self._strategy.init()
-        self._strategy._initialized = True
-        return None
 
     def sync_position(self, state: TradingState) -> None:
         self._strategy.position._refresh(state)

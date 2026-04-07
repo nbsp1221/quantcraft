@@ -10,10 +10,12 @@ from quantcraft.trading.domain.intents import OrderIntent, OrderType
 
 class Strategy(ABC):
     def __init__(self) -> None:
+        self._reset_runtime_state()
+
+    def _reset_runtime_state(self) -> None:
         self._active_order_intents: tuple[OrderIntent, ...] = ()
         self._pending_order_intents: list[OrderIntent] = []
         self._handling_bar = False
-        self._initialized = False
         self.data = OHLCVDataView(
             open=SeriesView(()),
             high=SeriesView(()),
@@ -24,7 +26,7 @@ class Strategy(ABC):
         self.position = PositionView()
 
     def init(self) -> None:
-        return None
+        pass
 
     @abstractmethod
     def on_bar(self, bar: BarEvent) -> None:
