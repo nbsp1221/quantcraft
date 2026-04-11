@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from quantcraft.research.domain import SeriesView
 from quantcraft.research.indicators.runtime.factory import (
     bind_indicator,
     bind_indicator_from_pure,
@@ -107,6 +108,21 @@ def test_factory_binds_multi_output_indicator_from_pure_function() -> None:
     assert isinstance(result, PairResult)
     assert result.primary[0] == 3.0
     assert result.secondary[0] == 30.0
+
+
+def test_factory_precomputed_binding_uses_visible_prefix_of_full_history() -> None:
+    series = SeriesView((1.0, 2.0, 3.0, 4.0), visible_length=3)
+
+    view = bind_indicator_from_pure(
+        sources=(series,),
+        compute=lambda values: tuple(value * 2.0 for value in values),
+    )
+
+    assert view[0] == 6.0
+
+    series._advance()
+
+    assert view[0] == 8.0
 
 
 @dataclass(frozen=True, slots=True)

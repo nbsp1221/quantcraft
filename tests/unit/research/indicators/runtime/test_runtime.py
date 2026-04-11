@@ -167,3 +167,26 @@ def test_runtime_rebuilds_when_multi_source_growth_is_misaligned() -> None:
         ((1.0, 2.0, 3.0, 4.0), (10.0, 20.0, 30.0)),
     ]
     assert kernel.append_inputs == []
+
+
+def test_runtime_reports_initialization_state_and_can_reset() -> None:
+    series = MutableSeries((1.0, 2.0, 3.0))
+    kernel = RecordingKernel()
+    runtime = IndicatorRuntime(sources=(series,), kernel=kernel)
+    view = runtime.view()
+
+    assert runtime.initialized is False
+
+    assert view[0] == 3.0
+    assert runtime.initialized is True
+
+    series.append(4.0)
+    runtime.reset()
+
+    assert runtime.initialized is False
+    assert view[0] == 4.0
+    assert runtime.initialized is True
+    assert kernel.build_inputs == [
+        ((1.0, 2.0, 3.0),),
+        ((1.0, 2.0, 3.0, 4.0),),
+    ]

@@ -49,16 +49,18 @@ class _PureFunctionKernel:
 
 
 class _PrecomputedRuntime:
+    """Optimization-only cache for static full-history SeriesView inputs."""
+
     __slots__ = ("_outputs", "_sources")
 
     def __init__(
         self,
         *,
         sources: tuple[SeriesView, ...],
-        outputs: tuple[Any, ...],
+        compute_outputs: Callable[[tuple[np.ndarray, ...]], tuple[Any, ...]],
     ) -> None:
         self._sources = sources
-        self._outputs = outputs
+        self._outputs = compute_outputs(_full_source_values(sources))
 
     def view(self, output_index: int = 0) -> IndicatorSeriesView:
         return IndicatorSeriesView(self, output_index)
@@ -145,7 +147,7 @@ def _bind_precomputed_indicator_if_possible(
         return None
     runtime = _PrecomputedRuntime(
         sources=cast(tuple[SeriesView, ...], sources),
-        outputs=(compute(*_full_source_values(sources)),),
+        compute_outputs=lambda runtime_sources: (compute(*runtime_sources),),
     )
     return runtime.view()
 
@@ -159,10 +161,11 @@ def _bind_precomputed_multi_output_if_possible(
 ) -> _ResultT | None:
     if not _all_series_views(sources):
         return None
-    result = compute(*_full_source_values(sources))
     runtime = _PrecomputedRuntime(
         sources=cast(tuple[SeriesView, ...], sources),
-        outputs=tuple(getattr(result, field_name) for field_name in field_names),
+        compute_outputs=lambda runtime_sources: tuple(
+            getattr(compute(*runtime_sources), field_name) for field_name in field_names
+        ),
     )
     if not is_dataclass(result_type):
         raise TypeError("result_type must be a dataclass")

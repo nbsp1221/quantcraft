@@ -52,6 +52,9 @@ class SourceSynchronizer:
     def commit(self, lengths: tuple[int, ...]) -> None:
         self._lengths = lengths
 
+    def reset(self) -> None:
+        self._lengths = None
+
     def _append_delta(self, current_lengths: tuple[int, ...]) -> int | None:
         if self._lengths is None:
             return None
@@ -93,6 +96,14 @@ class IndicatorRuntime(Generic[_KernelState]):
 
     def view(self, output_index: int = 0) -> IndicatorSeriesView:
         return IndicatorSeriesView(self, output_index)
+
+    @property
+    def initialized(self) -> bool:
+        return self._state is not None
+
+    def reset(self) -> None:
+        self._state = None
+        self._synchronizer.reset()
 
     def values(self, output_index: int) -> Sequence[float]:
         self._sync()

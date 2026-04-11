@@ -83,6 +83,7 @@ def test_backtest_runner_exposes_expanded_research_result_surface() -> None:
         strategy=DeterministicEntryExitStrategy(),
     )
 
+    assert result.execution_model_name == "conservative_ohlcv"
     assert result.equity_curve == (1000.0, 997.889, 1003.774)
     assert result.summary.final_balance == 1003.774
     assert result.summary.final_equity == 1003.774

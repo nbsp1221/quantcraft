@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 import json
 import math
 from pathlib import Path
@@ -8,10 +7,7 @@ from pathlib import Path
 import pytest
 
 from quantcraft.data import BarSeries, TimeBar
-from quantcraft.research.adapters.synthetic_events import (
-    convert_bar_series_to_backtest_events,
-    infer_intrabar_prices,
-)
+from quantcraft.research.adapters.execution_model import ConservativeOHLCVExecutionModel
 from quantcraft.trading.domain.events import BarEvent, TickEvent
 
 
@@ -29,6 +25,10 @@ def _make_bar_series(
     )
 
 
+def test_execution_model_exposes_expected_name() -> None:
+    assert ConservativeOHLCVExecutionModel().name == "conservative_ohlcv"
+
+
 def test_bullish_bar_uses_open_low_high_close_path() -> None:
     bar = TimeBar(
         timestamp=60,
@@ -39,7 +39,12 @@ def test_bullish_bar_uses_open_low_high_close_path() -> None:
         volume=10.0,
     )
 
-    assert infer_intrabar_prices(bar) == (100.0, 95.0, 105.0, 104.0)
+    assert ConservativeOHLCVExecutionModel().infer_intrabar_prices(bar) == (
+        100.0,
+        95.0,
+        105.0,
+        104.0,
+    )
 
 
 def test_bearish_bar_uses_open_high_low_close_path() -> None:
@@ -52,7 +57,12 @@ def test_bearish_bar_uses_open_high_low_close_path() -> None:
         volume=12.0,
     )
 
-    assert infer_intrabar_prices(bar) == (110.0, 112.0, 108.0, 109.0)
+    assert ConservativeOHLCVExecutionModel().infer_intrabar_prices(bar) == (
+        110.0,
+        112.0,
+        108.0,
+        109.0,
+    )
 
 
 def test_doji_bar_explicitly_uses_open_low_high_close_path() -> None:
@@ -65,11 +75,16 @@ def test_doji_bar_explicitly_uses_open_low_high_close_path() -> None:
         volume=8.0,
     )
 
-    assert infer_intrabar_prices(bar) == (100.0, 97.0, 103.0, 100.0)
+    assert ConservativeOHLCVExecutionModel().infer_intrabar_prices(bar) == (
+        100.0,
+        97.0,
+        103.0,
+        100.0,
+    )
 
 
 def test_gap_segment_skips_intermediate_prices() -> None:
-    events = convert_bar_series_to_backtest_events(
+    events = ConservativeOHLCVExecutionModel().events_from_bars(
         bars=_make_bar_series(
             (
                 TimeBar(
@@ -97,12 +112,6 @@ def test_gap_segment_skips_intermediate_prices() -> None:
     assert tick_prices == [100.0, 95.0, 105.0, 104.0, 110.0, 112.0, 108.0, 109.0]
 
 
-def test_conversion_api_accepts_only_bar_series() -> None:
-    signature = inspect.signature(convert_bar_series_to_backtest_events)
-
-    assert tuple(signature.parameters) == ("bars",)
-
-
 def test_malformed_time_bar_is_rejected_before_event_conversion() -> None:
     with pytest.raises(ValueError, match="invalid time bar"):
         TimeBar(
@@ -117,7 +126,7 @@ def test_malformed_time_bar_is_rejected_before_event_conversion() -> None:
 
 def test_out_of_order_time_bars_are_rejected_before_gap_modeling() -> None:
     with pytest.raises(ValueError, match="out-of-order time bars"):
-        convert_bar_series_to_backtest_events(
+        ConservativeOHLCVExecutionModel().events_from_bars(
             bars=_make_bar_series(
                 (
                     TimeBar(
@@ -142,7 +151,7 @@ def test_out_of_order_time_bars_are_rejected_before_gap_modeling() -> None:
 
 
 def test_synthetic_ticks_use_unbounded_book_depth_representation() -> None:
-    events = convert_bar_series_to_backtest_events(
+    events = ConservativeOHLCVExecutionModel().events_from_bars(
         bars=_make_bar_series(
             (
                 TimeBar(
@@ -170,9 +179,10 @@ def test_conversion_from_checked_in_fixture_is_deterministic() -> None:
     payload = json.loads(fixture_path.read_text())
     rows = tuple(TimeBar(**row) for row in payload)
     bars = _make_bar_series(rows)
+    model = ConservativeOHLCVExecutionModel()
 
-    first = convert_bar_series_to_backtest_events(bars=bars)
-    second = convert_bar_series_to_backtest_events(bars=bars)
+    first = model.events_from_bars(bars=bars)
+    second = model.events_from_bars(bars=bars)
 
     assert first == second
     assert first == (

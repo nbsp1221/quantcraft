@@ -14,4 +14,4 @@ Historical plans currently remain in `docs/plans/` while the repository moves to
 
 | Plan | Status | Note |
 | --- | --- | --- |
-| _None currently active_ | active | Open a new execution plan here when the next batch starts. |
+| [`2026-04-11-backtest-runtime-hardening-implementation.md`](2026-04-11-backtest-runtime-hardening-implementation.md) | active | All slices are implemented and verified; the plan remains active only until human review confirms archival. |

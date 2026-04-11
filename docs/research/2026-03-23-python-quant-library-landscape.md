@@ -101,7 +101,7 @@ Canonical references:
 - [Backtest MVP](../product-specs/backtest-mvp.md)
 - [backtest.py](../../src/quantcraft/research/application/backtest.py)
 - [strategy.py](../../src/quantcraft/research/application/strategy.py)
-- [synthetic_events.py](../../src/quantcraft/research/adapters/synthetic_events.py)
+- [execution_model.py](../../src/quantcraft/research/adapters/execution_model.py)
 - [matching.py](../../src/quantcraft/trading/domain/matching.py)
 - [state.py](../../src/quantcraft/trading/domain/state.py)
 

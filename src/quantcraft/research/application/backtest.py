@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from quantcraft.data import BarSeries
-from quantcraft.research.adapters.synthetic_events import convert_bar_series_to_backtest_events
+from quantcraft.research.adapters.execution_model import (
+    BacktestExecutionModel,
+    ConservativeOHLCVExecutionModel,
+)
 from quantcraft.research.application._runtime import _StrategyDriver
+from quantcraft.research.application.order_activation import OrderActivationPolicy
 from quantcraft.research.application.strategy import Strategy
 from quantcraft.trading.domain.costs import CostConfig
 from quantcraft.trading.domain.events import BarEvent, FillEvent, TickEvent
@@ -52,6 +56,11 @@ class BacktestResult:
     equity_curve: tuple[float, ...]
     final_state: TradingState
     summary: BacktestSummary
+    execution_model_name: str = field(
+        default="conservative_ohlcv",
+        compare=False,
+        repr=False,
+    )
 
 
 def _run_backtest(
@@ -63,6 +72,8 @@ def _run_backtest(
 ) -> BacktestResult:
     runtime = _StrategyDriver(strategy)
     runtime.initialize(bars=bars)
+    activation_policy = OrderActivationPolicy()
+    execution_model: BacktestExecutionModel = ConservativeOHLCVExecutionModel()
     state = TradingState(cash=initial_cash, equity=initial_cash)
     trade_log: list[FillEvent] = []
     equity_curve: list[float] = []
@@ -70,16 +81,14 @@ def _run_backtest(
     open_entry_fee_pool = 0.0
     bars_in_position = 0
     total_bars = 0
-    current_tick_timestamp: int | None = None
     latest_mark_price: float | None = None
 
-    events = convert_bar_series_to_backtest_events(bars=bars)
+    events = execution_model.events_from_bars(bars=bars)
 
     for event in events:
         if isinstance(event, TickEvent):
             latest_mark_price = event.last
-            if event.timestamp != current_tick_timestamp:
-                current_tick_timestamp = event.timestamp
+            if activation_policy.begin_tick(event.timestamp):
                 runtime.activate_pending_order_intents()
 
             remaining_intents: list[OrderIntent] = []
@@ -164,6 +173,7 @@ def _run_backtest(
         equity_curve=tuple(equity_curve),
         final_state=state,
         summary=summary,
+        execution_model_name=execution_model.name,
     )
 
 

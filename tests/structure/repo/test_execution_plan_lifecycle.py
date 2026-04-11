@@ -120,6 +120,17 @@ def test_current_exec_plan_docs_use_explicit_lifecycle_metadata() -> None:
     assert "- status: completed" in completed_stabilization_plan
 
 
+def test_active_backtest_runtime_hardening_plan_tracks_current_slice_state() -> None:
+    content = (
+        ROOT / "docs/exec-plans/active/2026-04-11-backtest-runtime-hardening-implementation.md"
+    ).read_text(encoding="utf-8")
+
+    assert "- status: active" in content
+    assert "- status_reason:" in content
+    for slice_number in range(1, 6):
+        assert f"- Slice {slice_number}: complete" in content
+
+
 def test_parse_exec_plan_index_entries_accepts_backticked_md_target_without_link() -> None:
     content = "\n".join(
         [

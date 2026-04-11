@@ -20,20 +20,30 @@ def test_pyproject_defines_runtime_verification_task() -> None:
 def test_runtime_verification_lane_is_documented_with_trigger_paths() -> None:
     reliability = (ROOT / "docs" / "RELIABILITY.md").read_text(encoding="utf-8")
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    active_plan = (
+        ROOT
+        / "docs"
+        / "exec-plans"
+        / "active"
+        / "2026-04-11-backtest-runtime-hardening-implementation.md"
+    ).read_text(encoding="utf-8")
     developer_tasks = (ROOT / "docs" / "references" / "developer-tasks.md").read_text(
         encoding="utf-8"
     )
     tooling = (ROOT / "docs" / "references" / "tooling.md").read_text(encoding="utf-8")
 
-    for content in [reliability, agents, developer_tasks, tooling]:
+    for content in [reliability, agents, active_plan, developer_tasks, tooling]:
         assert "uv run poe verify-runtime" in content
 
     for path in [
         "src/quantcraft/research/ta.py",
+        "src/quantcraft/research/adapters/execution_model.py",
         "src/quantcraft/research/indicators/runtime/",
         "src/quantcraft/research/indicators/pure/",
         "src/quantcraft/research/application/backtest.py",
+        "src/quantcraft/research/application/order_activation.py",
     ]:
         assert path in reliability or path in agents
+        assert path in active_plan
         assert path not in developer_tasks
         assert path not in tooling
