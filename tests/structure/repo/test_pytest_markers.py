@@ -9,6 +9,7 @@ def test_pytest_markers_are_registered() -> None:
 
     for marker_name in ["unit", "integration", "structure", "smoke", "live", "slow"]:
         assert any(entry.startswith(f"{marker_name}:") for entry in marker_entries)
+    assert not any(entry.startswith("extended:") for entry in marker_entries)
 
 
 def test_repository_guidance_excludes_live_tests_from_default_lane() -> None:

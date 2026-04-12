@@ -63,6 +63,10 @@ The performance gate is explicit:
 - `uv run poe verify` remains the correctness lane
 - `uv run poe perf-check` is the canonical RSI performance-regression lane
 - `uv run poe verify-runtime` is the stronger explicit lane for runtime-sensitive research changes
+- the default integration lane keeps a canonical strategy pair:
+  - `RSI 30/70 mean reversion`
+  - `EMA crossover`
+- additional deterministic strategy regression contracts may run in the normal integration lane when they stay cheap and legible
 - `perf-check` uses the checked-in BTC USD-M 1h 2025 CSV fixture and measures the backtest execution call only
 - the gate fails unless first-run runtime is `< 1.0s`
 - the gate also fails unless steady-state median runtime is `< 1.0s`

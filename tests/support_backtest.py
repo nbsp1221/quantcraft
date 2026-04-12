@@ -40,7 +40,30 @@ class CanonicalRsi3070Strategy(Strategy):
             self.sell(symbol=bar.symbol, quantity=1.0)
 
 
-def load_canonical_rsi_bars() -> BarSeries:
+class CanonicalEmaCrossStrategy(Strategy):
+    def init(self) -> None:
+        self.fast = ta.ema(self.data.close, length=10)
+        self.slow = ta.ema(self.data.close, length=20)
+
+    def on_bar(self, bar) -> None:
+        if qc.crossover(self.fast, self.slow):
+            self.buy(symbol=bar.symbol, quantity=1.0)
+        elif qc.crossunder(self.fast, self.slow):
+            self.sell(symbol=bar.symbol, quantity=1.0)
+
+
+class CanonicalMacdCrossStrategy(Strategy):
+    def init(self) -> None:
+        self.macd = ta.macd(self.data.close, fast=12, slow=26, signal=9)
+
+    def on_bar(self, bar) -> None:
+        if qc.crossover(self.macd.macd, self.macd.signal):
+            self.buy(symbol=bar.symbol, quantity=1.0)
+        elif qc.crossunder(self.macd.macd, self.macd.signal):
+            self.sell(symbol=bar.symbol, quantity=1.0)
+
+
+def load_canonical_bars() -> BarSeries:
     with CANONICAL_BACKTEST_FIXTURE_PATH.open(newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
         assert tuple(reader.fieldnames or ()) == CANONICAL_BACKTEST_EXPECTED_COLUMNS
@@ -58,15 +81,42 @@ def load_canonical_rsi_bars() -> BarSeries:
     ).load()
 
 
-def run_canonical_rsi_backtest(bars: BarSeries):
-    engine = BacktestEngine(
+def load_canonical_rsi_bars() -> BarSeries:
+    return load_canonical_bars()
+
+
+def load_canonical_ema_bars() -> BarSeries:
+    return load_canonical_bars()
+
+
+def load_canonical_macd_bars() -> BarSeries:
+    return load_canonical_bars()
+
+
+def _canonical_backtest_engine() -> BacktestEngine:
+    return BacktestEngine(
         initial_cash=1_000_000.0,
         costs=CostConfig(tick_size=0.1, slippage_ticks=1.0, fee_rate=0.0004),
     )
-    return engine.run(bars=bars, strategy=CanonicalRsi3070Strategy())
 
 
-def canonical_rsi_trade_log_samples(
+def _run_canonical_backtest(bars: BarSeries, strategy: Strategy):
+    return _canonical_backtest_engine().run(bars=bars, strategy=strategy)
+
+
+def run_canonical_rsi_backtest(bars: BarSeries):
+    return _run_canonical_backtest(bars, CanonicalRsi3070Strategy())
+
+
+def run_canonical_ema_backtest(bars: BarSeries):
+    return _run_canonical_backtest(bars, CanonicalEmaCrossStrategy())
+
+
+def run_canonical_macd_backtest(bars: BarSeries):
+    return _run_canonical_backtest(bars, CanonicalMacdCrossStrategy())
+
+
+def canonical_trade_log_samples(
     trade_log: tuple[FillEvent, ...],
 ) -> tuple[tuple[dict[str, float | int | str], ...], tuple[dict[str, float | int | str], ...]]:
     return (
@@ -75,13 +125,43 @@ def canonical_rsi_trade_log_samples(
     )
 
 
-def canonical_rsi_trade_log_digest(trade_log: tuple[FillEvent, ...]) -> str:
+def canonical_trade_log_digest(trade_log: tuple[FillEvent, ...]) -> str:
     payload = json.dumps(
         [_normalize_fill(fill) for fill in trade_log],
         sort_keys=True,
         separators=(",", ":"),
     ).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
+
+
+def canonical_rsi_trade_log_samples(
+    trade_log: tuple[FillEvent, ...],
+) -> tuple[tuple[dict[str, float | int | str], ...], tuple[dict[str, float | int | str], ...]]:
+    return canonical_trade_log_samples(trade_log)
+
+
+def canonical_rsi_trade_log_digest(trade_log: tuple[FillEvent, ...]) -> str:
+    return canonical_trade_log_digest(trade_log)
+
+
+def canonical_ema_trade_log_samples(
+    trade_log: tuple[FillEvent, ...],
+) -> tuple[tuple[dict[str, float | int | str], ...], tuple[dict[str, float | int | str], ...]]:
+    return canonical_trade_log_samples(trade_log)
+
+
+def canonical_ema_trade_log_digest(trade_log: tuple[FillEvent, ...]) -> str:
+    return canonical_trade_log_digest(trade_log)
+
+
+def canonical_macd_trade_log_samples(
+    trade_log: tuple[FillEvent, ...],
+) -> tuple[tuple[dict[str, float | int | str], ...], tuple[dict[str, float | int | str], ...]]:
+    return canonical_trade_log_samples(trade_log)
+
+
+def canonical_macd_trade_log_digest(trade_log: tuple[FillEvent, ...]) -> str:
+    return canonical_trade_log_digest(trade_log)
 
 
 def _normalize_fill(fill: FillEvent) -> dict[str, float | int | str]:

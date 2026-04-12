@@ -26,3 +26,4 @@ def test_poe_help_lists_required_tasks() -> None:
         "verify-runtime",
     ]:
         assert task_name in output
+    assert "test-integration-extended" not in output

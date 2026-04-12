@@ -21,13 +21,25 @@ def _coverage_command(*args: str) -> list[str]:
     return [sys.executable, "-m", "coverage", *args]
 
 
+def default_pytest_args() -> list[str]:
+    return ["-q"]
+
+
 def main() -> int:
     with TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
         data_file = temp_path / ".coverage"
         json_file = temp_path / "coverage.json"
 
-        test_run = _run(_coverage_command("run", f"--data-file={data_file}", "-m", "pytest", "-q"))
+        test_run = _run(
+            _coverage_command(
+                "run",
+                f"--data-file={data_file}",
+                "-m",
+                "pytest",
+                *default_pytest_args(),
+            )
+        )
         if test_run.returncode != 0:
             return test_run.returncode
 

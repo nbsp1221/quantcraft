@@ -61,3 +61,4 @@ Current historical plans are stored in:
 - `docs/plans/2026-04-03-rsi-performance-gate-implementation.md`
 - `docs/plans/2026-04-08-ta-layer-refactor-design.md`
 - `docs/plans/2026-04-10-backtest-runtime-hardening-design.md`
+- `docs/plans/2026-04-13-canonical-strategy-test-expansion.md`

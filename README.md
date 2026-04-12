@@ -88,6 +88,15 @@ The repository currently relies on:
 - packaging checks
 - notebook validation
 
+The default integration surface keeps a deliberately small canonical strategy pair:
+
+- `RSI 30/70 mean reversion`
+- `EMA crossover`
+
+This keeps the default lane representative without turning it into a slow “many strategies” suite.
+Additional deterministic strategy regression contracts can stay in the normal integration suite
+as long as they remain cheap and legible.
+
 For day-to-day development, use the Poe task layer:
 
 - `uv run poe lint`

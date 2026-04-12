@@ -174,6 +174,7 @@ def test_pyproject_defines_required_poe_tasks() -> None:
     task_names = pyproject["tool"]["poe"]["tasks"].keys()
     for task_name in REQUIRED_POE_TASKS:
         assert task_name in task_names
+    assert "test-integration-extended" not in task_names
 
 
 def test_poe_verify_sequence_matches_default_local_verification_bundle() -> None:
@@ -189,6 +190,14 @@ def test_poe_verify_sequence_matches_default_local_verification_bundle() -> None
         "repo-check",
         "notebook-validate",
     ]
+
+
+def test_default_test_tasks_use_plain_pytest_commands() -> None:
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    tasks = pyproject["tool"]["poe"]["tasks"]
+
+    assert tasks["test"]["cmd"] == "pytest -q"
+    assert tasks["test-integration"]["cmd"] == "pytest tests/integration -q"
 
 
 def test_poe_task_surface_is_documented() -> None:

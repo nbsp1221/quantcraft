@@ -42,6 +42,10 @@ def test_readme_current_scope_mentions_implemented_backtest_research_and_data_su
     ]:
         assert journey_marker in readme
     assert "strict merge gates" in readme
+    assert "canonical strategy" in readme.lower()
+    assert "RSI 30/70 mean reversion" in readme
+    assert "EMA crossover" in readme
+    assert "test-integration-extended" not in readme
 
 
 def test_current_docs_describe_summary_terms_and_engine_surface() -> None:
@@ -57,6 +61,7 @@ def test_current_docs_describe_summary_terms_and_engine_surface() -> None:
     quickstart = (ROOT / "docs" / "references" / "research-ergonomics-quickstart.md").read_text(
         encoding="utf-8"
     )
+    reliability = (ROOT / "docs" / "RELIABILITY.md").read_text(encoding="utf-8")
 
     assert "`total_trades` means closed trades" in research_spec
     assert "`total_fills` means the raw fill count" in research_spec
@@ -103,3 +108,7 @@ def test_current_docs_describe_summary_terms_and_engine_surface() -> None:
     assert "from quantcraft.data import BarSeries, DataFrameDataSource, TimeBar" in quickstart
     assert "run(bars=" in quickstart
     assert "run(source=" in quickstart
+    assert "canonical strategy pair" in reliability
+    assert "RSI 30/70 mean reversion" in reliability
+    assert "EMA crossover" in reliability
+    assert "test-integration-extended" not in reliability
