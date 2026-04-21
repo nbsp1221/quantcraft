@@ -14,24 +14,35 @@
   paper trading, or live trading pulls the repository into ad hoc runtime
   semantics.
 
+## Maintenance Note
+
+This draft originally captured the boundary decision before the first runtime
+`Order` seam landed in code. The core seam recommendation still stands, but
+parts of the historical “current repository truth” below have been superseded
+by the implemented April 19 runtime-Order slice.
+
+Use this note for the seam decision itself.
+
+Use [`order-runtime-model-design.md`](order-runtime-model-design.md) for
+the narrower follow-on question of what the runtime `Order` aggregate should
+own now that a minimal `Order` object exists in code.
+
 ## Why This Slice Exists
 
 The immediate UX complaint in the session was small:
 
 - current `Strategy.buy()` / `sell()` feel awkward for the single-symbol MVP
 
-But the investigation showed that the real architectural pressure point is
-below the strategy surface:
+When this investigation originally started, the real architectural pressure
+point was below the strategy surface:
 
-- today `OrderIntent` is the only first-class order-shaped object
-- active and pending order state currently live on `Strategy` and are
-  orchestrated by the backtest runtime
-- there is no dedicated runtime `Order` model, and `OrderEvent` remains a
-  documented but deferred part of the broader event direction rather than a
-  current public contract
-- `stop-market` and `stop-limit` are explicitly out of scope today, but they
-  are likely future requirements in the long-lived framework direction
-  discussed in this session
+- `OrderIntent` was still the only first-class order-shaped object
+- active and pending order state lived on `Strategy` and in backtest
+  orchestration
+- there was no dedicated runtime `Order` model yet
+- `OrderEvent` remained a documented but deferred future direction
+- `stop-market` and `stop-limit` were already likely future pressure on the
+  seam
 
 This note therefore answers a narrower question than “design the whole trading
 kernel”:
@@ -41,7 +52,7 @@ kernel”:
 
 ## Current Repository Truth
 
-Verified current truth:
+Verified current truth as of `2026-04-20`:
 
 - `OrderIntent` is the current strategy output contract with:
   - `symbol`
@@ -51,25 +62,25 @@ Verified current truth:
   - `limit_price?`
   - `tag?`
 - `OrderType` currently allows only `market` and `limit`
-- there is no current runtime `Order` object
+- there is now a minimal runtime `Order` object in `trading`
 - `OrderEvent` is currently deferred rather than implemented in the public
   slice
-- there is a minimal `OrderIntent` activation lifecycle today, but it lives
-  across `Strategy` and backtest runtime orchestration rather than in a
-  dedicated runtime `Order`
-- active and pending order state currently live on `Strategy`, with
-  `_StrategyDriver` and backtest runtime orchestrating activation and
-  consumption, not in `TradingState`
+- strategy still emits `OrderIntent`, but backtest runtime now activates
+  pending intents into runtime `Order` values owned by the working-order path
+- pending order state still originates in `Strategy`, while active runtime
+  order ownership now lives in `_StrategyDriver` / backtest orchestration, not
+  in `TradingState`
 - `TradingState` only tracks spot-like long-only cash, position, PnL, and
   equity state
-- matching is a single-step function from
-  `OrderIntent + TickEvent + CostConfig` to `FillEvent | None`
+- matching is now a single-step function from
+  `Order + TickEvent + CostConfig` to `FillEvent | None`
 - current backtest semantics are deterministic and conservative, but stop
   orders, modify/cancel flows, and user-visible partial fills remain deferred
 
 Repository evidence:
 
 - [intents.py](/home/retn0/repositories/nbsp1221/quantcraft/src/quantcraft/trading/domain/intents.py:1)
+- [orders.py](/home/retn0/repositories/nbsp1221/quantcraft/src/quantcraft/trading/domain/orders.py:1)
 - [strategy.py](/home/retn0/repositories/nbsp1221/quantcraft/src/quantcraft/research/strategy.py:41)
 - [strategy_runtime.py](/home/retn0/repositories/nbsp1221/quantcraft/src/quantcraft/backtest/strategy_runtime.py:11)
 - [state.py](/home/retn0/repositories/nbsp1221/quantcraft/src/quantcraft/trading/domain/state.py:1)
@@ -192,13 +203,8 @@ the same core point:
 Sources:
 
 - Nautilus docs: https://nautilustrader.io/docs/latest/concepts/orders/
-- [Nautilus orders doc](/tmp/nautilus_trader/docs/concepts/orders.md:1)
-- [Nautilus risk engine](/tmp/nautilus_trader/nautilus_trader/risk/engine.pyx:77)
 - LEAN docs: https://www.quantconnect.com/docs/v2/writing-algorithms/trading-and-orders/order-management/order-tickets
-- [LEAN OrderTicket](/tmp/lean/Common/Orders/OrderTicket.cs:25)
-- [LEAN transaction handler](/tmp/lean/Engine/TransactionHandlers/BrokerageTransactionHandler.cs:294)
 - backtrader docs: https://www.backtrader.com/docu/order/
-- [backtrader order.py](/tmp/backtrader/backtrader/order.py:222)
 
 ## Evidence Against The Hypothesis
 
@@ -280,7 +286,7 @@ Therefore the recommended answer remains Option B:
 > price-constrained orders, while keeping future stop-family support as a
 > pressure on the seam rather than a first-slice contract.
 
-## Recommended Order-Domain Design
+## Recommended Seam Direction
 
 ### 1. Keep `OrderIntent` As Strategy Output
 
@@ -299,83 +305,19 @@ runtime model.
 
 ### 2. Introduce A Runtime `Order` Owned By `trading`
 
-`Order` should become the runtime-managed object that exists after intent
-acceptance and before terminal completion.
+The seam recommendation is simply:
 
-Its minimum responsibilities should be:
+- strategy output remains `OrderIntent`
+- runtime-managed truth becomes `Order`
+- future stop-family or richer runtime work must extend `Order`, not mutate
+  `OrderIntent` into a fake runtime object
 
-- identity inside the runtime
-- order family semantics sufficient to distinguish:
-  - immediately executable orders
-  - price-constrained resting orders
-  - stop-triggered orders
-- side, symbol, requested quantity
-- price fields relevant to the family when applicable
-- runtime-owned executability and trigger state
-- runtime-owned completion facts, with exact outcome taxonomy deferred
+This seam says **what must be separate**, not yet **how much behavior the new
+`Order` aggregate should own**.
+That narrower ownership question now lives in
+[`order-runtime-model-design.md`](order-runtime-model-design.md).
 
-This is the first place where richer domain modeling is warranted:
-
-> `OrderIntent` should say what the strategy wants.
-> `Order` should say what the runtime is actually managing.
-
-### 3. Let `Order` Own Order-Local State Validity
-
-The runtime `Order` should be an aggregate-like domain object, not a passive
-record.
-
-That means the `Order` object should own:
-
-- legality of trigger transitions
-- legality of fill application
-- open versus terminal completion state
-- remaining-quantity and completion facts that are intrinsic to the order
-
-Exact runtime collaboration details belong in the implementation plan rather
-than this draft design note.
-
-### 4. Model Triggering As Runtime Order Behavior, Not Intent Mutation
-
-Stop-triggered orders require a runtime transition.
-
-The Order-domain spec should therefore reserve explicit support for:
-
-- order is accepted locally
-- order is not yet executable because it is waiting on a stop trigger
-- order becomes triggered
-- triggered order proceeds according to its post-trigger family semantics
-
-This does **not** require a large venue-like status enum in the first slice.
-It does require that trigger and executability state belong to runtime
-`Order`, not to `OrderIntent`.
-
-This remains a future boundary consideration, not a requirement that the first
-runtime `Order` implementation ship trigger-aware behavior immediately.
-
-### 5. Keep The First Lifecycle Model Minimal
-
-The first canonical lifecycle should be defined behaviorally, not as a huge
-status table.
-
-The runtime order must support these transitions:
-
-1. `intent accepted -> order created`
-2. `order created -> order working`
-3. `stop-family order working -> order triggered`
-4. `order working/triggered -> order completed or remains open`
-
-This note intentionally does **not** standardize all future intermediate states
-such as:
-
-- `pending_update`
-- `pending_cancel`
-- venue acknowledgement taxonomies
-- local emulation versus venue-open distinctions
-
-Those are valid future concerns, but the current evidence does not justify
-freezing them now.
-
-### 6. Preserve The Existing Matching Boundary
+### 3. Preserve The Existing Matching Boundary
 
 This Order-domain design does not move fill semantics out of the approved
 backtest boundary:
@@ -399,10 +341,12 @@ The following should be designed **now**:
 - a minimal distinction between:
   - immediately executable orders
   - resting price-constrained orders
-- a minimal boundary between open and terminal order state
+- a minimal boundary between runtime-managed order truth and downstream fill
+  accounting
 
 The following should be **deferred**:
 
+- exact runtime `Order` ownership and lifecycle depth
 - trigger-aware runtime behavior for stop-family orders
 - full OMS request/ticket hierarchy
 - full venue status taxonomy
@@ -425,6 +369,6 @@ See:
 
 `quantcraft` should not jump straight to a full OMS, but it also should not
 keep stretching `OrderIntent` into a fake runtime order.
-The right next architecture move is a minimal runtime `Order` owned by
-`trading`, with just enough lifecycle for immediately executable and
-stop-triggered orders.
+This seam note’s core recommendation led to the now-implemented minimal
+runtime `Order` boundary, while deeper object-responsibility questions are
+handled in [`order-runtime-model-design.md`](order-runtime-model-design.md).
