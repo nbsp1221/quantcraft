@@ -22,13 +22,13 @@ The OpenAI harness pattern is not “mechanize everything immediately.” It is 
 
 ## Document Roles
 
-The repository uses these governing documents for this area:
+The repository uses these primary documents for this area:
 
 1. [quantcraft-architecture.md](quantcraft-architecture.md)
    - approved top-level architecture
 2. [package-topology-and-naming.md](package-topology-and-naming.md)
    - approved package topology, naming, and public-facade rules
-3. [trading-kernel-contract-draft-ko.md](trading-kernel-contract-draft-ko.md)
+3. [trading-kernel-contract-draft.md](trading-kernel-contract-draft.md)
    - future-only long-lived trading-kernel contract draft
 4. [architecture-governance.md](architecture-governance.md)
    - approved governance and promotion policy
@@ -46,7 +46,10 @@ This split prevents agents from conflating:
 - current implemented scope
 - approved expansion scope
 
-The draft trading-kernel document must not override the current implemented-scope product specs. Agents should read it only when planning future shared trading semantics beyond the shipped baseline.
+The draft trading-kernel document is part of the documentation set for this
+area, but it is not governing for current implemented behavior. Agents should
+read it only when planning future shared trading semantics beyond the shipped
+baseline.
 
 ## What We Enforce Mechanically Now
 

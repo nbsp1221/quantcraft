@@ -10,7 +10,7 @@ Related documents:
 
 - [../design-docs/quantcraft-architecture.md](../design-docs/quantcraft-architecture.md)
 - [../design-docs/backtest-execution-semantics.md](../design-docs/backtest-execution-semantics.md)
-- [../design-docs/trading-kernel-contract-draft-ko.md](../design-docs/trading-kernel-contract-draft-ko.md)
+- [../design-docs/trading-kernel-contract-draft.md](../design-docs/trading-kernel-contract-draft.md)
 - [../design-docs/architecture-governance.md](../design-docs/architecture-governance.md)
 
 This document is the canonical current implemented-scope contract for the shipped backtest MVP.

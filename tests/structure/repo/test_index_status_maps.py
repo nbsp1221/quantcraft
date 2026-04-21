@@ -158,8 +158,8 @@ def test_check_docs_rejects_legacy_design_index_status_map_schema(tmp_path: Path
                     "repository workflow and operating norms |"
                 ),
                 (
-                    "| [`trading-kernel-contract-draft-ko.md`]"
-                    "(trading-kernel-contract-draft-ko.md) | implemented | no | "
+                    "| [`trading-kernel-contract-draft.md`]"
+                    "(trading-kernel-contract-draft.md) | implemented | no | "
                     "future trading-kernel planning | Only when evaluating future "
                     "shared trading semantics. | shared trading-kernel semantics "
                     "planning |"

@@ -74,3 +74,56 @@ def test_agents_routes_to_governing_docs_and_repo_checks() -> None:
 
     assert "Compound Engineering" in agents
     assert "Tier A domains are `trading` and `execution`" in agents
+
+
+def test_current_order_and_kernel_doc_routing_prefers_english_canonical_paths() -> None:
+    design_index = (ROOT / "docs/design-docs/index.md").read_text(encoding="utf-8")
+    backtest_mvp = (ROOT / "docs/product-specs/backtest-mvp.md").read_text(encoding="utf-8")
+    architecture_governance = (
+        ROOT / "docs/design-docs/architecture-governance.md"
+    ).read_text(encoding="utf-8")
+    research_index = (ROOT / "docs/research/index.md").read_text(encoding="utf-8")
+
+    assert "[`order-runtime-model-design.md`](order-runtime-model-design.md)" in design_index
+    assert (
+        "| Runtime Order object model and responsibility | "
+        "[`order-runtime-model-design.md`](order-runtime-model-design.md) |"
+    ) in design_index
+    assert "order-runtime-model-design-ko.md" not in design_index
+    assert "[`trading-kernel-contract-draft.md`](trading-kernel-contract-draft.md)" in design_index
+    assert (
+        "| Shared trading-kernel semantics planning | "
+        "[`trading-kernel-contract-draft.md`](trading-kernel-contract-draft.md) |"
+    ) in design_index
+    assert "trading-kernel-contract-draft-ko.md" not in design_index
+    assert (
+        "[`2026-04-20-order-runtime-model-comparison.md`]"
+        "(2026-04-20-order-runtime-model-comparison.md)"
+    ) in research_index
+    assert "2026-04-20-order-runtime-model-comparison-ko.md" not in research_index
+    assert "../design-docs/trading-kernel-contract-draft.md" in backtest_mvp
+    assert "[trading-kernel-contract-draft.md](trading-kernel-contract-draft.md)" in architecture_governance
+
+
+def test_legacy_ko_doc_paths_are_removed() -> None:
+    compatibility_paths = [
+        ROOT / "docs/design-docs/order-runtime-model-design-ko.md",
+        ROOT / "docs/design-docs/trading-kernel-contract-draft-ko.md",
+        ROOT / "docs/research/2026-04-20-order-runtime-model-comparison-ko.md",
+    ]
+
+    for path in compatibility_paths:
+        assert not path.exists()
+
+
+def test_completed_archives_keep_historical_ko_filename_references() -> None:
+    archive_paths = [
+        ROOT / "docs/exec-plans/completed/2026-03-21-backtest-mvp-implementation.md",
+        ROOT / "docs/exec-plans/completed/2026-03-22-harness-quality-improvement.md",
+        ROOT / "docs/exec-plans/completed/2026-03-24-research-ergonomics-implementation.md",
+    ]
+
+    for path in archive_paths:
+        contents = path.read_text(encoding="utf-8")
+        assert "trading-kernel-contract-draft-ko.md" in contents
+        assert "trading-kernel-contract-draft.md" not in contents

@@ -138,7 +138,7 @@ def write_minimal_repo_docs(tmp_path) -> None:
             "repeated rule from docs into checks or changing system-of-record "
             "policy. |\n"
             "| Shared trading-kernel semantics planning | "
-            "[`trading-kernel-contract-draft-ko.md`](trading-kernel-contract-draft-ko.md) "
+            "[`trading-kernel-contract-draft.md`](trading-kernel-contract-draft.md) "
             "| Draft | future trading-kernel planning | Only when evaluating future "
             "shared trading semantics; read the current implemented product specs "
             "first. |\n"
@@ -159,7 +159,7 @@ def write_minimal_repo_docs(tmp_path) -> None:
         "architecture governance\n",
         encoding="utf-8",
     )
-    (design_docs_dir / "trading-kernel-contract-draft-ko.md").write_text(
+    (design_docs_dir / "trading-kernel-contract-draft.md").write_text(
         "draft trading contract\n",
         encoding="utf-8",
     )
