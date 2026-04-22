@@ -4,8 +4,9 @@ from abc import ABC, abstractmethod
 
 from quantcraft.research.series import OHLCVDataView, SeriesView
 from quantcraft.trading.domain.events import BarEvent
-from quantcraft.trading.domain.intents import OrderIntent, OrderType
+from quantcraft.trading.domain.intents import OrderType
 from quantcraft.trading.domain.state import TradingState
+from quantcraft.trading.order_requests import PendingOrderRequest
 
 
 class PositionView:
@@ -39,8 +40,7 @@ class Strategy(ABC):
         self._reset_runtime_state()
 
     def _reset_runtime_state(self) -> None:
-        self._active_order_intents: tuple[OrderIntent, ...] = ()
-        self._pending_order_intents: list[OrderIntent] = []
+        self._pending_order_requests: list[PendingOrderRequest] = []
         self._handling_bar = False
         self._active_bar_symbol: str | None = None
         self.data = OHLCVDataView(
@@ -67,7 +67,7 @@ class Strategy(ABC):
         try:
             self.on_bar(bar)
         except Exception:
-            self._pending_order_intents.clear()
+            self._pending_order_requests.clear()
             raise
         finally:
             self._handling_bar = False
@@ -77,17 +77,19 @@ class Strategy(ABC):
         self,
         *,
         symbol: str | None = None,
-        quantity: float,
+        quantity: float | None = None,
+        qty_percent: float | None = None,
         order_type: OrderType = "market",
         limit_price: float | None = None,
         tag: str | None = None,
     ) -> None:
         self._assert_order_intake_allowed()
-        self._pending_order_intents.append(
-            OrderIntent(
+        self._pending_order_requests.append(
+            PendingOrderRequest(
                 symbol=self._resolve_order_symbol(symbol),
                 side="buy",
                 quantity=quantity,
+                qty_percent=qty_percent,
                 order_type=order_type,
                 limit_price=limit_price,
                 tag=tag,
@@ -98,17 +100,19 @@ class Strategy(ABC):
         self,
         *,
         symbol: str | None = None,
-        quantity: float,
+        quantity: float | None = None,
+        qty_percent: float | None = None,
         order_type: OrderType = "market",
         limit_price: float | None = None,
         tag: str | None = None,
     ) -> None:
         self._assert_order_intake_allowed()
-        self._pending_order_intents.append(
-            OrderIntent(
+        self._pending_order_requests.append(
+            PendingOrderRequest(
                 symbol=self._resolve_order_symbol(symbol),
                 side="sell",
                 quantity=quantity,
+                qty_percent=qty_percent,
                 order_type=order_type,
                 limit_price=limit_price,
                 tag=tag,
@@ -120,9 +124,14 @@ class Strategy(ABC):
             raise ValueError("Order intake methods may only be used during on_bar")
 
     def _resolve_order_symbol(self, symbol: str | None) -> str:
-        if symbol is not None:
-            return symbol
         active_bar_symbol = self._active_bar_symbol
+        if symbol is not None:
+            if active_bar_symbol is not None and symbol != active_bar_symbol:
+                raise ValueError(
+                    "explicit symbol must match the active series symbol "
+                    "in the current single-symbol on_bar workflow"
+                )
+            return symbol
         if active_bar_symbol is None:
             raise RuntimeError("active bar symbol is missing during on_bar order intake")
         return active_bar_symbol

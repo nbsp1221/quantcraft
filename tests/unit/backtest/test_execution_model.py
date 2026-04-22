@@ -192,11 +192,11 @@ def test_rising_segment_sell_limit_fills_at_limit_price() -> None:
     order = Order.from_intent(
         order_id=1,
         intent=OrderIntent(
-        symbol="BTC/USDT",
-        side="sell",
-        quantity=1.0,
-        order_type="limit",
-        limit_price=110.0,
+            symbol="BTC/USDT",
+            side="sell",
+            quantity=1.0,
+            order_type="limit",
+            limit_price=110.0,
         ),
     )
 
@@ -231,11 +231,11 @@ def test_gap_crossed_buy_limit_fills_at_open() -> None:
     order = Order.from_intent(
         order_id=1,
         intent=OrderIntent(
-        symbol="BTC/USDT",
-        side="buy",
-        quantity=1.0,
-        order_type="limit",
-        limit_price=100.0,
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=1.0,
+            order_type="limit",
+            limit_price=100.0,
         ),
     )
 
@@ -270,11 +270,11 @@ def test_marketable_buy_limit_fills_at_first_executable_open() -> None:
     order = Order.from_intent(
         order_id=1,
         intent=OrderIntent(
-        symbol="BTC/USDT",
-        side="buy",
-        quantity=1.0,
-        order_type="limit",
-        limit_price=130.0,
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=1.0,
+            order_type="limit",
+            limit_price=130.0,
         ),
     )
 

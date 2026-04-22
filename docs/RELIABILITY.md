@@ -67,6 +67,9 @@ The performance gate is explicit:
   - `RSI 30/70 mean reversion`
   - `EMA crossover`
 - additional deterministic strategy regression contracts may run in the normal integration lane when they stay cheap and legible
+- current checked-in examples include BTC-fixture-backed `qty_percent`
+  regressions for shipped market, limit-entry, and limit-exit behavior in the
+  normal integration suite
 - `perf-check` uses the checked-in BTC USD-M 1h 2025 CSV fixture and measures the backtest execution call only
 - the gate fails unless first-run runtime is `< 1.0s`
 - the gate also fails unless steady-state median runtime is `< 1.0s`

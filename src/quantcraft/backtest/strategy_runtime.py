@@ -4,16 +4,23 @@ from dataclasses import dataclass
 from typing import Any, Protocol, cast
 
 from quantcraft.data import BarSeries, TimeBar
+from quantcraft.trading.domain.costs import CostConfig
 from quantcraft.trading.domain.events import BarEvent
 from quantcraft.trading.domain.intents import OrderIntent
 from quantcraft.trading.domain.orders import Order
 from quantcraft.trading.domain.state import TradingState
+from quantcraft.trading.order_requests import PendingOrderRequest
+from quantcraft.trading.sizing import (
+    SizingConstraints,
+    SizingReservations,
+    resolve_pending_order_request,
+)
 
 
 @dataclass(frozen=True, slots=True)
 class _StrategyOrderState:
     active: tuple[Order, ...]
-    pending: tuple[OrderIntent, ...]
+    pending: tuple[PendingOrderRequest, ...]
 
 
 class _PositionLike(Protocol):
@@ -21,7 +28,7 @@ class _PositionLike(Protocol):
 
 
 class StrategyLike(Protocol):
-    _pending_order_intents: list[OrderIntent]
+    _pending_order_requests: list[PendingOrderRequest]
     data: Any
     position: _PositionLike
 
@@ -60,19 +67,61 @@ class _StrategyDriver:
         self.sync_position(self._DEFAULT_FLAT_STATE if state is None else state)
         self._strategy._handle_bar(bar)
 
-    def activate_pending_order_intents(self) -> _StrategyOrderState:
-        activated = tuple(
-            self._create_order(intent)
-            for intent in self._strategy._pending_order_intents
-        )
-        self._active_orders = self._active_orders + activated
-        self._strategy._pending_order_intents.clear()
+    def activate_pending_order_intents(
+        self,
+        *,
+        next_bar: TimeBar,
+        state: TradingState,
+        costs: CostConfig,
+    ) -> _StrategyOrderState:
+        next_active_orders = list(self._active_orders)
+        reservations = SizingReservations()
+        for request in self._strategy._pending_order_requests:
+            sizing = resolve_pending_order_request(
+                request=request,
+                state=state,
+                active_orders=self._active_orders,
+                market_buy_price=next_bar.open,
+                costs=costs,
+                constraints=SizingConstraints(),
+                reservations=reservations,
+            )
+            if sizing.is_noop:
+                continue
+            quantity = sizing.quantity
+            if quantity is None:
+                continue
+            intent = OrderIntent(
+                symbol=request.symbol,
+                side=request.side,
+                quantity=quantity,
+                order_type=request.order_type,
+                limit_price=request.limit_price,
+                tag=request.tag,
+            )
+            next_active_orders.append(self._create_order(intent))
+            reservations = reservations.reserve(sizing)
+        self._active_orders = tuple(next_active_orders)
+        self._strategy._pending_order_requests.clear()
         return self.order_state()
+
+    def activate_pending_order_requests(
+        self,
+        *,
+        bar: TimeBar,
+        state: TradingState,
+        costs: CostConfig,
+    ) -> _StrategyOrderState:
+        return self.activate_pending_order_intents(
+            next_bar=bar,
+            state=state,
+            costs=costs,
+        )
 
     def order_state(self) -> _StrategyOrderState:
         return _StrategyOrderState(
             active=self._active_orders,
-            pending=tuple(self._strategy._pending_order_intents),
+            pending=tuple(self._strategy._pending_order_requests),
         )
 
     def replace_active_orders(self, orders: tuple[Order, ...]) -> None:

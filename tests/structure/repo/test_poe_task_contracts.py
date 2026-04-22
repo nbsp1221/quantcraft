@@ -190,6 +190,11 @@ def write_minimal_repo_docs(tmp_path) -> None:
             "current implemented scope | Before changing strategy ergonomics, "
             "series contracts, indicators, result reporting, examples, or "
             "quickstart assets for the research layer. |\n"
+            "| Explicit percentage-based order sizing | "
+            "[`order-sizing.md`](order-sizing.md) | Governing | current "
+            "implemented scope | Before changing the shipped `qty_percent` "
+            "sizing behavior for strategy order entry and partial exit "
+            "semantics; read the current backtest and research specs first. |\n"
             "| Paper-trading planning | [`paper-trading.md`](paper-trading.md) | "
             "Future-only | future planning only | Only when discussing simulated "
             "execution work beyond the current approved slices. |\n"
@@ -207,6 +212,7 @@ def write_minimal_repo_docs(tmp_path) -> None:
         "research ergonomics\n",
         encoding="utf-8",
     )
+    (product_specs_dir / "order-sizing.md").write_text("order sizing\n", encoding="utf-8")
     (product_specs_dir / "paper-trading.md").write_text("paper trading\n", encoding="utf-8")
     (product_specs_dir / "live-trading.md").write_text("live trading\n", encoding="utf-8")
 

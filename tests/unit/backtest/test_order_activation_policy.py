@@ -21,4 +21,3 @@ def test_policy_reset_restores_first_tick_activation() -> None:
     policy.reset()
 
     assert policy.begin_tick(60) is True
-

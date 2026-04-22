@@ -58,6 +58,7 @@ def test_capability_public_surfaces_import_cleanly() -> None:
     assert getattr(execution_module, "__all__", None) == []
     assert getattr(integrations_module, "__all__", None) == []
 
+
 def test_removed_legacy_paths_no_longer_import() -> None:
     for module_name in (
         "quantcraft.exchange",

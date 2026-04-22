@@ -17,6 +17,7 @@ def test_core_guardrail_and_routing_docs_exist() -> None:
         "docs/product-specs/index.md",
         "docs/product-specs/backtest-mvp.md",
         "docs/product-specs/research-ergonomics.md",
+        "docs/product-specs/order-sizing.md",
     ]
 
     for relative_path in required_paths:
@@ -49,6 +50,8 @@ def test_product_specs_are_discoverable_from_routing_index() -> None:
     assert entries_by_target["backtest-mvp.md"]["scope"] == "current implemented scope"
     assert entries_by_target["research-ergonomics.md"]["role"] == "Governing"
     assert entries_by_target["research-ergonomics.md"]["scope"] == "current implemented scope"
+    assert entries_by_target["order-sizing.md"]["role"] == "Governing"
+    assert entries_by_target["order-sizing.md"]["scope"] == "current implemented scope"
 
 
 def test_architecture_doc_points_to_design_docs_not_plans() -> None:
@@ -79,9 +82,9 @@ def test_agents_routes_to_governing_docs_and_repo_checks() -> None:
 def test_current_order_and_kernel_doc_routing_prefers_english_canonical_paths() -> None:
     design_index = (ROOT / "docs/design-docs/index.md").read_text(encoding="utf-8")
     backtest_mvp = (ROOT / "docs/product-specs/backtest-mvp.md").read_text(encoding="utf-8")
-    architecture_governance = (
-        ROOT / "docs/design-docs/architecture-governance.md"
-    ).read_text(encoding="utf-8")
+    architecture_governance = (ROOT / "docs/design-docs/architecture-governance.md").read_text(
+        encoding="utf-8"
+    )
     research_index = (ROOT / "docs/research/index.md").read_text(encoding="utf-8")
 
     assert "[`order-runtime-model-design.md`](order-runtime-model-design.md)" in design_index
@@ -103,8 +106,7 @@ def test_current_order_and_kernel_doc_routing_prefers_english_canonical_paths() 
     assert "2026-04-20-order-runtime-model-comparison-ko.md" not in research_index
     assert "../design-docs/trading-kernel-contract-draft.md" in backtest_mvp
     assert (
-        "[trading-kernel-contract-draft.md]"
-        "(trading-kernel-contract-draft.md)"
+        "[trading-kernel-contract-draft.md](trading-kernel-contract-draft.md)"
     ) in architecture_governance
 
 

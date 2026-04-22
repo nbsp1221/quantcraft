@@ -12,7 +12,7 @@ from quantcraft.research import Strategy as PublicStrategy
 from quantcraft.research.strategy import Strategy
 from quantcraft.trading.domain.costs import CostConfig
 from quantcraft.trading.domain.events import BarEvent
-from quantcraft.trading.domain.intents import OrderIntent
+from quantcraft.trading.order_requests import PendingOrderRequest
 
 
 class BuyOnFirstBarStrategy(Strategy):
@@ -28,7 +28,17 @@ class BuyOnFirstBarStrategy(Strategy):
 
 class ExplicitSymbolBuyOnFirstBarStrategy(Strategy):
     def on_bar(self, bar: BarEvent) -> None:
+        self.buy(symbol="BTC/USDT", quantity=1.0, tag="entry")
+
+
+class MismatchedExplicitSymbolBuyOnFirstBarStrategy(Strategy):
+    def on_bar(self, bar: BarEvent) -> None:
         self.buy(symbol="ETH/USDT", quantity=1.0, tag="entry")
+
+
+class PercentBuyOnFirstBarStrategy(Strategy):
+    def on_bar(self, bar: BarEvent) -> None:
+        self.buy(qty_percent=80.0, tag="percent-entry")
 
 
 class ImplicitSymbolBuyOnFirstBarStrategy(Strategy):
@@ -47,7 +57,23 @@ class ImplicitSymbolSellOnFirstBarStrategy(Strategy):
         self.sell(quantity=2.0, order_type="limit", limit_price=bar.high, tag="take-profit")
 
 
+class ImplicitSymbolPercentSellOnFirstBarStrategy(Strategy):
+    def on_bar(self, bar: BarEvent) -> None:
+        self.sell(qty_percent=30.0, tag="scale-out")
+
+
 class ExplicitSymbolSellOnFirstBarStrategy(Strategy):
+    def on_bar(self, bar: BarEvent) -> None:
+        self.sell(
+            symbol="BTC/USDT",
+            quantity=2.0,
+            order_type="limit",
+            limit_price=bar.high,
+            tag="take-profit",
+        )
+
+
+class MismatchedExplicitSymbolSellOnFirstBarStrategy(Strategy):
     def on_bar(self, bar: BarEvent) -> None:
         self.sell(
             symbol="ETH/USDT",
@@ -114,12 +140,36 @@ def _make_bar_series(
 
 def test_strategy_surface_is_self_based_and_on_bar_is_the_first_hook() -> None:
     signature = inspect.signature(Strategy.on_bar)
+    buy_signature = inspect.signature(Strategy.buy)
+    sell_signature = inspect.signature(Strategy.sell)
 
     assert tuple(signature.parameters) == ("self", "bar")
     assert not hasattr(Strategy, "activate_pending_order_intents")
     assert tuple(inspect.signature(Strategy.init).parameters) == ("self",)
     assert not hasattr(Strategy, "prepare")
     assert not hasattr(Strategy, "handle_bar")
+    assert tuple(buy_signature.parameters) == (
+        "self",
+        "symbol",
+        "quantity",
+        "qty_percent",
+        "order_type",
+        "limit_price",
+        "tag",
+    )
+    assert tuple(sell_signature.parameters) == (
+        "self",
+        "symbol",
+        "quantity",
+        "qty_percent",
+        "order_type",
+        "limit_price",
+        "tag",
+    )
+    assert buy_signature.parameters["quantity"].default is None
+    assert buy_signature.parameters["qty_percent"].default is None
+    assert sell_signature.parameters["quantity"].default is None
+    assert sell_signature.parameters["qty_percent"].default is None
 
 
 def test_public_research_strategy_surface_exports_strategy() -> None:
@@ -163,6 +213,106 @@ def test_order_intake_methods_are_restricted_to_bar_handling_callback() -> None:
     with pytest.raises(ValueError, match="only be used during on_bar"):
         strategy.sell(symbol="BTC/USDT", quantity=1.0)
 
+    with pytest.raises(ValueError, match="only be used during on_bar"):
+        strategy.buy(symbol="BTC/USDT", qty_percent=50.0)
+
+    with pytest.raises(ValueError, match="only be used during on_bar"):
+        strategy.sell(symbol="BTC/USDT", qty_percent=50.0)
+
+
+def test_order_intake_requires_exactly_one_sizing_mode() -> None:
+    class MixedSizingStrategy(Strategy):
+        def on_bar(self, bar: BarEvent) -> None:
+            self.buy(quantity=1.0, qty_percent=50.0)
+
+    class MissingSizingStrategy(Strategy):
+        def on_bar(self, bar: BarEvent) -> None:
+            self.sell()
+
+    runtime = _runtime(MixedSizingStrategy())
+
+    with pytest.raises(ValueError, match="exactly one sizing mode"):
+        runtime.handle_bar(
+            BarEvent(
+                bar_type="time",
+                bar_spec="1m",
+                symbol="BTC/USDT",
+                timestamp=60,
+                open=100.0,
+                high=105.0,
+                low=95.0,
+                close=104.0,
+                volume=10.0,
+                is_closed=True,
+            )
+        )
+
+    runtime = _runtime(MissingSizingStrategy())
+    with pytest.raises(ValueError, match="exactly one sizing mode"):
+        runtime.handle_bar(
+            BarEvent(
+                bar_type="time",
+                bar_spec="1m",
+                symbol="BTC/USDT",
+                timestamp=60,
+                open=100.0,
+                high=105.0,
+                low=95.0,
+                close=104.0,
+                volume=10.0,
+                is_closed=True,
+            )
+        )
+
+
+@pytest.mark.parametrize("invalid_percent", (0.0, -5.0, 120.0))
+def test_qty_percent_validation_rejects_out_of_range_values(invalid_percent: float) -> None:
+    class InvalidPercentStrategy(Strategy):
+        def on_bar(self, bar: BarEvent) -> None:
+            self.buy(qty_percent=invalid_percent)
+
+    runtime = _runtime(InvalidPercentStrategy())
+
+    with pytest.raises(ValueError, match="qty_percent"):
+        runtime.handle_bar(
+            BarEvent(
+                bar_type="time",
+                bar_spec="1m",
+                symbol="BTC/USDT",
+                timestamp=60,
+                open=100.0,
+                high=105.0,
+                low=95.0,
+                close=104.0,
+                volume=10.0,
+                is_closed=True,
+            )
+        )
+
+
+def test_qty_percent_validation_rejects_non_numeric_values() -> None:
+    class InvalidPercentTypeStrategy(Strategy):
+        def on_bar(self, bar: BarEvent) -> None:
+            self.buy(qty_percent="bad")  # type: ignore[arg-type]
+
+    runtime = _runtime(InvalidPercentTypeStrategy())
+
+    with pytest.raises(ValueError, match="qty_percent"):
+        runtime.handle_bar(
+            BarEvent(
+                bar_type="time",
+                bar_spec="1m",
+                symbol="BTC/USDT",
+                timestamp=60,
+                open=100.0,
+                high=105.0,
+                low=95.0,
+                close=104.0,
+                volume=10.0,
+                is_closed=True,
+            )
+        )
+
 
 def test_implicit_buy_uses_active_bar_symbol() -> None:
     strategy = ImplicitSymbolBuyOnFirstBarStrategy()
@@ -183,7 +333,7 @@ def test_implicit_buy_uses_active_bar_symbol() -> None:
     runtime.handle_bar(first_bar)
 
     assert runtime.order_state().pending == (
-        OrderIntent(
+        PendingOrderRequest(
             symbol="BTC/USDT",
             side="buy",
             quantity=1.0,
@@ -193,7 +343,7 @@ def test_implicit_buy_uses_active_bar_symbol() -> None:
     )
 
 
-def test_explicit_symbol_buy_is_preserved_before_runtime_matching() -> None:
+def test_explicit_symbol_buy_matching_active_series_is_preserved() -> None:
     strategy = ExplicitSymbolBuyOnFirstBarStrategy()
     runtime = _runtime(strategy)
 
@@ -213,14 +363,35 @@ def test_explicit_symbol_buy_is_preserved_before_runtime_matching() -> None:
     )
 
     assert runtime.order_state().pending == (
-        OrderIntent(
-            symbol="ETH/USDT",
+        PendingOrderRequest(
+            symbol="BTC/USDT",
             side="buy",
             quantity=1.0,
             order_type="market",
             tag="entry",
         ),
     )
+
+
+def test_explicit_symbol_buy_mismatch_is_rejected_in_single_symbol_workflow() -> None:
+    strategy = MismatchedExplicitSymbolBuyOnFirstBarStrategy()
+    runtime = _runtime(strategy)
+
+    with pytest.raises(ValueError, match="active series symbol"):
+        runtime.handle_bar(
+            BarEvent(
+                bar_type="time",
+                bar_spec="1m",
+                symbol="BTC/USDT",
+                timestamp=60,
+                open=100.0,
+                high=105.0,
+                low=95.0,
+                close=104.0,
+                volume=10.0,
+                is_closed=True,
+            )
+        )
 
 
 def test_implicit_sell_uses_active_bar_symbol() -> None:
@@ -242,7 +413,7 @@ def test_implicit_sell_uses_active_bar_symbol() -> None:
     runtime.handle_bar(first_bar)
 
     assert runtime.order_state().pending == (
-        OrderIntent(
+        PendingOrderRequest(
             symbol="BTC/USDT",
             side="sell",
             quantity=2.0,
@@ -253,7 +424,7 @@ def test_implicit_sell_uses_active_bar_symbol() -> None:
     )
 
 
-def test_explicit_symbol_sell_is_preserved_before_runtime_matching() -> None:
+def test_explicit_symbol_sell_matching_active_series_is_preserved() -> None:
     strategy = ExplicitSymbolSellOnFirstBarStrategy()
     runtime = _runtime(strategy)
 
@@ -273,8 +444,8 @@ def test_explicit_symbol_sell_is_preserved_before_runtime_matching() -> None:
     )
 
     assert runtime.order_state().pending == (
-        OrderIntent(
-            symbol="ETH/USDT",
+        PendingOrderRequest(
+            symbol="BTC/USDT",
             side="sell",
             quantity=2.0,
             order_type="limit",
@@ -282,6 +453,27 @@ def test_explicit_symbol_sell_is_preserved_before_runtime_matching() -> None:
             tag="take-profit",
         ),
     )
+
+
+def test_explicit_symbol_sell_mismatch_is_rejected_in_single_symbol_workflow() -> None:
+    strategy = MismatchedExplicitSymbolSellOnFirstBarStrategy()
+    runtime = _runtime(strategy)
+
+    with pytest.raises(ValueError, match="active series symbol"):
+        runtime.handle_bar(
+            BarEvent(
+                bar_type="time",
+                bar_spec="1m",
+                symbol="BTC/USDT",
+                timestamp=60,
+                open=100.0,
+                high=105.0,
+                low=95.0,
+                close=104.0,
+                volume=10.0,
+                is_closed=True,
+            )
+        )
 
 
 def test_implicit_symbol_ordering_outside_active_bar_context_keeps_on_bar_guard() -> None:
@@ -292,6 +484,12 @@ def test_implicit_symbol_ordering_outside_active_bar_context_keeps_on_bar_guard(
 
     with pytest.raises(ValueError, match="only be used during on_bar"):
         strategy.sell(quantity=1.0)
+
+    with pytest.raises(ValueError, match="only be used during on_bar"):
+        strategy.buy(qty_percent=50.0)
+
+    with pytest.raises(ValueError, match="only be used during on_bar"):
+        strategy.sell(qty_percent=50.0)
 
 
 def test_init_cannot_create_orders() -> None:
@@ -378,7 +576,7 @@ def test_order_intents_from_on_bar_become_effective_on_the_next_bar() -> None:
 
     assert runtime.order_state().active == ()
     assert runtime.order_state().pending == (
-        OrderIntent(
+        PendingOrderRequest(
             symbol="BTC/USDT",
             side="buy",
             quantity=1.0,
@@ -405,7 +603,7 @@ def test_sell_forwards_order_type_limit_price_and_tag() -> None:
     )
     runtime.handle_bar(first_bar)
     assert runtime.order_state().pending == (
-        OrderIntent(
+        PendingOrderRequest(
             symbol="BTC/USDT",
             side="sell",
             quantity=2.0,
@@ -415,6 +613,33 @@ def test_sell_forwards_order_type_limit_price_and_tag() -> None:
         ),
     )
     assert runtime.order_state().active == ()
+
+
+def test_limit_orders_require_limit_price_at_intake() -> None:
+    class MissingLimitPriceQuantityStrategy(Strategy):
+        def on_bar(self, bar: BarEvent) -> None:
+            self.buy(quantity=1.0, order_type="limit")
+
+    class MissingLimitPricePercentStrategy(Strategy):
+        def on_bar(self, bar: BarEvent) -> None:
+            self.buy(qty_percent=50.0, order_type="limit")
+
+    first_bar = BarEvent(
+        bar_type="time",
+        bar_spec="1m",
+        symbol="BTC/USDT",
+        timestamp=60,
+        open=100.0,
+        high=105.0,
+        low=95.0,
+        close=104.0,
+        volume=10.0,
+        is_closed=True,
+    )
+
+    for strategy in (MissingLimitPriceQuantityStrategy(), MissingLimitPricePercentStrategy()):
+        with pytest.raises(ValueError, match="limit orders require a limit_price"):
+            _runtime(strategy).handle_bar(first_bar)
 
 
 def test_failed_on_bar_does_not_leak_staged_intents_to_the_next_bar() -> None:
@@ -458,6 +683,86 @@ def test_failed_on_bar_does_not_leak_staged_intents_to_the_next_bar() -> None:
     assert runtime.order_state().active == ()
 
 
+def test_qty_percent_orders_preserve_symbol_and_percent_before_runtime_resolution() -> None:
+    runtime = _runtime(PercentBuyOnFirstBarStrategy())
+    runtime.handle_bar(
+        BarEvent(
+            bar_type="time",
+            bar_spec="1m",
+            symbol="BTC/USDT",
+            timestamp=60,
+            open=100.0,
+            high=105.0,
+            low=95.0,
+            close=104.0,
+            volume=10.0,
+            is_closed=True,
+        )
+    )
+
+    assert runtime.order_state().pending == (
+        PendingOrderRequest(
+            symbol="BTC/USDT",
+            side="buy",
+            qty_percent=80.0,
+            order_type="market",
+            tag="percent-entry",
+        ),
+    )
+
+
+def test_percent_orders_inherit_implicit_symbol_during_on_bar() -> None:
+    buy_runtime = _runtime(PercentBuyOnFirstBarStrategy())
+    buy_runtime.handle_bar(
+        BarEvent(
+            bar_type="time",
+            bar_spec="1m",
+            symbol="BTC/USDT",
+            timestamp=60,
+            open=100.0,
+            high=105.0,
+            low=95.0,
+            close=104.0,
+            volume=10.0,
+            is_closed=True,
+        )
+    )
+    assert buy_runtime.order_state().pending == (
+        PendingOrderRequest(
+            symbol="BTC/USDT",
+            side="buy",
+            qty_percent=80.0,
+            order_type="market",
+            tag="percent-entry",
+        ),
+    )
+
+    sell_runtime = _runtime(ImplicitSymbolPercentSellOnFirstBarStrategy())
+    sell_runtime.handle_bar(
+        BarEvent(
+            bar_type="time",
+            bar_spec="1m",
+            symbol="BTC/USDT",
+            timestamp=60,
+            open=100.0,
+            high=105.0,
+            low=95.0,
+            close=104.0,
+            volume=10.0,
+            is_closed=True,
+        )
+    )
+    assert sell_runtime.order_state().pending == (
+        PendingOrderRequest(
+            symbol="BTC/USDT",
+            side="sell",
+            qty_percent=30.0,
+            order_type="market",
+            tag="scale-out",
+        ),
+    )
+
+
 def test_sell_is_the_current_long_exit_surface() -> None:
     class SellWhileFlatInLongOnlyScopeStrategy(Strategy):
         def on_bar(self, bar: BarEvent) -> None:
@@ -488,6 +793,43 @@ def test_sell_is_the_current_long_exit_surface() -> None:
             )
         ),
         strategy=SellWhileFlatInLongOnlyScopeStrategy(),
+    )
+
+    assert result.trade_log == ()
+    assert result.final_state.position_quantity == 0.0
+    assert result.final_state.cash == 1_000.0
+
+
+def test_percent_sell_is_the_current_long_exit_surface() -> None:
+    class PercentSellWhileFlatInLongOnlyScopeStrategy(Strategy):
+        def on_bar(self, bar: BarEvent) -> None:
+            self.sell(qty_percent=100.0, tag="flat-exit")
+
+    result = BacktestEngine(
+        initial_cash=1_000.0,
+        costs=CostConfig(tick_size=0.1, slippage_ticks=0.0, fee_rate=0.0),
+    ).run(
+        bars=_make_bar_series(
+            (
+                TimeBar(
+                    timestamp=60,
+                    open=100.0,
+                    high=101.0,
+                    low=99.0,
+                    close=100.5,
+                    volume=10.0,
+                ),
+                TimeBar(
+                    timestamp=120,
+                    open=101.0,
+                    high=102.0,
+                    low=100.0,
+                    close=101.5,
+                    volume=10.0,
+                ),
+            )
+        ),
+        strategy=PercentSellWhileFlatInLongOnlyScopeStrategy(),
     )
 
     assert result.trade_log == ()

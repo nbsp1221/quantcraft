@@ -12,6 +12,7 @@ Related documents:
 - [../design-docs/backtest-execution-semantics.md](../design-docs/backtest-execution-semantics.md)
 - [../design-docs/trading-kernel-contract-draft.md](../design-docs/trading-kernel-contract-draft.md)
 - [../design-docs/architecture-governance.md](../design-docs/architecture-governance.md)
+- [order-sizing.md](order-sizing.md)
 
 This document is the canonical current implemented-scope contract for the shipped backtest MVP.
 
@@ -71,9 +72,21 @@ Responsibility split:
 
 - user-facing strategy API is `self`-based
 - first public hook is `on_bar` only
-- strategy output is `OrderIntent`
+- strategy output is a pending order request that resolves into a
+  quantity-only `OrderIntent` at runtime activation
 
-MVP `OrderIntent` minimum fields:
+MVP pending strategy-request minimum fields:
+
+- `symbol`
+- `side`
+- exactly one of:
+  - `quantity`
+  - `qty_percent`
+- `order_type`
+- `limit_price?`
+- `tag?`
+
+Runtime `OrderIntent` minimum fields:
 
 - `symbol`
 - `side`
@@ -208,7 +221,7 @@ More advanced fee and slippage model objects may be added later, but they are no
 ### Strategy Timing
 
 - `on_bar` is called only after the bar is complete
-- `OrderIntent` created inside that callback does not apply retroactively to the current bar
+- a pending strategy request created inside that callback does not apply retroactively to the current bar
 - by default, it becomes effective starting from the next bar
 
 This is the slice's lookahead-bias guardrail.
@@ -245,7 +258,8 @@ The slice is acceptable only if it satisfies all of the following:
 
 1. it runs from checked-in OHLCV input for a single symbol
 2. the engine remains tick/L2-driven internally
-3. strategy code can emit `OrderIntent` from a `self`-based `on_bar` hook
+3. strategy code can emit pending order requests from a `self`-based `on_bar`
+   hook, and runtime activation resolves them into quantity-only `OrderIntent`
 4. `market` and `limit` orders both work
 5. long-only, `1x`, spot-like semantics remain consistent
 6. costs are externally injected

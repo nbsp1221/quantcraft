@@ -40,7 +40,11 @@ def _run_backtest(
         if previous_timestamp is not None and previous_timestamp >= bar.timestamp:
             raise ValueError("out-of-order time bars")
 
-        runtime.activate_pending_order_intents()
+        runtime.activate_pending_order_requests(
+            bar=bar,
+            state=state,
+            costs=costs,
+        )
         tick_events = execution_model.tick_events_for_bar(
             symbol=bars.symbol,
             previous_close=previous_close,

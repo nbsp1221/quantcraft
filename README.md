@@ -17,6 +17,9 @@ The current implemented scope is intentionally small:
 - `source.load()` materialization into `BarSeries` with `tuple[TimeBar, ...]` rows and `bar_type="time"`
 - a deterministic single-symbol Backtest MVP built on the shared trading kernel
 - a first `quantcraft.research` ergonomics surface with `Strategy`, `ta`, and `qc`
+- explicit strategy-side order sizing through `buy()/sell(quantity=...)` and
+  `buy()/sell(qty_percent=...)`, with shipped `qty_percent` support in the
+  current single-symbol research/backtest workflow
 - a first `quantcraft.backtest` runtime surface with `BacktestEngine`
 - canonical backtest execution paths via `BacktestEngine.run(bars=..., strategy=...)` and `BacktestEngine.run(source=..., strategy=...)`
 - canonical quickstart and notebook assets for the current research workflow
@@ -103,6 +106,8 @@ The default integration surface keeps a deliberately small canonical strategy pa
 This keeps the default lane representative without turning it into a slow “many strategies” suite.
 Additional deterministic strategy regression contracts can stay in the normal integration suite
 as long as they remain cheap and legible.
+Current checked-in examples include BTC-fixture-backed `%` sizing regressions
+for shipped market, limit-entry, and limit-exit behavior.
 
 For day-to-day development, use the Poe task layer:
 

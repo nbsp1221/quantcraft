@@ -11,6 +11,7 @@ Related documents:
 - [../design-docs/quantcraft-architecture.md](../design-docs/quantcraft-architecture.md)
 - [../design-docs/architecture-governance.md](../design-docs/architecture-governance.md)
 - [backtest-mvp.md](backtest-mvp.md)
+- [order-sizing.md](order-sizing.md)
 - [../research/2026-03-23-python-quant-library-landscape.md](../research/2026-03-23-python-quant-library-landscape.md)
 
 This document defines the canonical current implemented-scope contract for the shipped `research ergonomics` surface that sits on top of the backtest MVP.
@@ -167,6 +168,9 @@ Approved public surface:
 Current order semantics for this slice:
 
 - `buy()` and `sell()` accept explicit `symbol=...` everywhere they are allowed
+- `buy()` and `sell()` accept exactly one sizing mode:
+  - `quantity=...`
+  - `qty_percent=...`
 - in the current single-symbol `on_bar()` workflow, `buy()` and `sell()` may
   omit `symbol`; the helper infers the active `bar.symbol`
 - in the current shipped single-symbol backtest, any explicit `symbol=...`
@@ -174,6 +178,8 @@ Current order semantics for this slice:
 - `buy()` means long entry or long increase
 - `sell()` means long exit in the current long-only MVP scope, not short entry
 - `sell()` while flat is treated as a no-op in the current long-only backtest path
+- `qty_percent` uses current executable sizing resources for the requested
+  direction rather than portfolio-target semantics
 
 Examples and quickstarts must explain that `sell()` is an exit operation in the current scope.
 

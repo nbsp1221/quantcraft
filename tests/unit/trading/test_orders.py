@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import fields
+
 import pytest
 
 from quantcraft.trading.domain.events import FillEvent
@@ -30,6 +32,19 @@ def test_order_from_intent_preserves_runtime_fields() -> None:
     assert order.filled_quantity == 0.0
     assert order.remaining_quantity == 2.0
     assert order.is_open is True
+
+
+def test_runtime_order_field_surface_remains_quantity_only() -> None:
+    assert tuple(field.name for field in fields(Order)) == (
+        "id",
+        "symbol",
+        "side",
+        "quantity",
+        "order_type",
+        "limit_price",
+        "tag",
+        "filled_quantity",
+    )
 
 
 def test_order_rejects_non_positive_quantity_at_creation() -> None:

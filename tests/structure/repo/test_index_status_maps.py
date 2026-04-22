@@ -62,6 +62,8 @@ def test_product_spec_routing_index_lists_governing_current_scope_specs() -> Non
     assert entries_by_target["backtest-mvp.md"]["scope"] == "current implemented scope"
     assert entries_by_target["research-ergonomics.md"]["role"] == "Governing"
     assert entries_by_target["research-ergonomics.md"]["scope"] == "current implemented scope"
+    assert entries_by_target["order-sizing.md"]["role"] == "Governing"
+    assert entries_by_target["order-sizing.md"]["scope"] == "current implemented scope"
     assert entries_by_target["backtest.md"]["role"] == "Pointer"
 
 
@@ -98,8 +100,7 @@ def test_check_docs_flags_blank_scope_for_product_specs_index(
     issues = check_docs.collect_issues(tmp_path)
 
     assert (
-        "docs/product-specs/index.md has blank Scope field for document: market-data.md"
-        in issues
+        "docs/product-specs/index.md has blank Scope field for document: market-data.md" in issues
     )
 
 

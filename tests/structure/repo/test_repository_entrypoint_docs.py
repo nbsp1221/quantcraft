@@ -29,6 +29,7 @@ def test_readme_current_scope_mentions_implemented_backtest_research_and_data_su
         assert marker in pre_setup_section
     for marker in ["`Strategy`", "`BacktestEngine`", "`ta`", "`qc`"]:
         assert marker in pre_setup_section
+    assert "`qty_percent`" in pre_setup_section
     assert "`run_backtest`" not in pre_setup_section
     assert "`BacktestEngine.run(bars=..., strategy=...)`" in pre_setup_section
     assert "`BacktestEngine.run(source=..., strategy=...)`" in pre_setup_section
@@ -45,6 +46,7 @@ def test_readme_current_scope_mentions_implemented_backtest_research_and_data_su
     assert "canonical strategy" in readme.lower()
     assert "RSI 30/70 mean reversion" in readme
     assert "EMA crossover" in readme
+    assert "BTC-fixture-backed `%` sizing regressions" in readme
     assert "test-integration-extended" not in readme
 
 
@@ -53,6 +55,9 @@ def test_current_docs_describe_summary_terms_and_engine_surface() -> None:
         encoding="utf-8"
     )
     backtest_spec = (ROOT / "docs" / "product-specs" / "backtest-mvp.md").read_text(
+        encoding="utf-8"
+    )
+    order_sizing_spec = (ROOT / "docs" / "product-specs" / "order-sizing.md").read_text(
         encoding="utf-8"
     )
     data_ingestion_spec = (ROOT / "docs" / "product-specs" / "data-ingestion.md").read_text(
@@ -68,7 +73,13 @@ def test_current_docs_describe_summary_terms_and_engine_surface() -> None:
     assert "trade-count metrics should be interpreted as closed trades" in backtest_spec
     assert "`result.summary.total_trades` = closed trades" in quickstart
     assert "`sell()` while flat is treated as a no-op" in research_spec
+    assert "`qty_percent`" in research_spec
     assert "a `sell` intent while flat is treated as an exit-only no-op" in backtest_spec
+    assert "pending order request" in backtest_spec
+    assert "quantity-only `OrderIntent`" in backtest_spec
+    assert "- Status: `implemented`" in order_sizing_spec
+    assert "runtime `OrderIntent` remains quantity-only" in order_sizing_spec
+    assert "runtime `Order` remains quantity-based" in order_sizing_spec
     assert "repeated `sell()` calls while flat are treated as exit-only no-ops" in quickstart
     assert "`self.position`" in research_spec
     assert "`self.position.is_open`" in research_spec
@@ -105,8 +116,8 @@ def test_current_docs_describe_summary_terms_and_engine_surface() -> None:
     assert "`DataFrameDataSource.load()` returns `BarSeries`" in data_ingestion_spec
     assert "`BarSeries.rows` is `tuple[TimeBar, ...]`" in data_ingestion_spec
     assert '`BarSeries.bar_type` is fixed to `"time"`' in data_ingestion_spec
-    assert "self.buy(quantity=1, tag=\"rsi-entry\")" in data_ingestion_spec
-    assert "self.sell(quantity=1, tag=\"rsi-exit\")" in data_ingestion_spec
+    assert 'self.buy(quantity=1, tag="rsi-entry")' in data_ingestion_spec
+    assert 'self.sell(quantity=1, tag="rsi-exit")' in data_ingestion_spec
     assert "from quantcraft.backtest import BacktestEngine" in quickstart
     assert "from quantcraft.research import Strategy, ta, qc" in quickstart
     assert (
@@ -119,4 +130,5 @@ def test_current_docs_describe_summary_terms_and_engine_surface() -> None:
     assert "canonical strategy pair" in reliability
     assert "RSI 30/70 mean reversion" in reliability
     assert "EMA crossover" in reliability
+    assert "BTC-fixture-backed `qty_percent`" in reliability
     assert "test-integration-extended" not in reliability

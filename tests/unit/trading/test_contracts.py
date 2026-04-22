@@ -8,10 +8,20 @@ from quantcraft.trading.domain import events as trading_events
 from quantcraft.trading.domain.costs import CostConfig
 from quantcraft.trading.domain.events import BarEvent, FillEvent, TickEvent
 from quantcraft.trading.domain.intents import OrderIntent
+from quantcraft.trading.domain.orders import Order
+from quantcraft.trading.order_requests import PendingOrderRequest
 
 
 def test_order_intent_matches_backtest_mvp_minimum_contract() -> None:
     order_intent_fields = fields(OrderIntent)
+    assert tuple(field.name for field in order_intent_fields) == (
+        "symbol",
+        "side",
+        "quantity",
+        "order_type",
+        "limit_price",
+        "tag",
+    )
 
     assert_dataclass_includes_fields(
         order_intent_fields,
@@ -37,6 +47,46 @@ def test_order_intent_matches_backtest_mvp_minimum_contract() -> None:
             "tag": lambda annotation: set(get_args(annotation)) == {str, type(None)},
         },
     )
+    assert "qty_percent" not in hints
+
+
+def test_pending_order_request_supports_exactly_one_sizing_mode() -> None:
+    pending_request_fields = fields(PendingOrderRequest)
+
+    assert tuple(field.name for field in pending_request_fields) == (
+        "symbol",
+        "side",
+        "quantity",
+        "qty_percent",
+        "order_type",
+        "limit_price",
+        "tag",
+    )
+
+    hints = get_type_hints(PendingOrderRequest)
+    assert hints["symbol"] is str
+    assert set(get_args(hints["quantity"])) == {float, type(None)}
+    assert set(get_args(hints["qty_percent"])) == {float, type(None)}
+    assert get_origin_and_args(hints["side"]) == (Literal, ("buy", "sell"))
+    assert get_origin_and_args(hints["order_type"]) == (Literal, ("market", "limit"))
+    assert set(get_args(hints["limit_price"])) == {float, type(None)}
+    assert set(get_args(hints["tag"])) == {str, type(None)}
+
+
+def test_runtime_order_remains_quantity_only() -> None:
+    order_fields = fields(Order)
+
+    assert tuple(field.name for field in order_fields) == (
+        "id",
+        "symbol",
+        "side",
+        "quantity",
+        "order_type",
+        "limit_price",
+        "tag",
+        "filled_quantity",
+    )
+    assert "qty_percent" not in get_type_hints(Order)
 
 
 def test_tick_event_matches_l2_snapshot_contract() -> None:

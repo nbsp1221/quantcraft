@@ -15,13 +15,10 @@ def test_backtest_loop_imports_execution_model_directly() -> None:
     execution_model_imports = [
         node
         for node in ast.walk(tree)
-        if isinstance(node, ast.ImportFrom)
-        and node.module == "quantcraft.backtest.execution_model"
+        if isinstance(node, ast.ImportFrom) and node.module == "quantcraft.backtest.execution_model"
     ]
 
-    imported_names = {
-        alias.name for node in execution_model_imports for alias in node.names
-    }
+    imported_names = {alias.name for node in execution_model_imports for alias in node.names}
 
     assert "ConservativeOHLCVExecutionModel" in imported_names
 
@@ -51,9 +48,7 @@ def test_backtest_loop_does_not_revert_to_unnamed_synthetic_event_helper() -> No
         and node.module == "quantcraft.research.adapters.synthetic_events"
     ]
 
-    imported_names = {
-        alias.name for node in synthetic_helper_imports for alias in node.names
-    }
+    imported_names = {alias.name for node in synthetic_helper_imports for alias in node.names}
 
     assert "convert_bar_series_to_backtest_events" not in imported_names
 
@@ -70,8 +65,7 @@ def test_research_backtest_routes_fill_state_transitions_through_trading_kernel(
     state_imports = [
         node
         for node in ast.walk(tree)
-        if isinstance(node, ast.ImportFrom)
-        and node.module == "quantcraft.trading.domain.state"
+        if isinstance(node, ast.ImportFrom) and node.module == "quantcraft.trading.domain.state"
     ]
     imported_names = {alias.name for node in state_imports for alias in node.names}
     local_function_names = {
@@ -114,8 +108,7 @@ def test_execution_package_does_not_define_a_second_position_engine() -> None:
         state_imports = [
             node
             for node in ast.walk(tree)
-            if isinstance(node, ast.ImportFrom)
-            and node.module == "quantcraft.trading.domain.state"
+            if isinstance(node, ast.ImportFrom) and node.module == "quantcraft.trading.domain.state"
         ]
         imported_names = {alias.name for node in state_imports for alias in node.names}
         noncanonical_state_imports = [

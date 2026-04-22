@@ -184,8 +184,7 @@ def _all_series_views(sources: tuple[SeriesLike, ...]) -> bool:
 
 def _full_source_values(sources: tuple[SeriesLike, ...]) -> tuple[np.ndarray, ...]:
     return tuple(
-        np.asarray(cast(SeriesView, source)._all_values(), dtype=float)
-        for source in sources
+        np.asarray(cast(SeriesView, source)._all_values(), dtype=float) for source in sources
     )
 
 

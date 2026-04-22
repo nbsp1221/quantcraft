@@ -54,7 +54,8 @@ def test_ccxt_data_source_imports_canonical_integrations_owner() -> None:
     imported_modules = {
         node.module
         for node in ast.walk(tree)
-        if isinstance(node, ast.ImportFrom) and node.module is not None
+        if isinstance(node, ast.ImportFrom)
+        and node.module is not None
         and node.module != "__future__"
     }
 

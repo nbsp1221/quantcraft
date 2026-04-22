@@ -14,12 +14,15 @@ from quantcraft.trading.domain.state import TradingState, apply_fill
 
 def test_market_buy_applies_adverse_slippage_to_best_ask() -> None:
     fill = match_order(
-        Order.from_intent(order_id=1, intent=OrderIntent(
-            symbol="BTC/USDT",
-            side="buy",
-            quantity=2.0,
-            order_type="market",
-        )),
+        Order.from_intent(
+            order_id=1,
+            intent=OrderIntent(
+                symbol="BTC/USDT",
+                side="buy",
+                quantity=2.0,
+                order_type="market",
+            ),
+        ),
         TickEvent(
             timestamp=60,
             symbol="BTC/USDT",
@@ -42,13 +45,16 @@ def test_market_buy_applies_adverse_slippage_to_best_ask() -> None:
 
 def test_limit_buy_fills_across_multiple_levels_without_beating_limit() -> None:
     fill = match_order(
-        Order.from_intent(order_id=1, intent=OrderIntent(
-            symbol="BTC/USDT",
-            side="buy",
-            quantity=2.0,
-            order_type="limit",
-            limit_price=102.0,
-        )),
+        Order.from_intent(
+            order_id=1,
+            intent=OrderIntent(
+                symbol="BTC/USDT",
+                side="buy",
+                quantity=2.0,
+                order_type="limit",
+                limit_price=102.0,
+            ),
+        ),
         TickEvent(
             timestamp=60,
             symbol="BTC/USDT",
@@ -71,13 +77,16 @@ def test_limit_buy_fills_across_multiple_levels_without_beating_limit() -> None:
 
 def test_limit_order_returns_none_when_book_cannot_fill_within_limit() -> None:
     fill = match_order(
-        Order.from_intent(order_id=1, intent=OrderIntent(
-            symbol="BTC/USDT",
-            side="buy",
-            quantity=2.0,
-            order_type="limit",
-            limit_price=101.0,
-        )),
+        Order.from_intent(
+            order_id=1,
+            intent=OrderIntent(
+                symbol="BTC/USDT",
+                side="buy",
+                quantity=2.0,
+                order_type="limit",
+                limit_price=101.0,
+            ),
+        ),
         TickEvent(
             timestamp=60,
             symbol="BTC/USDT",
@@ -93,12 +102,15 @@ def test_limit_order_returns_none_when_book_cannot_fill_within_limit() -> None:
 
 def test_market_sell_applies_adverse_slippage_to_best_bid() -> None:
     fill = match_order(
-        Order.from_intent(order_id=1, intent=OrderIntent(
-            symbol="BTC/USDT",
-            side="sell",
-            quantity=2.0,
-            order_type="market",
-        )),
+        Order.from_intent(
+            order_id=1,
+            intent=OrderIntent(
+                symbol="BTC/USDT",
+                side="sell",
+                quantity=2.0,
+                order_type="market",
+            ),
+        ),
         TickEvent(
             timestamp=60,
             symbol="BTC/USDT",
@@ -121,13 +133,16 @@ def test_market_sell_applies_adverse_slippage_to_best_bid() -> None:
 
 def test_limit_sell_fills_across_multiple_levels_without_beating_limit() -> None:
     fill = match_order(
-        Order.from_intent(order_id=1, intent=OrderIntent(
-            symbol="BTC/USDT",
-            side="sell",
-            quantity=2.0,
-            order_type="limit",
-            limit_price=98.0,
-        )),
+        Order.from_intent(
+            order_id=1,
+            intent=OrderIntent(
+                symbol="BTC/USDT",
+                side="sell",
+                quantity=2.0,
+                order_type="limit",
+                limit_price=98.0,
+            ),
+        ),
         TickEvent(
             timestamp=60,
             symbol="BTC/USDT",
@@ -150,13 +165,16 @@ def test_limit_sell_fills_across_multiple_levels_without_beating_limit() -> None
 
 def test_matching_skips_zero_liquidity_levels() -> None:
     fill = match_order(
-        Order.from_intent(order_id=1, intent=OrderIntent(
-            symbol="BTC/USDT",
-            side="buy",
-            quantity=1.0,
-            order_type="limit",
-            limit_price=102.0,
-        )),
+        Order.from_intent(
+            order_id=1,
+            intent=OrderIntent(
+                symbol="BTC/USDT",
+                side="buy",
+                quantity=1.0,
+                order_type="limit",
+                limit_price=102.0,
+            ),
+        ),
         TickEvent(
             timestamp=60,
             symbol="BTC/USDT",
@@ -180,12 +198,15 @@ def test_matching_skips_zero_liquidity_levels() -> None:
 def test_matching_rejects_symbol_mismatch_between_intent_and_tick() -> None:
     with pytest.raises(ValueError, match="symbol mismatch"):
         match_order(
-            Order.from_intent(order_id=1, intent=OrderIntent(
-                symbol="ETH/USDT",
-                side="buy",
-                quantity=1.0,
-                order_type="market",
-            )),
+            Order.from_intent(
+                order_id=1,
+                intent=OrderIntent(
+                    symbol="ETH/USDT",
+                    side="buy",
+                    quantity=1.0,
+                    order_type="market",
+                ),
+            ),
             TickEvent(
                 timestamp=60,
                 symbol="BTC/USDT",
@@ -200,12 +221,15 @@ def test_matching_rejects_symbol_mismatch_between_intent_and_tick() -> None:
 def test_matching_rejects_non_positive_quantities() -> None:
     with pytest.raises(ValueError, match="positive quantity"):
         match_order(
-            Order.from_intent(order_id=1, intent=OrderIntent(
-                symbol="BTC/USDT",
-                side="buy",
-                quantity=0.0,
-                order_type="market",
-            )),
+            Order.from_intent(
+                order_id=1,
+                intent=OrderIntent(
+                    symbol="BTC/USDT",
+                    side="buy",
+                    quantity=0.0,
+                    order_type="market",
+                ),
+            ),
             TickEvent(
                 timestamp=60,
                 symbol="BTC/USDT",

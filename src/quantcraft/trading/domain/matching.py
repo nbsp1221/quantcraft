@@ -43,6 +43,8 @@ def match_order(
         timestamp=tick.timestamp,
         fee=fee,
     )
+
+
 def _match_notional(
     *,
     levels: tuple[BookLevel, ...],
@@ -77,4 +79,6 @@ def _price_is_within_limit(*, side: str, price: float, limit_price: float) -> bo
     if side == "buy":
         return price <= limit_price
     return price >= limit_price
+
+
 __all__ = ["match_order"]

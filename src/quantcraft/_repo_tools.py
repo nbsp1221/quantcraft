@@ -235,12 +235,14 @@ def parse_routing_index_entries(
 
     return [], []
 
+
 def resolve_routing_index_target(root: Path, *, index_path: Path, target: str) -> str | None:
     relative_base = index_path.parent.relative_to(root)
     relative_path = (relative_base / target).as_posix()
     if relative_path.startswith("../"):
         return None
     return relative_path
+
 
 def collect_doc_issues(root: Path) -> list[str]:
     issues: list[str] = []
