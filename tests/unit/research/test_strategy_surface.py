@@ -51,6 +51,65 @@ class StopMarketBelowCloseBuyStrategy(Strategy):
         self.buy(quantity=1.0, order_type="stop_market", stop_price=90.0, tag="stop-entry")
 
 
+class StopLimitAboveCloseBuyStrategy(Strategy):
+    def on_bar(self, bar: BarEvent) -> None:
+        self.buy(
+            quantity=1.0,
+            order_type="stop_limit",
+            stop_price=120.0,
+            limit_price=121.0,
+            tag="stop-limit-entry",
+        )
+
+
+class StopLimitBelowCloseBuyStrategy(Strategy):
+    def on_bar(self, bar: BarEvent) -> None:
+        self.buy(
+            quantity=1.0,
+            order_type="stop_limit",
+            stop_price=90.0,
+            limit_price=80.0,
+            tag="pullback-entry",
+        )
+
+
+class StopLimitBelowCloseSellStrategy(Strategy):
+    def on_bar(self, bar: BarEvent) -> None:
+        self.sell(
+            quantity=1.0,
+            order_type="stop_limit",
+            stop_price=90.0,
+            limit_price=120.0,
+            tag="breakdown-exit",
+        )
+
+
+class StopLimitMatrixStrategy(Strategy):
+    def __init__(self, *, side: str, stop_price: float, limit_price: float) -> None:
+        super().__init__()
+        self._side = side
+        self._stop_price = stop_price
+        self._limit_price = limit_price
+
+    def on_bar(self, bar: BarEvent) -> None:
+        if self._side == "buy":
+            self.buy(
+                quantity=1.0,
+                order_type="stop_limit",
+                stop_price=self._stop_price,
+                limit_price=self._limit_price,
+                tag="matrix",
+            )
+            return
+        self.sell(
+            quantity=1.0,
+            order_type="stop_limit",
+            stop_price=self._stop_price,
+            limit_price=self._limit_price,
+            tag="matrix",
+        )
+
+
 class ImplicitSymbolBuyOnFirstBarStrategy(Strategy):
     def __init__(self) -> None:
         super().__init__()
@@ -714,6 +773,192 @@ def test_stop_market_below_close_is_normalized_with_crosses_below() -> None:
             tag="stop-entry",
         ),
     )
+
+
+def test_stop_limit_above_close_is_normalized_with_crosses_above() -> None:
+    runtime = _runtime(StopLimitAboveCloseBuyStrategy())
+
+    runtime.handle_bar(
+        BarEvent(
+            bar_type="time",
+            bar_spec="1m",
+            symbol="BTC/USDT",
+            timestamp=60,
+            open=100.0,
+            high=105.0,
+            low=95.0,
+            close=104.0,
+            volume=10.0,
+            is_closed=True,
+        )
+    )
+
+    assert runtime.order_state().pending == (
+        PendingOrderRequest(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=1.0,
+            order_type="stop_limit",
+            stop_price=120.0,
+            trigger_condition="crosses_above",
+            limit_price=121.0,
+            tag="stop-limit-entry",
+        ),
+    )
+
+
+def test_stop_limit_below_close_infers_trigger_condition_independent_of_limit_and_side() -> None:
+    first_bar = BarEvent(
+        bar_type="time",
+        bar_spec="1m",
+        symbol="BTC/USDT",
+        timestamp=60,
+        open=100.0,
+        high=105.0,
+        low=95.0,
+        close=104.0,
+        volume=10.0,
+        is_closed=True,
+    )
+
+    buy_runtime = _runtime(StopLimitBelowCloseBuyStrategy())
+    buy_runtime.handle_bar(first_bar)
+    sell_runtime = _runtime(StopLimitBelowCloseSellStrategy())
+    sell_runtime.handle_bar(first_bar)
+
+    assert buy_runtime.order_state().pending == (
+        PendingOrderRequest(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=1.0,
+            order_type="stop_limit",
+            stop_price=90.0,
+            trigger_condition="crosses_below",
+            limit_price=80.0,
+            tag="pullback-entry",
+        ),
+    )
+    assert sell_runtime.order_state().pending == (
+        PendingOrderRequest(
+            symbol="BTC/USDT",
+            side="sell",
+            quantity=1.0,
+            order_type="stop_limit",
+            stop_price=90.0,
+            trigger_condition="crosses_below",
+            limit_price=120.0,
+            tag="breakdown-exit",
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("side", "stop_price", "limit_price", "expected_trigger_condition"),
+    (
+        ("buy", 90.0, 120.0, "crosses_below"),
+        ("buy", 90.0, 80.0, "crosses_below"),
+        ("sell", 90.0, 120.0, "crosses_below"),
+        ("sell", 90.0, 80.0, "crosses_below"),
+        ("sell", 120.0, 119.0, "crosses_above"),
+    ),
+)
+def test_stop_limit_trigger_inference_uses_stop_price_not_side_or_limit_price(
+    side: str,
+    stop_price: float,
+    limit_price: float,
+    expected_trigger_condition: str,
+) -> None:
+    runtime = _runtime(
+        StopLimitMatrixStrategy(
+            side=side,
+            stop_price=stop_price,
+            limit_price=limit_price,
+        )
+    )
+
+    runtime.handle_bar(
+        BarEvent(
+            bar_type="time",
+            bar_spec="1m",
+            symbol="BTC/USDT",
+            timestamp=60,
+            open=100.0,
+            high=105.0,
+            low=95.0,
+            close=104.0,
+            volume=10.0,
+            is_closed=True,
+        )
+    )
+
+    assert runtime.order_state().pending == (
+        PendingOrderRequest(
+            symbol="BTC/USDT",
+            side=side,  # type: ignore[arg-type]
+            quantity=1.0,
+            order_type="stop_limit",
+            stop_price=stop_price,
+            trigger_condition=expected_trigger_condition,  # type: ignore[arg-type]
+            limit_price=limit_price,
+            tag="matrix",
+        ),
+    )
+
+
+def test_stop_limit_rejects_missing_stop_price_and_limit_price() -> None:
+    class MissingStopPriceStrategy(Strategy):
+        def on_bar(self, bar: BarEvent) -> None:
+            self.buy(quantity=1.0, order_type="stop_limit", limit_price=105.0)
+
+    class MissingLimitPriceStrategy(Strategy):
+        def on_bar(self, bar: BarEvent) -> None:
+            self.buy(quantity=1.0, order_type="stop_limit", stop_price=105.0)
+
+    first_bar = BarEvent(
+        bar_type="time",
+        bar_spec="1m",
+        symbol="BTC/USDT",
+        timestamp=60,
+        open=100.0,
+        high=105.0,
+        low=95.0,
+        close=104.0,
+        volume=10.0,
+        is_closed=True,
+    )
+
+    with pytest.raises(ValueError, match="stop_limit orders require a stop_price"):
+        _runtime(MissingStopPriceStrategy()).handle_bar(first_bar)
+    with pytest.raises(ValueError, match="stop_limit orders require a limit_price"):
+        _runtime(MissingLimitPriceStrategy()).handle_bar(first_bar)
+
+
+def test_stop_limit_rejects_equal_stop_price_and_qty_percent() -> None:
+    class EqualStopPriceStrategy(Strategy):
+        def on_bar(self, bar: BarEvent) -> None:
+            self.buy(quantity=1.0, order_type="stop_limit", stop_price=104.0, limit_price=105.0)
+
+    class PercentStopLimitStrategy(Strategy):
+        def on_bar(self, bar: BarEvent) -> None:
+            self.buy(qty_percent=50.0, order_type="stop_limit", stop_price=120.0, limit_price=121.0)
+
+    first_bar = BarEvent(
+        bar_type="time",
+        bar_spec="1m",
+        symbol="BTC/USDT",
+        timestamp=60,
+        open=100.0,
+        high=105.0,
+        low=95.0,
+        close=104.0,
+        volume=10.0,
+        is_closed=True,
+    )
+
+    with pytest.raises(ValueError, match="stop_price equal to the active bar close is ambiguous"):
+        _runtime(EqualStopPriceStrategy()).handle_bar(first_bar)
+    with pytest.raises(ValueError, match="qty_percent is not supported for stop_limit"):
+        _runtime(PercentStopLimitStrategy()).handle_bar(first_bar)
 
 
 def test_stop_market_rejects_missing_stop_price() -> None:

@@ -31,6 +31,17 @@ class LimitPercentBuyStrategy(Strategy):
         self.buy(qty_percent=50.0, order_type="limit", limit_price=20.0, tag="limit-entry")
 
 
+class FlatSellStopLimitStrategy(Strategy):
+    def on_bar(self, bar: BarEvent) -> None:
+        self.sell(
+            quantity=1.0,
+            order_type="stop_limit",
+            stop_price=95.0,
+            limit_price=94.0,
+            tag="flat-stop-limit",
+        )
+
+
 def _runtime(strategy: Strategy) -> _StrategyDriver:
     return _StrategyDriver(strategy)
 
@@ -184,3 +195,48 @@ def test_dormant_stop_market_buy_does_not_reduce_ordinary_percent_buy_budget() -
     )
 
     assert tuple(order.quantity for order in runtime.order_state().active) == (1.0, 5.0)
+
+
+def test_dormant_stop_limit_buy_does_not_reduce_ordinary_percent_buy_budget() -> None:
+    runtime = _runtime(PercentBuyStrategy())
+    runtime.initialize(bars=_bars())
+    runtime.handle_bar(_bar_event(60), state=TradingState(cash=100.0, equity=100.0))
+    runtime.replace_active_orders(
+        (
+            Order.from_intent(
+                order_id=1,
+                intent=OrderIntent(
+                    symbol="BTC/USDT",
+                    side="buy",
+                    quantity=1.0,
+                    order_type="stop_limit",
+                    trigger_price=20.0,
+                    trigger_condition="crosses_above",
+                    trigger_type="last",
+                    limit_price=21.0,
+                ),
+            ),
+        )
+    )
+
+    runtime.activate_pending_order_requests(
+        bar=_bars().rows[1],
+        state=TradingState(cash=100.0, equity=100.0),
+        costs=CostConfig(tick_size=0.1, slippage_ticks=0.0, fee_rate=0.0),
+    )
+
+    assert tuple(order.quantity for order in runtime.order_state().active) == (1.0, 5.0)
+
+
+def test_flat_sell_stop_limit_resolves_to_no_new_order() -> None:
+    runtime = _runtime(FlatSellStopLimitStrategy())
+    runtime.initialize(bars=_bars())
+    runtime.handle_bar(_bar_event(60), state=TradingState(cash=100.0, equity=100.0))
+
+    runtime.activate_pending_order_requests(
+        bar=_bars().rows[1],
+        state=TradingState(cash=100.0, equity=100.0),
+        costs=CostConfig(tick_size=0.1, slippage_ticks=0.0, fee_rate=0.0),
+    )
+
+    assert runtime.order_state().active == ()

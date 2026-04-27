@@ -253,6 +253,50 @@ class StopMarketSellWhileFlatStrategy(Strategy):
         )
 
 
+class BuyStopLimitStrategy(Strategy):
+    def __init__(self, *, stop_price: float, limit_price: float) -> None:
+        super().__init__()
+        self._stop_price = stop_price
+        self._limit_price = limit_price
+
+    def init(self) -> None:
+        self._placed = False
+
+    def on_bar(self, bar) -> None:
+        if not self._placed:
+            self._placed = True
+            self.buy(
+                quantity=1.0,
+                order_type="stop_limit",
+                stop_price=self._stop_price,
+                limit_price=self._limit_price,
+                tag="stop-limit-entry",
+            )
+
+
+class SellStopLimitStrategy(Strategy):
+    def __init__(self, *, stop_price: float, limit_price: float) -> None:
+        super().__init__()
+        self._stop_price = stop_price
+        self._limit_price = limit_price
+
+    def init(self) -> None:
+        self._seen_bars = 0
+
+    def on_bar(self, bar) -> None:
+        self._seen_bars += 1
+        if self._seen_bars == 1:
+            self.buy(quantity=1.0, tag="entry")
+        elif self._seen_bars == 2 and self.position.is_open:
+            self.sell(
+                quantity=1.0,
+                order_type="stop_limit",
+                stop_price=self._stop_price,
+                limit_price=self._limit_price,
+                tag="stop-limit-exit",
+            )
+
+
 class MultipleStopMarketEntriesStrategy(Strategy):
     def init(self) -> None:
         self._placed = False

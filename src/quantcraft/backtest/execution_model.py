@@ -6,12 +6,19 @@ from typing import Protocol
 
 from quantcraft.data import BarSeries, TimeBar
 from quantcraft.trading.domain.events import BarEvent, TickEvent
+from quantcraft.trading.domain.intents import _is_stop_order_type
 from quantcraft.trading.domain.orders import Order
 
 _UNBOUNDED_LEVEL_SIZE = math.inf
 
 
 SyntheticEvent = TickEvent | BarEvent
+
+
+@dataclass(frozen=True, slots=True)
+class _SegmentCrossingResult:
+    prices: tuple[float, ...]
+    newly_triggered_unfilled_stop_limit_ids: frozenset[int]
 
 
 class BacktestExecutionModel(Protocol):
@@ -54,14 +61,25 @@ class ConservativeOHLCVExecutionModel:
         del previous_close
 
         path = self.infer_intrabar_prices(bar)
+        triggered_unfilled_stop_limit_ids = frozenset(
+            order.id
+            for order in active_orders
+            if self._is_dormant_stop_limit(order)
+            and order.symbol == symbol
+            and order.is_triggered_by_price(price=bar.open)
+            and not self._is_marketable_at_price(order=order, price=bar.open)
+        )
         for start, end in zip(path, path[1:]):
-            prices.extend(
-                self._crossing_prices_for_segment(
-                    symbol=symbol,
-                    start=start,
-                    end=end,
-                    active_orders=active_orders,
-                )
+            segment_crossings = self._crossing_prices_for_segment(
+                symbol=symbol,
+                start=start,
+                end=end,
+                active_orders=active_orders,
+                triggered_unfilled_stop_limit_ids=triggered_unfilled_stop_limit_ids,
+            )
+            prices.extend(segment_crossings.prices)
+            triggered_unfilled_stop_limit_ids |= (
+                segment_crossings.newly_triggered_unfilled_stop_limit_ids
             )
             if end != prices[-1]:
                 prices.append(end)
@@ -106,37 +124,71 @@ class ConservativeOHLCVExecutionModel:
         start: float,
         end: float,
         active_orders: tuple[Order, ...],
-    ) -> tuple[float, ...]:
+        triggered_unfilled_stop_limit_ids: frozenset[int],
+    ) -> _SegmentCrossingResult:
         if start == end:
-            return ()
+            return _SegmentCrossingResult((), frozenset())
 
-        crossed_prices: list[float] = []
+        candidates: list[float] = []
+        newly_triggered_unfilled_stop_limit_ids: set[int] = set()
         low = min(start, end)
         high = max(start, end)
 
         for order in active_orders:
             if order.symbol != symbol or not order.is_open:
                 continue
-            if order.order_type == "limit":
+            if self._is_executable_limit(order) or order.id in triggered_unfilled_stop_limit_ids:
                 if order.limit_price is None:
                     continue
                 if self._is_marketable_at_price(order=order, price=start):
                     continue
                 if not low <= order.limit_price <= high:
                     continue
-                crossed_prices.append(order.limit_price)
+                candidates.append(order.limit_price)
                 continue
-            if order.order_type == "stop_market":
+            if _is_stop_order_type(order.order_type):
                 if order.is_triggered or order.trigger_price is None:
                     continue
                 if order.is_triggered_by_price(price=start):
                     continue
                 if not low <= order.trigger_price <= high:
                     continue
-                crossed_prices.append(order.trigger_price)
+                candidates.append(order.trigger_price)
+                if order.order_type == "stop_limit" and not self._is_marketable_at_price(
+                    order=order,
+                    price=order.trigger_price,
+                ):
+                    if order.limit_price is not None and self._crosses_between(
+                        price=order.limit_price,
+                        start=order.trigger_price,
+                        end=end,
+                    ):
+                        candidates.append(order.limit_price)
+                    newly_triggered_unfilled_stop_limit_ids.add(order.id)
 
-        ordered_prices = sorted(set(crossed_prices), reverse=start > end)
-        return tuple(price for price in ordered_prices if price != start)
+        reverse = start > end
+        ordered_prices = sorted(
+            set(candidates),
+            reverse=reverse,
+        )
+        return _SegmentCrossingResult(
+            prices=tuple(price for price in ordered_prices if price != start),
+            newly_triggered_unfilled_stop_limit_ids=frozenset(
+                newly_triggered_unfilled_stop_limit_ids
+            ),
+        )
+
+    @staticmethod
+    def _is_executable_limit(order: Order) -> bool:
+        return order.is_executable and order.executable_order_type == "limit"
+
+    @staticmethod
+    def _is_dormant_stop_limit(order: Order) -> bool:
+        return order.order_type == "stop_limit" and not order.is_triggered
+
+    @staticmethod
+    def _crosses_between(*, price: float, start: float, end: float) -> bool:
+        return min(start, end) <= price <= max(start, end) and price != start
 
     @staticmethod
     def _is_marketable_at_price(*, order: Order, price: float) -> bool:

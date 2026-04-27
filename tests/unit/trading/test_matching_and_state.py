@@ -127,6 +127,34 @@ def test_dormant_stop_market_returns_no_fill_until_triggered() -> None:
     assert fill is None
 
 
+def test_dormant_stop_limit_returns_no_fill_until_triggered() -> None:
+    fill = match_order(
+        Order.from_intent(
+            order_id=11,
+            intent=OrderIntent(
+                symbol="BTC/USDT",
+                side="buy",
+                quantity=1.0,
+                order_type="stop_limit",
+                trigger_price=110.0,
+                trigger_condition="crosses_above",
+                trigger_type="last",
+                limit_price=110.0,
+            ),
+        ),
+        TickEvent(
+            timestamp=60,
+            symbol="BTC/USDT",
+            bids=((99.0, math.inf),),
+            asks=((100.0, math.inf),),
+            last=100.0,
+        ),
+        CostConfig(tick_size=0.5, slippage_ticks=2.0, fee_rate=0.001),
+    )
+
+    assert fill is None
+
+
 def test_crosses_above_triggers_on_equality_and_gap_through() -> None:
     order = Order.from_intent(
         order_id=12,
@@ -187,6 +215,32 @@ def test_crosses_below_triggers_on_equality_and_gap_through() -> None:
             last=95.0,
         ),
     )
+
+
+def test_stop_limit_trigger_detection_uses_stop_family_predicate() -> None:
+    order = Order.from_intent(
+        order_id=13,
+        intent=OrderIntent(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=1.0,
+            order_type="stop_limit",
+            trigger_price=110.0,
+            trigger_condition="crosses_above",
+            trigger_type="last",
+            limit_price=111.0,
+        ),
+    )
+    tick = TickEvent(
+        timestamp=60,
+        symbol="BTC/USDT",
+        bids=((110.0, math.inf),),
+        asks=((110.0, math.inf),),
+        last=110.0,
+    )
+
+    assert is_order_triggered(order, tick) is True
+    assert is_order_triggered(order.trigger(timestamp=60), tick) is False
 
 
 def test_is_order_triggered_returns_false_for_non_stop_and_already_triggered_orders() -> None:
@@ -311,6 +365,70 @@ def test_triggered_stop_market_reuses_market_fill_semantics() -> None:
     assert match_order(stop_market, tick, costs) == match_order(ordinary_market, tick, costs)
 
 
+def test_triggered_stop_limit_buy_reuses_limit_fill_semantics() -> None:
+    tick = TickEvent(
+        timestamp=60,
+        symbol="BTC/USDT",
+        bids=((99.0, math.inf),),
+        asks=((105.0, math.inf),),
+        last=105.0,
+    )
+    costs = CostConfig(tick_size=0.5, slippage_ticks=2.0, fee_rate=0.001)
+    ordinary_limit = Order.from_intent(
+        order_id=14,
+        intent=OrderIntent(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=2.0,
+            order_type="limit",
+            limit_price=106.0,
+        ),
+    )
+    stop_limit = Order.from_intent(
+        order_id=15,
+        intent=OrderIntent(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=2.0,
+            order_type="stop_limit",
+            trigger_price=105.0,
+            trigger_condition="crosses_above",
+            trigger_type="last",
+            limit_price=106.0,
+        ),
+    ).trigger(timestamp=60)
+
+    assert match_order(stop_limit, tick, costs) == match_order(ordinary_limit, tick, costs)
+
+
+def test_triggered_stop_limit_buy_remains_unfilled_when_worse_than_limit() -> None:
+    fill = match_order(
+        Order.from_intent(
+            order_id=15,
+            intent=OrderIntent(
+                symbol="BTC/USDT",
+                side="buy",
+                quantity=2.0,
+                order_type="stop_limit",
+                trigger_price=105.0,
+                trigger_condition="crosses_above",
+                trigger_type="last",
+                limit_price=106.0,
+            ),
+        ).trigger(timestamp=60),
+        TickEvent(
+            timestamp=60,
+            symbol="BTC/USDT",
+            bids=((109.0, math.inf),),
+            asks=((110.0, math.inf),),
+            last=110.0,
+        ),
+        CostConfig(tick_size=0.5, slippage_ticks=2.0, fee_rate=0.001),
+    )
+
+    assert fill is None
+
+
 def test_market_sell_applies_adverse_slippage_to_best_bid() -> None:
     fill = match_order(
         Order.from_intent(
@@ -372,6 +490,70 @@ def test_limit_sell_fills_across_multiple_levels_without_beating_limit() -> None
         timestamp=60,
         fee=0.197,
     )
+
+
+def test_triggered_stop_limit_sell_reuses_limit_fill_semantics() -> None:
+    tick = TickEvent(
+        timestamp=60,
+        symbol="BTC/USDT",
+        bids=((95.0, math.inf),),
+        asks=((97.0, math.inf),),
+        last=95.0,
+    )
+    costs = CostConfig(tick_size=0.5, slippage_ticks=2.0, fee_rate=0.001)
+    ordinary_limit = Order.from_intent(
+        order_id=14,
+        intent=OrderIntent(
+            symbol="BTC/USDT",
+            side="sell",
+            quantity=2.0,
+            order_type="limit",
+            limit_price=94.0,
+        ),
+    )
+    stop_limit = Order.from_intent(
+        order_id=15,
+        intent=OrderIntent(
+            symbol="BTC/USDT",
+            side="sell",
+            quantity=2.0,
+            order_type="stop_limit",
+            trigger_price=95.0,
+            trigger_condition="crosses_below",
+            trigger_type="last",
+            limit_price=94.0,
+        ),
+    ).trigger(timestamp=60)
+
+    assert match_order(stop_limit, tick, costs) == match_order(ordinary_limit, tick, costs)
+
+
+def test_triggered_stop_limit_sell_remains_unfilled_when_worse_than_limit() -> None:
+    fill = match_order(
+        Order.from_intent(
+            order_id=15,
+            intent=OrderIntent(
+                symbol="BTC/USDT",
+                side="sell",
+                quantity=2.0,
+                order_type="stop_limit",
+                trigger_price=95.0,
+                trigger_condition="crosses_below",
+                trigger_type="last",
+                limit_price=94.0,
+            ),
+        ).trigger(timestamp=60),
+        TickEvent(
+            timestamp=60,
+            symbol="BTC/USDT",
+            bids=((90.0, math.inf),),
+            asks=((91.0, math.inf),),
+            last=90.0,
+        ),
+        CostConfig(tick_size=0.5, slippage_ticks=2.0, fee_rate=0.001),
+    )
+
+    assert fill is None
 
 
 def test_matching_skips_zero_liquidity_levels() -> None:

@@ -4,6 +4,7 @@ import math
 from dataclasses import dataclass
 
 from quantcraft.trading.domain.costs import CostConfig
+from quantcraft.trading.domain.intents import _is_stop_order_type
 from quantcraft.trading.domain.orders import Order
 from quantcraft.trading.domain.state import TradingState
 from quantcraft.trading.order_requests import PendingOrderRequest
@@ -104,7 +105,7 @@ def _resolve_quantity_request(
 
     if request.side == "sell":
         return ResolvedOrderSizing(quantity=quantity, sell_quantity_reservation=quantity)
-    if request.order_type == "stop_market":
+    if _is_stop_order_type(request.order_type):
         return ResolvedOrderSizing(quantity=quantity)
 
     anchor_price = _buy_anchor_price(
@@ -231,7 +232,7 @@ def _active_buy_cash_reservation(
     for order in active_orders:
         if not order.is_open or order.side != "buy":
             continue
-        if order.order_type == "stop_market" and not order.is_triggered:
+        if _is_stop_order_type(order.order_type) and not order.is_triggered:
             continue
         anchor = _order_buy_anchor_price(
             order=order,
@@ -266,8 +267,8 @@ def _buy_anchor_price(
     market_buy_price: float,
     costs: CostConfig,
 ) -> float:
-    if request.order_type == "stop_market":
-        raise ValueError("stop_market is unsupported in ordinary buy anchor pricing")
+    if _is_stop_order_type(request.order_type):
+        raise ValueError(f"{request.order_type} is unsupported in ordinary buy anchor pricing")
     if request.order_type == "limit":
         if request.limit_price is None:
             raise ValueError("limit buy requests require a limit_price")
@@ -284,7 +285,7 @@ def _order_buy_anchor_price(
 ) -> float:
     if order.order_type == "stop_market":
         raise ValueError("stop_market is unsupported in ordinary buy anchor pricing")
-    if order.order_type == "limit":
+    if order.executable_order_type == "limit":
         if order.limit_price is None:
             raise ValueError("limit buy orders require a limit_price")
         return order.limit_price
@@ -301,7 +302,6 @@ def _round_down_to_increment(value: float, *, increment: float) -> float:
         return 0.0
     steps = math.floor((value / increment) + 1e-12)
     return round(steps * increment, 12)
-
 
 __all__ = [
     "ResolvedOrderSizing",

@@ -189,6 +189,58 @@ class CanonicalStopMarketInsideBarBreakoutStrategy(_CanonicalStopMarketSignalStr
     prefix = "inside"
 
 
+class _CanonicalStopLimitSignalStrategy(Strategy):
+    signal_name: str
+
+    def __init__(self, rows: tuple[TimeBar, ...]) -> None:
+        super().__init__()
+        self._rows = rows
+        self._signals = _canonical_stop_limit_signals(self.signal_name, rows)
+
+    def init(self) -> None:
+        self._entry_pending = False
+        self._entry_bar_index: int | None = None
+
+    def on_bar(self, bar) -> None:
+        bar_index = len(self.data.close) - 1
+        if self.position.is_open:
+            self._entry_pending = False
+            if self._entry_bar_index is None:
+                self._entry_bar_index = bar_index
+            if bar_index - self._entry_bar_index >= 24:
+                self.sell(quantity=1.0, tag="time-exit")
+            return
+
+        self._entry_bar_index = None
+        if self._entry_pending:
+            return
+
+        signal = self._signals.get(self._rows[bar_index].timestamp)
+        if signal is None:
+            return
+        stop_price, limit_price = signal
+        self.buy(
+            quantity=1.0,
+            order_type="stop_limit",
+            stop_price=stop_price,
+            limit_price=limit_price,
+            tag="entry",
+        )
+        self._entry_pending = True
+
+
+class CanonicalStopLimitOpeningRangeBreakoutStrategy(_CanonicalStopLimitSignalStrategy):
+    signal_name = "opening_range"
+
+
+class CanonicalStopLimitDonchianBreakoutStrategy(_CanonicalStopLimitSignalStrategy):
+    signal_name = "donchian"
+
+
+class CanonicalStopLimitInsideBarBreakoutStrategy(_CanonicalStopLimitSignalStrategy):
+    signal_name = "inside_bar"
+
+
 def load_canonical_bars() -> BarSeries:
     with CANONICAL_BACKTEST_FIXTURE_PATH.open(newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
@@ -240,6 +292,18 @@ def load_canonical_stop_market_donchian_bars() -> BarSeries:
 
 
 def load_canonical_stop_market_inside_bar_bars() -> BarSeries:
+    return load_canonical_bars()
+
+
+def load_canonical_stop_limit_opening_range_bars() -> BarSeries:
+    return load_canonical_bars()
+
+
+def load_canonical_stop_limit_donchian_bars() -> BarSeries:
+    return load_canonical_bars()
+
+
+def load_canonical_stop_limit_inside_bar_bars() -> BarSeries:
     return load_canonical_bars()
 
 
@@ -296,6 +360,27 @@ def run_canonical_stop_market_inside_bar_backtest(bars: BarSeries):
     return _run_canonical_backtest(
         bars,
         CanonicalStopMarketInsideBarBreakoutStrategy(_canonical_stop_market_signals(bars)),
+    )
+
+
+def run_canonical_stop_limit_opening_range_backtest(bars: BarSeries):
+    return _run_canonical_backtest(
+        bars,
+        CanonicalStopLimitOpeningRangeBreakoutStrategy(bars.rows),
+    )
+
+
+def run_canonical_stop_limit_donchian_backtest(bars: BarSeries):
+    return _run_canonical_backtest(
+        bars,
+        CanonicalStopLimitDonchianBreakoutStrategy(bars.rows),
+    )
+
+
+def run_canonical_stop_limit_inside_bar_backtest(bars: BarSeries):
+    return _run_canonical_backtest(
+        bars,
+        CanonicalStopLimitInsideBarBreakoutStrategy(bars.rows),
     )
 
 
@@ -409,6 +494,42 @@ def canonical_stop_market_inside_bar_trade_log_digest(trade_log: tuple[FillEvent
     return canonical_trade_log_digest(trade_log)
 
 
+def canonical_stop_limit_opening_range_trade_log_samples(
+    trade_log: tuple[FillEvent, ...],
+) -> tuple[tuple[dict[str, float | int | str], ...], tuple[dict[str, float | int | str], ...]]:
+    return canonical_trade_log_samples(trade_log)
+
+
+def canonical_stop_limit_opening_range_trade_log_digest(
+    trade_log: tuple[FillEvent, ...],
+) -> str:
+    return canonical_trade_log_digest(trade_log)
+
+
+def canonical_stop_limit_buy_trade_log_digest(trade_log: tuple[FillEvent, ...]) -> str:
+    return canonical_trade_log_digest(tuple(fill for fill in trade_log if fill.side == "buy"))
+
+
+def canonical_stop_limit_donchian_trade_log_samples(
+    trade_log: tuple[FillEvent, ...],
+) -> tuple[tuple[dict[str, float | int | str], ...], tuple[dict[str, float | int | str], ...]]:
+    return canonical_trade_log_samples(trade_log)
+
+
+def canonical_stop_limit_donchian_trade_log_digest(trade_log: tuple[FillEvent, ...]) -> str:
+    return canonical_trade_log_digest(trade_log)
+
+
+def canonical_stop_limit_inside_bar_trade_log_samples(
+    trade_log: tuple[FillEvent, ...],
+) -> tuple[tuple[dict[str, float | int | str], ...], tuple[dict[str, float | int | str], ...]]:
+    return canonical_trade_log_samples(trade_log)
+
+
+def canonical_stop_limit_inside_bar_trade_log_digest(trade_log: tuple[FillEvent, ...]) -> str:
+    return canonical_trade_log_digest(trade_log)
+
+
 def _normalize_fill(fill: FillEvent) -> dict[str, float | int | str]:
     return {
         "timestamp": fill.timestamp,
@@ -486,6 +607,94 @@ def _canonical_stop_market_signals(bars: BarSeries) -> dict[int, dict[str, float
         signals[row.timestamp] = row_signals
 
     return signals
+
+
+def _canonical_stop_limit_signals(
+    signal_name: str,
+    rows: tuple[TimeBar, ...],
+) -> dict[int, tuple[float, float]]:
+    signals: dict[int, tuple[float, float]] = {}
+    opening_range_highs = _opening_range_highs(rows) if signal_name == "opening_range" else {}
+    for index, row in enumerate(rows):
+        if signal_name == "opening_range":
+            signal = _canonical_stop_limit_opening_range_signal(
+                row=row,
+                opening_range_highs=opening_range_highs,
+            )
+        elif signal_name == "donchian":
+            signal = _canonical_stop_limit_donchian_signal(rows, index)
+        elif signal_name == "inside_bar":
+            signal = _canonical_stop_limit_inside_bar_signal(rows, index)
+        else:
+            raise ValueError(f"unknown stop-limit signal name: {signal_name}")
+        if signal is not None:
+            signals[row.timestamp] = signal
+    return signals
+
+
+def _opening_range_highs(rows: tuple[TimeBar, ...]) -> dict[str, tuple[float, int]]:
+    ranges: dict[str, tuple[float, int]] = {}
+    for row in rows:
+        timestamp = datetime.fromtimestamp(row.timestamp / 1000, tz=UTC)
+        if timestamp.hour >= 6:
+            continue
+        key = timestamp.date().isoformat()
+        if key not in ranges:
+            ranges[key] = (row.high, 1)
+            continue
+        previous_high, previous_count = ranges[key]
+        ranges[key] = (max(previous_high, row.high), previous_count + 1)
+    return ranges
+
+
+def _canonical_stop_limit_opening_range_signal(
+    *,
+    row: TimeBar,
+    opening_range_highs: dict[str, tuple[float, int]],
+) -> tuple[float, float] | None:
+    timestamp = datetime.fromtimestamp(row.timestamp / 1000, tz=UTC)
+    if timestamp.hour < 6:
+        return None
+
+    opening_range = opening_range_highs.get(timestamp.date().isoformat())
+    if opening_range is None:
+        return None
+    opening_high, opening_count = opening_range
+    if opening_count < 6:
+        return None
+
+    stop_price = opening_high + 0.1
+    if row.close >= stop_price:
+        return None
+    return stop_price, stop_price + 50.0
+
+
+def _canonical_stop_limit_donchian_signal(
+    rows: tuple[TimeBar, ...],
+    index: int,
+) -> tuple[float, float] | None:
+    if index < 20:
+        return None
+    stop_price = max(row.high for row in rows[index - 20 : index]) + 0.1
+    if rows[index].close >= stop_price:
+        return None
+    return stop_price, stop_price + 50.0
+
+
+def _canonical_stop_limit_inside_bar_signal(
+    rows: tuple[TimeBar, ...],
+    index: int,
+) -> tuple[float, float] | None:
+    if index < 1:
+        return None
+    mother = rows[index - 1]
+    row = rows[index]
+    if not (row.high < mother.high and row.low > mother.low):
+        return None
+    stop_price = mother.high + 0.1
+    if row.close >= stop_price:
+        return None
+    return stop_price, stop_price + 50.0
 
 
 def _opening_ranges(rows: tuple[TimeBar, ...]) -> dict[str, tuple[float, float]]:

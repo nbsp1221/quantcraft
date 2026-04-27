@@ -9,6 +9,7 @@ from quantcraft.trading.domain.intents import (
     OrderType,
     TriggerCondition,
     TriggerType,
+    _is_stop_order_type,
 )
 
 
@@ -36,24 +37,26 @@ class Order:
             raise ValueError("Order filled_quantity cannot exceed quantity")
         if self.order_type == "limit" and self.limit_price is None:
             raise ValueError("limit orders require a limit_price")
-        if self.order_type == "stop_market":
+        if _is_stop_order_type(self.order_type):
             if self.trigger_price is None:
-                raise ValueError("stop_market orders require a trigger_price")
+                raise ValueError(f"{self.order_type} orders require a trigger_price")
             if self.trigger_condition is None:
-                raise ValueError("stop_market orders require a trigger_condition")
+                raise ValueError(f"{self.order_type} orders require a trigger_condition")
             if self.trigger_type is None:
-                raise ValueError("stop_market orders require a trigger_type")
-            if self.limit_price is not None:
+                raise ValueError(f"{self.order_type} orders require a trigger_type")
+            if self.order_type == "stop_market" and self.limit_price is not None:
                 raise ValueError("stop_market orders cannot specify a limit_price")
+            if self.order_type == "stop_limit" and self.limit_price is None:
+                raise ValueError("stop_limit orders require a limit_price")
         else:
             if self.trigger_price is not None:
-                raise ValueError("trigger_price is only valid for stop_market orders")
+                raise ValueError("trigger_price is only valid for stop-family orders")
             if self.trigger_condition is not None:
-                raise ValueError("trigger_condition is only valid for stop_market orders")
+                raise ValueError("trigger_condition is only valid for stop-family orders")
             if self.trigger_type is not None:
-                raise ValueError("trigger_type is only valid for stop_market orders")
+                raise ValueError("trigger_type is only valid for stop-family orders")
             if self.triggered_at is not None:
-                raise ValueError("triggered_at is only valid for stop_market orders")
+                raise ValueError("triggered_at is only valid for stop-family orders")
 
     @classmethod
     def from_intent(cls, *, order_id: int, intent: OrderIntent) -> Order:
@@ -84,7 +87,7 @@ class Order:
 
     @property
     def is_executable(self) -> bool:
-        if self.order_type != "stop_market":
+        if not _is_stop_order_type(self.order_type):
             return True
         return self.is_triggered
 
@@ -92,26 +95,28 @@ class Order:
     def executable_order_type(self) -> OrderType:
         if self.order_type == "stop_market":
             return "market"
+        if self.order_type == "stop_limit":
+            return "limit"
         return self.order_type
 
     def is_triggered_by_price(self, *, price: float) -> bool:
-        if self.order_type != "stop_market":
-            raise ValueError("only stop_market orders support trigger-price evaluation")
+        if not _is_stop_order_type(self.order_type):
+            raise ValueError("only stop-family orders support trigger-price evaluation")
 
         trigger_price = self.trigger_price
         trigger_condition = self.trigger_condition
         if trigger_price is None or trigger_condition is None:
-            raise ValueError("stop_market trigger facts must be present")
+            raise ValueError("stop-family trigger facts must be present")
 
         if trigger_condition == "crosses_above":
             return price >= trigger_price
         return price <= trigger_price
 
     def trigger(self, *, timestamp: int) -> Order:
-        if self.order_type != "stop_market":
-            raise ValueError("only stop_market orders can be triggered")
+        if not _is_stop_order_type(self.order_type):
+            raise ValueError("only stop-family orders can be triggered")
         if self.is_triggered:
-            raise ValueError("stop_market order has already been triggered")
+            raise ValueError("stop-family order has already been triggered")
         return Order(
             id=self.id,
             symbol=self.symbol,
@@ -156,6 +161,5 @@ class Order:
             tag=self.tag,
             filled_quantity=next_filled,
         )
-
 
 __all__ = ["Order"]

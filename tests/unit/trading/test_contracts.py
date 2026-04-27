@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import MISSING, Field, fields
 from typing import Callable, Literal, get_args, get_type_hints
 
+import pytest
+
 from quantcraft.trading.domain import __all__ as trading_domain_exports
 from quantcraft.trading.domain import events as trading_events
 from quantcraft.trading.domain.costs import CostConfig
@@ -46,7 +48,7 @@ def test_order_intent_matches_backtest_mvp_minimum_contract() -> None:
             "order_type": lambda annotation: (
                 get_origin_and_args(annotation) == (
                     Literal,
-                    ("market", "limit", "stop_market"),
+                    ("market", "limit", "stop_market", "stop_limit"),
                 )
             ),
             "trigger_price": lambda annotation: set(get_args(annotation)) == {float, type(None)},
@@ -87,7 +89,7 @@ def test_pending_order_request_supports_exactly_one_sizing_mode() -> None:
     assert get_origin_and_args(hints["side"]) == (Literal, ("buy", "sell"))
     assert get_origin_and_args(hints["order_type"]) == (
         Literal,
-        ("market", "limit", "stop_market"),
+        ("market", "limit", "stop_market", "stop_limit"),
     )
     assert set(get_args(hints["limit_price"])) == {float, type(None)}
     assert set(get_args(hints["stop_price"])) == {float, type(None)}
@@ -100,6 +102,44 @@ def test_pending_order_request_supports_exactly_one_sizing_mode() -> None:
         ("crosses_above", "crosses_below"),
     )
     assert set(get_args(hints["tag"])) == {str, type(None)}
+
+
+def test_pending_order_request_accepts_stop_limit_shape() -> None:
+    request = PendingOrderRequest(
+        symbol="BTC/USDT",
+        side="buy",
+        quantity=1.0,
+        order_type="stop_limit",
+        stop_price=105.0,
+        trigger_condition="crosses_above",
+        limit_price=106.0,
+        tag="breakout",
+    )
+
+    assert request.to_order_intent(quantity=1.0) == OrderIntent(
+        symbol="BTC/USDT",
+        side="buy",
+        quantity=1.0,
+        order_type="stop_limit",
+        trigger_price=105.0,
+        trigger_condition="crosses_above",
+        trigger_type="last",
+        limit_price=106.0,
+        tag="breakout",
+    )
+
+
+def test_pending_order_request_rejects_qty_percent_stop_limit_shape() -> None:
+    with pytest.raises(ValueError, match="qty_percent is not supported for stop_limit"):
+        PendingOrderRequest(
+            symbol="BTC/USDT",
+            side="buy",
+            qty_percent=50.0,
+            order_type="stop_limit",
+            stop_price=105.0,
+            trigger_condition="crosses_above",
+            limit_price=106.0,
+        )
 
 
 def test_runtime_order_exposes_trigger_aware_runtime_fields() -> None:

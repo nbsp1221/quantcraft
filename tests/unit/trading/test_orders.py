@@ -41,6 +41,36 @@ def test_order_from_intent_preserves_runtime_fields() -> None:
     assert order.is_executable is False
     assert order.executable_order_type == "market"
 
+
+def test_stop_limit_order_from_intent_is_dormant_until_triggered() -> None:
+    order = Order.from_intent(
+        order_id=8,
+        intent=OrderIntent(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=1.0,
+            order_type="stop_limit",
+            trigger_price=105.0,
+            trigger_condition="crosses_above",
+            trigger_type="last",
+            limit_price=106.0,
+            tag="breakout",
+        ),
+    )
+
+    assert order.id == 8
+    assert order.order_type == "stop_limit"
+    assert order.trigger_price == 105.0
+    assert order.trigger_condition == "crosses_above"
+    assert order.trigger_type == "last"
+    assert order.limit_price == 106.0
+    assert order.tag == "breakout"
+    assert order.is_open is True
+    assert order.is_triggered is False
+    assert order.is_executable is False
+    assert order.executable_order_type == "limit"
+
+
 def test_runtime_order_field_surface_is_trigger_aware() -> None:
     assert tuple(field.name for field in fields(Order)) == (
         "id",
@@ -90,6 +120,40 @@ def test_stop_market_price_trigger_predicate_uses_runtime_trigger_condition() ->
     assert crosses_below.is_triggered_by_price(price=100.0) is False
 
 
+def test_stop_limit_price_trigger_predicate_uses_runtime_trigger_condition() -> None:
+    crosses_above = Order.from_intent(
+        order_id=1,
+        intent=OrderIntent(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=1.0,
+            order_type="stop_limit",
+            trigger_price=101.0,
+            trigger_condition="crosses_above",
+            trigger_type="last",
+            limit_price=102.0,
+        ),
+    )
+    crosses_below = Order.from_intent(
+        order_id=2,
+        intent=OrderIntent(
+            symbol="BTC/USDT",
+            side="sell",
+            quantity=1.0,
+            order_type="stop_limit",
+            trigger_price=99.0,
+            trigger_condition="crosses_below",
+            trigger_type="last",
+            limit_price=98.0,
+        ),
+    )
+
+    assert crosses_above.is_triggered_by_price(price=101.0) is True
+    assert crosses_above.is_triggered_by_price(price=100.0) is False
+    assert crosses_below.is_triggered_by_price(price=99.0) is True
+    assert crosses_below.is_triggered_by_price(price=100.0) is False
+
+
 def test_non_stop_orders_reject_trigger_price_evaluation() -> None:
     order = Order.from_intent(
         order_id=1,
@@ -103,7 +167,7 @@ def test_non_stop_orders_reject_trigger_price_evaluation() -> None:
 
     with pytest.raises(
         ValueError,
-        match="only stop_market orders support trigger-price evaluation",
+        match="only stop-family orders support trigger-price evaluation",
     ):
         order.is_triggered_by_price(price=100.0)
 
@@ -247,6 +311,74 @@ def test_order_rejects_invalid_runtime_state_and_malformed_limit_orders() -> Non
             triggered_at=60,
         )
 
+    with pytest.raises(ValueError, match="stop_limit orders require a limit_price"):
+        Order.from_intent(
+            order_id=1,
+            intent=OrderIntent(
+                symbol="BTC/USDT",
+                side="buy",
+                quantity=1.0,
+                order_type="stop_limit",
+                trigger_price=101.0,
+                trigger_condition="crosses_above",
+                trigger_type="last",
+            ),
+        )
+
+    with pytest.raises(ValueError, match="stop_limit orders require a limit_price"):
+        Order(
+            id=1,
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=1.0,
+            order_type="stop_limit",
+            trigger_price=101.0,
+            trigger_condition="crosses_above",
+            trigger_type="last",
+        )
+
+    with pytest.raises(ValueError, match="stop_limit orders require a trigger_price"):
+        Order.from_intent(
+            order_id=1,
+            intent=OrderIntent(
+                symbol="BTC/USDT",
+                side="buy",
+                quantity=1.0,
+                order_type="stop_limit",
+                trigger_condition="crosses_above",
+                trigger_type="last",
+                limit_price=102.0,
+            ),
+        )
+
+    with pytest.raises(ValueError, match="stop_limit orders require a trigger_condition"):
+        Order.from_intent(
+            order_id=1,
+            intent=OrderIntent(
+                symbol="BTC/USDT",
+                side="buy",
+                quantity=1.0,
+                order_type="stop_limit",
+                trigger_price=101.0,
+                trigger_type="last",
+                limit_price=102.0,
+            ),
+        )
+
+    with pytest.raises(ValueError, match="stop_limit orders require a trigger_type"):
+        Order.from_intent(
+            order_id=1,
+            intent=OrderIntent(
+                symbol="BTC/USDT",
+                side="buy",
+                quantity=1.0,
+                order_type="stop_limit",
+                trigger_price=101.0,
+                trigger_condition="crosses_above",
+                limit_price=102.0,
+            ),
+        )
+
 
 def test_order_intent_rejects_trigger_fields_on_non_stop_orders() -> None:
     with pytest.raises(ValueError, match="trigger_price is only valid"):
@@ -358,6 +490,66 @@ def test_stop_market_order_from_intent_preserves_trigger_fields() -> None:
     assert order.executable_order_type == "market"
 
 
+def test_triggering_stop_limit_preserves_identity_and_becomes_limit_executable() -> None:
+    order = Order.from_intent(
+        order_id=7,
+        intent=OrderIntent(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=1.0,
+            order_type="stop_limit",
+            trigger_price=120.0,
+            trigger_condition="crosses_above",
+            trigger_type="last",
+            limit_price=121.0,
+            tag="entry",
+        ),
+    )
+
+    triggered = order.trigger(timestamp=120)
+
+    assert triggered.id == order.id
+    assert triggered.order_type == "stop_limit"
+    assert triggered.trigger_price == 120.0
+    assert triggered.trigger_condition == "crosses_above"
+    assert triggered.trigger_type == "last"
+    assert triggered.triggered_at == 120
+    assert triggered.limit_price == 121.0
+    assert triggered.tag == "entry"
+    assert triggered.filled_quantity == 0.0
+    assert triggered.is_executable is True
+    assert triggered.executable_order_type == "limit"
+
+
+def test_dormant_stop_limit_rejects_fill_until_triggered() -> None:
+    order = Order.from_intent(
+        order_id=7,
+        intent=OrderIntent(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=1.0,
+            order_type="stop_limit",
+            trigger_price=120.0,
+            trigger_condition="crosses_above",
+            trigger_type="last",
+            limit_price=121.0,
+        ),
+    )
+    fill = FillEvent(
+        symbol="BTC/USDT",
+        side="buy",
+        quantity=1.0,
+        price=100.0,
+        timestamp=60,
+        fee=0.0,
+    )
+
+    with pytest.raises(ValueError, match="dormant stop order"):
+        order.apply_fill(fill)
+
+    assert order.trigger(timestamp=120).apply_fill(fill).filled_quantity == 1.0
+
+
 def test_trigger_marks_stop_market_executable_once() -> None:
     order = Order.from_intent(
         order_id=9,
@@ -398,7 +590,7 @@ def test_non_stop_orders_do_not_require_triggering_to_be_executable() -> None:
     assert order.is_executable is True
     assert order.executable_order_type == "limit"
 
-    with pytest.raises(ValueError, match="only stop_market orders can be triggered"):
+    with pytest.raises(ValueError, match="only stop-family orders can be triggered"):
         order.trigger(timestamp=60)
 
 

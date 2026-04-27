@@ -241,3 +241,92 @@ def test_dormant_stop_market_buys_do_not_reduce_ordinary_buy_percent_budget() ->
 
     assert result.reason is None
     assert result.quantity == 5.0
+
+
+def test_dormant_stop_limit_buys_do_not_reduce_ordinary_buy_percent_budget() -> None:
+    dormant_stop = Order.from_intent(
+        order_id=3,
+        intent=OrderIntent(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=2.0,
+            order_type="stop_limit",
+            trigger_price=15.0,
+            trigger_condition="crosses_above",
+            trigger_type="last",
+            limit_price=16.0,
+        ),
+    )
+
+    result = resolve_pending_order_request(
+        request=PendingOrderRequest(
+            symbol="BTC/USDT",
+            side="buy",
+            qty_percent=50.0,
+            order_type="market",
+        ),
+        state=TradingState(cash=100.0, equity=100.0),
+        active_orders=(dormant_stop,),
+        market_buy_price=10.0,
+        costs=CostConfig(tick_size=1.0, slippage_ticks=0.0, fee_rate=0.0),
+        constraints=SizingConstraints(),
+    )
+
+    assert result.reason is None
+    assert result.quantity == 5.0
+
+
+def test_triggered_stop_limit_buys_reserve_cash_like_ordinary_limits() -> None:
+    triggered_stop = Order.from_intent(
+        order_id=3,
+        intent=OrderIntent(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=2.0,
+            order_type="stop_limit",
+            trigger_price=15.0,
+            trigger_condition="crosses_above",
+            trigger_type="last",
+            limit_price=10.0,
+        ),
+    ).trigger(timestamp=60)
+
+    result = resolve_pending_order_request(
+        request=PendingOrderRequest(
+            symbol="BTC/USDT",
+            side="buy",
+            qty_percent=50.0,
+            order_type="market",
+        ),
+        state=TradingState(cash=100.0, equity=100.0),
+        active_orders=(triggered_stop,),
+        market_buy_price=10.0,
+        costs=CostConfig(tick_size=1.0, slippage_ticks=0.0, fee_rate=0.0),
+        constraints=SizingConstraints(),
+    )
+
+    assert result.reason is None
+    assert result.quantity == 4.0
+
+
+def test_quantity_based_stop_limit_buy_does_not_reserve_cash_before_trigger() -> None:
+    result = resolve_pending_order_request(
+        request=PendingOrderRequest(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=2.0,
+            order_type="stop_limit",
+            stop_price=15.0,
+            trigger_condition="crosses_above",
+            limit_price=16.0,
+        ),
+        state=TradingState(cash=1.0, equity=1.0),
+        active_orders=(),
+        market_buy_price=10.0,
+        costs=CostConfig(tick_size=1.0, slippage_ticks=0.0, fee_rate=0.0),
+        constraints=SizingConstraints(min_cost=100.0),
+    )
+
+    assert result.reason is None
+    assert result.quantity == 2.0
+    assert result.cash_consumption == 0.0

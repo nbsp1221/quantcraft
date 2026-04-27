@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 OrderSide = Literal["buy", "sell"]
-OrderType = Literal["market", "limit", "stop_market"]
+OrderType = Literal["market", "limit", "stop_market", "stop_limit"]
 TriggerCondition = Literal["crosses_above", "crosses_below"]
 TriggerType = Literal["last"]
 
@@ -24,19 +24,25 @@ class OrderIntent:
     def __post_init__(self) -> None:
         if self.order_type == "limit" and self.limit_price is None:
             raise ValueError("limit orders require a limit_price")
-        if self.order_type == "stop_market":
+        if _is_stop_order_type(self.order_type):
             if self.trigger_price is None:
-                raise ValueError("stop_market orders require a trigger_price")
+                raise ValueError(f"{self.order_type} orders require a trigger_price")
             if self.trigger_condition is None:
-                raise ValueError("stop_market orders require a trigger_condition")
+                raise ValueError(f"{self.order_type} orders require a trigger_condition")
             if self.trigger_type is None:
-                raise ValueError("stop_market orders require a trigger_type")
-            if self.limit_price is not None:
+                raise ValueError(f"{self.order_type} orders require a trigger_type")
+            if self.order_type == "stop_market" and self.limit_price is not None:
                 raise ValueError("stop_market orders cannot specify a limit_price")
+            if self.order_type == "stop_limit" and self.limit_price is None:
+                raise ValueError("stop_limit orders require a limit_price")
         else:
             if self.trigger_price is not None:
-                raise ValueError("trigger_price is only valid for stop_market orders")
+                raise ValueError("trigger_price is only valid for stop-family orders")
             if self.trigger_condition is not None:
-                raise ValueError("trigger_condition is only valid for stop_market orders")
+                raise ValueError("trigger_condition is only valid for stop-family orders")
             if self.trigger_type is not None:
-                raise ValueError("trigger_type is only valid for stop_market orders")
+                raise ValueError("trigger_type is only valid for stop-family orders")
+
+
+def _is_stop_order_type(order_type: str) -> bool:
+    return order_type in {"stop_market", "stop_limit"}

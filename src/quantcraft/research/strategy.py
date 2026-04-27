@@ -4,7 +4,12 @@ from abc import ABC, abstractmethod
 
 from quantcraft.research.series import OHLCVDataView, SeriesView
 from quantcraft.trading.domain.events import BarEvent
-from quantcraft.trading.domain.intents import OrderSide, OrderType, TriggerCondition
+from quantcraft.trading.domain.intents import (
+    OrderSide,
+    OrderType,
+    TriggerCondition,
+    _is_stop_order_type,
+)
 from quantcraft.trading.domain.state import TradingState
 from quantcraft.trading.order_requests import PendingOrderRequest
 
@@ -175,15 +180,15 @@ class Strategy(ABC):
         qty_percent: float | None,
         stop_price: float | None,
     ) -> TriggerCondition | None:
-        if order_type != "stop_market":
+        if not _is_stop_order_type(order_type):
             if stop_price is not None:
-                raise ValueError("stop_price is only valid for stop_market orders")
+                raise ValueError("stop_price is only valid for stop-family orders")
             return None
 
         if qty_percent is not None:
-            raise ValueError("qty_percent is not supported for stop_market")
+            raise ValueError(f"qty_percent is not supported for {order_type}")
         if stop_price is None:
-            raise ValueError("stop_market orders require a stop_price")
+            raise ValueError(f"{order_type} orders require a stop_price")
 
         active_bar_close = self._active_bar_close
         if active_bar_close is None:
@@ -193,6 +198,5 @@ class Strategy(ABC):
         if stop_price > active_bar_close:
             return "crosses_above"
         return "crosses_below"
-
 
 __all__ = ["Strategy"]

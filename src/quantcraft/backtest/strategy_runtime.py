@@ -6,7 +6,7 @@ from typing import Any, Protocol, cast
 from quantcraft.data import BarSeries, TimeBar
 from quantcraft.trading.domain.costs import CostConfig
 from quantcraft.trading.domain.events import BarEvent
-from quantcraft.trading.domain.intents import OrderIntent
+from quantcraft.trading.domain.intents import OrderIntent, _is_stop_order_type
 from quantcraft.trading.domain.orders import Order
 from quantcraft.trading.domain.state import TradingState
 from quantcraft.trading.order_requests import PendingOrderRequest
@@ -92,7 +92,7 @@ class _StrategyDriver:
             if quantity is None:
                 continue
             if (
-                request.order_type == "stop_market"
+                _is_stop_order_type(request.order_type)
                 and request.side == "sell"
                 and state.position_quantity <= 0.0
             ):

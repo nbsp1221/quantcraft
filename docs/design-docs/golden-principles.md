@@ -22,3 +22,7 @@ one slice, reviewer, or prompt.
   [architecture-governance.md](architecture-governance.md).
 - Treat reviewer output as strongest when it names a concrete failure mode
   rather than generic approval.
+- Prefer executable tests as the source of truth for scenario-level behavior.
+  Use planning docs to stage test scenarios before implementation, but do not
+  promote concrete test-case catalogs into long-lived product specs once tests
+  can carry that contract.

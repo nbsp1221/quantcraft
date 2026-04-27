@@ -4,13 +4,14 @@ import math
 
 from quantcraft.trading.domain.costs import CostConfig
 from quantcraft.trading.domain.events import BookLevel, FillEvent, TickEvent
+from quantcraft.trading.domain.intents import _is_stop_order_type
 from quantcraft.trading.domain.orders import Order
 
 
 def is_order_triggered(order: Order, tick: TickEvent) -> bool:
     if order.symbol != tick.symbol:
         raise ValueError("symbol mismatch between order and tick")
-    if order.order_type != "stop_market":
+    if not _is_stop_order_type(order.order_type):
         return False
     if order.is_triggered:
         return False
