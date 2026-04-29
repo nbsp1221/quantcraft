@@ -5,7 +5,7 @@ from typing import Any, Protocol, cast
 
 from quantcraft.data import BarSeries, TimeBar
 from quantcraft.trading.domain.costs import CostConfig
-from quantcraft.trading.domain.events import BarEvent
+from quantcraft.trading.domain.events import BarEvent, OrderRejectedEvent, OrderRejectionReason
 from quantcraft.trading.domain.intents import OrderIntent, _is_stop_order_type
 from quantcraft.trading.domain.orders import Order
 from quantcraft.trading.domain.state import TradingState
@@ -21,6 +21,7 @@ from quantcraft.trading.sizing import (
 class _StrategyOrderState:
     active: tuple[Order, ...]
     pending: tuple[PendingOrderRequest, ...]
+    order_events: tuple[OrderRejectedEvent, ...] = ()
 
 
 class _PositionLike(Protocol):
@@ -48,6 +49,7 @@ class _StrategyDriver:
         self._next_order_id = 1
         self._preloaded_rows: tuple[TimeBar, ...] | None = None
         self._visible_bars = 0
+        self._order_events: list[OrderRejectedEvent] = []
 
     def initialize(self, *, bars: BarSeries | None = None) -> None:
         self._strategy._reset_runtime_state()
@@ -55,6 +57,7 @@ class _StrategyDriver:
         self._next_order_id = 1
         self._preloaded_rows = None
         self._visible_bars = 0
+        self._order_events = []
         if bars is not None:
             self._preload_bars(bars)
         self._strategy.init()
@@ -87,6 +90,12 @@ class _StrategyDriver:
                 reservations=reservations,
             )
             if sizing.is_noop:
+                self._record_rejection(
+                    request=request,
+                    timestamp=next_bar.timestamp,
+                    reason=sizing.reason,
+                    quantity=sizing.quantity,
+                )
                 continue
             quantity = sizing.quantity
             if quantity is None:
@@ -96,6 +105,12 @@ class _StrategyDriver:
                 and request.side == "sell"
                 and state.position_quantity <= 0.0
             ):
+                self._record_rejection(
+                    request=request,
+                    timestamp=next_bar.timestamp,
+                    reason="insufficient_position",
+                    quantity=quantity,
+                )
                 continue
             intent = request.to_order_intent(quantity=quantity)
             next_active_orders.append(self._create_order(intent))
@@ -121,10 +136,16 @@ class _StrategyDriver:
         return _StrategyOrderState(
             active=self._active_orders,
             pending=tuple(self._strategy._pending_order_requests),
+            order_events=tuple(self._order_events),
         )
 
     def replace_active_orders(self, orders: tuple[Order, ...]) -> None:
         self._active_orders = orders
+
+    def drain_order_events(self) -> tuple[OrderRejectedEvent, ...]:
+        events = tuple(self._order_events)
+        self._order_events.clear()
+        return events
 
     def _append_bar(self, bar: BarEvent) -> None:
         if self._preloaded_rows is not None:
@@ -178,6 +199,44 @@ class _StrategyDriver:
         order = Order.from_intent(order_id=self._next_order_id, intent=intent)
         self._next_order_id += 1
         return order
+
+    def _record_rejection(
+        self,
+        *,
+        request: PendingOrderRequest,
+        timestamp: int,
+        reason: str | None,
+        quantity: float | None,
+    ) -> None:
+        self._order_events.append(
+            OrderRejectedEvent(
+                symbol=request.symbol,
+                side=request.side,
+                order_type=request.order_type,
+                reason=_rejection_reason(reason),
+                timestamp=timestamp,
+                quantity=request.quantity if request.quantity is not None else quantity,
+                tag=request.tag,
+            )
+        )
+
+
+def _rejection_reason(reason: str | None) -> OrderRejectionReason:
+    if reason is None:
+        return "buy_budget_unaffordable"
+    allowed_reasons: tuple[OrderRejectionReason, ...] = (
+        "insufficient_cash",
+        "insufficient_position",
+        "below_minimum_size",
+        "below_minimum_cost",
+        "no_buy_budget_available",
+        "no_closable_position",
+        "buy_budget_unaffordable",
+        "execution_affordability",
+    )
+    if reason not in allowed_reasons:
+        raise ValueError(f"unsupported order rejection reason: {reason}")
+    return cast(OrderRejectionReason, reason)
 
 
 __all__ = ["StrategyLike", "_StrategyDriver", "_StrategyOrderState"]

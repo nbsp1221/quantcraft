@@ -12,6 +12,7 @@ Related documents:
 
 - [backtest-mvp.md](backtest-mvp.md)
 - [research-ergonomics.md](research-ergonomics.md)
+- [order-reservation.md](order-reservation.md)
 - [../design-docs/backtest-execution-semantics.md](../design-docs/backtest-execution-semantics.md)
 - [../design-docs/order-lifecycle-and-sizing-design.md](../design-docs/order-lifecycle-and-sizing-design.md)
 
@@ -31,6 +32,8 @@ Status note:
   [../design-docs/backtest-execution-semantics.md](../design-docs/backtest-execution-semantics.md)
 - current architecture boundaries remain governed by
   [../../ARCHITECTURE.md](../../ARCHITECTURE.md)
+- conservative reservation behavior for percent-sized stop-family orders is
+  implemented and governed by [order-reservation.md](order-reservation.md)
 
 ## Goal
 
@@ -66,11 +69,11 @@ Current shipped truth:
   stop-trigger facts
 - runtime `Order` remains quantity-based and may also carry shipped
   stop-trigger facts
-- current shipped scope remains:
+- current shipped scope now includes:
   - single symbol
   - long-only
-  - `market`, `limit`, and `stop_market`
-  - `qty_percent + stop_market` remains out of scope
+  - `market`, `limit`, `stop_market`, and `stop_limit`
+  - `qty_percent` for all four supported order types
   - no margin or leverage modeling
   - no portfolio-target APIs
 
@@ -338,7 +341,7 @@ That means:
   sell-first reorderer
 
 The intent-emission order therefore remains part of the deterministic sizing
-contract for this first slice.
+contract for this slice.
 
 ## Affordability And Conservative Resolution
 
@@ -386,26 +389,30 @@ universal `qty_percent` order parameter.
 
 ## Order-Type Scope For This Slice
 
-The first percentage-sizing slice applies only to the current shipped order
-types:
+Percentage sizing applies to all current shipped order types:
 
 - `market`
 - `limit`
+- `stop_market`
+- `stop_limit`
 
 It does **not** automatically widen support to:
 
-- stop-market
-- stop-limit
 - trailing or bracket-style orders
+- unimplemented venue-specific order types
 
-Future order-type expansion should inherit this sizing primitive only after the
-runtime order and stop-family slices are defined.
+Future order-type expansion should inherit this sizing primitive only after its
+runtime order semantics and reservation policy are defined.
 
 Current shipped stop-family rule:
 
-- `stop_market` requests support `quantity`
-- `qty_percent + stop_market` remains explicitly out of scope and is rejected
-  during strategy request normalization
+- `stop_market` and `stop_limit` requests support `quantity` and `qty_percent`
+- stop-family percent sizing is resolved at request acceptance time into
+  concrete quantity
+- dormant buy stop-family orders reserve resources conservatively at acceptance
+- stop-family orders are trigger-conditioned versions of their child order
+  type: `stop_market` follows market sizing and `stop_limit` follows limit
+  sizing
 
 ## Strategy Examples
 

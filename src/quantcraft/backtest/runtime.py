@@ -8,7 +8,7 @@ from quantcraft.backtest.results import BacktestResult, BacktestSummary, Exposur
 from quantcraft.backtest.strategy_runtime import StrategyLike, _StrategyDriver
 from quantcraft.data import BarSeries
 from quantcraft.trading.domain.costs import CostConfig
-from quantcraft.trading.domain.events import BarEvent, FillEvent
+from quantcraft.trading.domain.events import BarEvent, FillEvent, OrderRejectedEvent
 from quantcraft.trading.domain.matching import is_order_triggered, match_order
 from quantcraft.trading.domain.orders import Order
 from quantcraft.trading.domain.state import TradingState, apply_fill
@@ -26,6 +26,8 @@ def _run_backtest(
     execution_model: BacktestExecutionModel = ConservativeOHLCVExecutionModel()
     state = TradingState(cash=initial_cash, equity=initial_cash)
     trade_log: list[FillEvent] = []
+    order_events: list[OrderRejectedEvent] = []
+    buy_reservations: dict[int, float] = {}
     equity_curve: list[float] = []
     closing_trade_pnls: list[float] = []
     open_entry_fee_pool = 0.0
@@ -43,6 +45,12 @@ def _run_backtest(
         runtime.activate_pending_order_requests(
             bar=bar,
             state=state,
+            costs=costs,
+        )
+        order_events.extend(runtime.drain_order_events())
+        buy_reservations = _sync_buy_reservations(
+            orders=runtime.order_state().active,
+            existing=buy_reservations,
             costs=costs,
         )
         tick_events = execution_model.tick_events_for_bar(
@@ -72,6 +80,17 @@ def _run_backtest(
                 if fill is None:
                     remaining_orders.append(order)
                     continue
+                rejection = _runtime_fill_rejection(
+                    state=state,
+                    order=order,
+                    fill=fill,
+                    buy_reservations=buy_reservations,
+                    timestamp=event.timestamp,
+                )
+                if rejection is not None:
+                    order_events.append(rejection)
+                    buy_reservations.pop(order.id, None)
+                    continue
 
                 state, open_entry_fee_pool, order = _apply_runtime_fill(
                     state=state,
@@ -82,8 +101,16 @@ def _run_backtest(
                     closing_trade_pnls=closing_trade_pnls,
                     trade_log=trade_log,
                 )
+                _update_buy_reservation_after_fill(
+                    reservations=buy_reservations,
+                    order=order,
+                    fill=fill,
+                    costs=costs,
+                )
                 if order.is_open:
                     remaining_orders.append(order)
+                else:
+                    buy_reservations.pop(order.id, None)
 
             for order in newly_triggered_orders:
                 if _is_flat_exit_order(order=order, state=state):
@@ -93,6 +120,17 @@ def _run_backtest(
                 if fill is None:
                     remaining_orders.append(order)
                     continue
+                rejection = _runtime_fill_rejection(
+                    state=state,
+                    order=order,
+                    fill=fill,
+                    buy_reservations=buy_reservations,
+                    timestamp=event.timestamp,
+                )
+                if rejection is not None:
+                    order_events.append(rejection)
+                    buy_reservations.pop(order.id, None)
+                    continue
 
                 state, open_entry_fee_pool, order = _apply_runtime_fill(
                     state=state,
@@ -103,8 +141,16 @@ def _run_backtest(
                     closing_trade_pnls=closing_trade_pnls,
                     trade_log=trade_log,
                 )
+                _update_buy_reservation_after_fill(
+                    reservations=buy_reservations,
+                    order=order,
+                    fill=fill,
+                    costs=costs,
+                )
                 if order.is_open:
                     remaining_orders.append(order)
+                else:
+                    buy_reservations.pop(order.id, None)
 
             runtime.replace_active_orders(tuple(remaining_orders))
 
@@ -166,8 +212,96 @@ def _run_backtest(
         equity_curve=tuple(equity_curve),
         final_state=state,
         summary=summary,
+        order_events=tuple(order_events),
         execution_model_name=execution_model.name,
     )
+
+
+def _runtime_fill_rejection(
+    *,
+    state: TradingState,
+    order: Order,
+    fill: FillEvent,
+    buy_reservations: dict[int, float],
+    timestamp: int,
+) -> OrderRejectedEvent | None:
+    if order.side == "buy":
+        required_cash = round((fill.price * fill.quantity) + fill.fee, 12)
+        available_for_order = round(
+            buy_reservations.get(order.id, 0.0) + _unreserved_cash(state, buy_reservations),
+            12,
+        )
+        if required_cash - available_for_order > 1e-12:
+            return OrderRejectedEvent(
+                symbol=order.symbol,
+                side=order.side,
+                order_type=order.order_type,
+                reason="execution_affordability",
+                timestamp=timestamp,
+                quantity=order.remaining_quantity,
+                order_id=order.id,
+                tag=order.tag,
+            )
+    return None
+
+
+def _sync_buy_reservations(
+    *,
+    orders: tuple[Order, ...],
+    existing: dict[int, float],
+    costs: CostConfig,
+) -> dict[int, float]:
+    live_order_ids = {order.id for order in orders if order.is_open and order.side == "buy"}
+    next_reservations = {
+        order_id: cash for order_id, cash in existing.items() if order_id in live_order_ids
+    }
+    for order in orders:
+        if order.side != "buy" or not order.is_open or order.id in next_reservations:
+            continue
+        next_reservations[order.id] = _buy_order_reserved_cash(order=order, costs=costs)
+    return next_reservations
+
+
+def _buy_order_reserved_cash(*, order: Order, costs: CostConfig) -> float:
+    if order.side != "buy":
+        return 0.0
+    if order.order_type == "stop_market":
+        if order.trigger_price is None:
+            raise ValueError("stop_market buy orders require a trigger_price")
+        anchor = order.trigger_price + (costs.tick_size * costs.slippage_ticks)
+    elif order.executable_order_type == "limit":
+        if order.limit_price is None:
+            raise ValueError("limit buy orders require a limit_price")
+        anchor = order.limit_price
+    else:
+        return 0.0
+    position_budget = round(order.remaining_quantity * anchor, 12)
+    return round(position_budget + (position_budget * costs.fee_rate), 12)
+
+
+def _unreserved_cash(state: TradingState, reservations: dict[int, float]) -> float:
+    return max(round(state.cash - sum(reservations.values()), 12), 0.0)
+
+
+def _update_buy_reservation_after_fill(
+    *,
+    reservations: dict[int, float],
+    order: Order,
+    fill: FillEvent,
+    costs: CostConfig,
+) -> None:
+    if order.side != "buy":
+        return
+    current_reservation = reservations.get(order.id)
+    if current_reservation is None:
+        return
+    consumed_cash = round((fill.price * fill.quantity) + fill.fee, 12)
+    next_reservation = max(round(current_reservation - consumed_cash, 12), 0.0)
+    if order.remaining_quantity <= 0.0:
+        reservations.pop(order.id, None)
+        return
+    minimum_remaining_reservation = _buy_order_reserved_cash(order=order, costs=costs)
+    reservations[order.id] = max(next_reservation, minimum_remaining_reservation)
 
 
 def _mark_state_to_market(state: TradingState, *, mark_price: float) -> TradingState:

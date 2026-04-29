@@ -19,7 +19,12 @@ def test_backtest_mvp_spec_marks_order_and_timer_events_as_deferred() -> None:
 
     event_contract = parse_engine_and_events_contract(spec_text)
 
-    assert event_contract["implemented"] == {"TickEvent", "BarEvent", "FillEvent"}
+    assert event_contract["implemented"] == {
+        "TickEvent",
+        "BarEvent",
+        "FillEvent",
+        "OrderRejectedEvent",
+    }
     assert {"OrderEvent", "TimerEvent"} <= event_contract["deferred"]
     assert event_contract["implemented"].isdisjoint({"OrderEvent", "TimerEvent"})
 

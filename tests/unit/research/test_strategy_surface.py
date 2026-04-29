@@ -84,6 +84,36 @@ class StopLimitBelowCloseSellStrategy(Strategy):
         )
 
 
+class PercentStopMarketAboveCloseBuyStrategy(Strategy):
+    def on_bar(self, bar: BarEvent) -> None:
+        self.buy(qty_percent=50.0, order_type="stop_market", stop_price=120.0)
+
+
+class PercentStopLimitAboveCloseBuyStrategy(Strategy):
+    def on_bar(self, bar: BarEvent) -> None:
+        self.buy(
+            qty_percent=50.0,
+            order_type="stop_limit",
+            stop_price=120.0,
+            limit_price=121.0,
+        )
+
+
+class PercentStopMarketBelowCloseSellStrategy(Strategy):
+    def on_bar(self, bar: BarEvent) -> None:
+        self.sell(qty_percent=50.0, order_type="stop_market", stop_price=90.0)
+
+
+class PercentStopLimitBelowCloseSellStrategy(Strategy):
+    def on_bar(self, bar: BarEvent) -> None:
+        self.sell(
+            qty_percent=50.0,
+            order_type="stop_limit",
+            stop_price=90.0,
+            limit_price=89.0,
+        )
+
+
 class StopLimitMatrixStrategy(Strategy):
     def __init__(self, *, side: str, stop_price: float, limit_price: float) -> None:
         super().__init__()
@@ -547,6 +577,81 @@ def test_explicit_symbol_sell_mismatch_is_rejected_in_single_symbol_workflow() -
         )
 
 
+@pytest.mark.parametrize(
+    ("strategy", "expected_request"),
+    (
+        (
+            PercentStopMarketAboveCloseBuyStrategy(),
+            PendingOrderRequest(
+                symbol="BTC/USDT",
+                side="buy",
+                qty_percent=50.0,
+                order_type="stop_market",
+                stop_price=120.0,
+                trigger_condition="crosses_above",
+            ),
+        ),
+        (
+            PercentStopLimitAboveCloseBuyStrategy(),
+            PendingOrderRequest(
+                symbol="BTC/USDT",
+                side="buy",
+                qty_percent=50.0,
+                order_type="stop_limit",
+                stop_price=120.0,
+                trigger_condition="crosses_above",
+                limit_price=121.0,
+            ),
+        ),
+        (
+            PercentStopMarketBelowCloseSellStrategy(),
+            PendingOrderRequest(
+                symbol="BTC/USDT",
+                side="sell",
+                qty_percent=50.0,
+                order_type="stop_market",
+                stop_price=90.0,
+                trigger_condition="crosses_below",
+            ),
+        ),
+        (
+            PercentStopLimitBelowCloseSellStrategy(),
+            PendingOrderRequest(
+                symbol="BTC/USDT",
+                side="sell",
+                qty_percent=50.0,
+                order_type="stop_limit",
+                stop_price=90.0,
+                trigger_condition="crosses_below",
+                limit_price=89.0,
+            ),
+        ),
+    ),
+)
+def test_qty_percent_is_accepted_for_stop_family_orders(
+    strategy: Strategy,
+    expected_request: PendingOrderRequest,
+) -> None:
+    runtime = _runtime(strategy)
+
+    runtime.handle_bar(
+        BarEvent(
+            bar_type="time",
+            bar_spec="1m",
+            symbol="BTC/USDT",
+            timestamp=60,
+            open=100.0,
+            high=105.0,
+            low=95.0,
+            close=104.0,
+            volume=10.0,
+            is_closed=True,
+        )
+    )
+
+    assert runtime.order_state().pending == (expected_request,)
+
+
 def test_implicit_symbol_ordering_outside_active_bar_context_keeps_on_bar_guard() -> None:
     strategy = ImplicitSymbolBuyOnFirstBarStrategy()
 
@@ -933,7 +1038,7 @@ def test_stop_limit_rejects_missing_stop_price_and_limit_price() -> None:
         _runtime(MissingLimitPriceStrategy()).handle_bar(first_bar)
 
 
-def test_stop_limit_rejects_equal_stop_price_and_qty_percent() -> None:
+def test_stop_limit_rejects_equal_stop_price_and_accepts_qty_percent() -> None:
     class EqualStopPriceStrategy(Strategy):
         def on_bar(self, bar: BarEvent) -> None:
             self.buy(quantity=1.0, order_type="stop_limit", stop_price=104.0, limit_price=105.0)
@@ -957,8 +1062,21 @@ def test_stop_limit_rejects_equal_stop_price_and_qty_percent() -> None:
 
     with pytest.raises(ValueError, match="stop_price equal to the active bar close is ambiguous"):
         _runtime(EqualStopPriceStrategy()).handle_bar(first_bar)
-    with pytest.raises(ValueError, match="qty_percent is not supported for stop_limit"):
-        _runtime(PercentStopLimitStrategy()).handle_bar(first_bar)
+
+    runtime = _runtime(PercentStopLimitStrategy())
+    runtime.handle_bar(first_bar)
+
+    assert runtime.order_state().pending == (
+        PendingOrderRequest(
+            symbol="BTC/USDT",
+            side="buy",
+            qty_percent=50.0,
+            order_type="stop_limit",
+            stop_price=120.0,
+            trigger_condition="crosses_above",
+            limit_price=121.0,
+        ),
+    )
 
 
 def test_stop_market_rejects_missing_stop_price() -> None:
@@ -983,26 +1101,37 @@ def test_stop_market_rejects_missing_stop_price() -> None:
         )
 
 
-def test_stop_market_rejects_qty_percent_in_the_first_slice() -> None:
+def test_stop_market_accepts_qty_percent() -> None:
     class StopPercentStrategy(Strategy):
         def on_bar(self, bar: BarEvent) -> None:
             self.buy(qty_percent=50.0, order_type="stop_market", stop_price=120.0)
 
-    with pytest.raises(ValueError, match="qty_percent is not supported for stop_market"):
-        _runtime(StopPercentStrategy()).handle_bar(
-            BarEvent(
-                bar_type="time",
-                bar_spec="1m",
-                symbol="BTC/USDT",
-                timestamp=60,
-                open=100.0,
-                high=105.0,
-                low=95.0,
-                close=104.0,
-                volume=10.0,
-                is_closed=True,
-            )
+    runtime = _runtime(StopPercentStrategy())
+    runtime.handle_bar(
+        BarEvent(
+            bar_type="time",
+            bar_spec="1m",
+            symbol="BTC/USDT",
+            timestamp=60,
+            open=100.0,
+            high=105.0,
+            low=95.0,
+            close=104.0,
+            volume=10.0,
+            is_closed=True,
         )
+    )
+
+    assert runtime.order_state().pending == (
+        PendingOrderRequest(
+            symbol="BTC/USDT",
+            side="buy",
+            qty_percent=50.0,
+            order_type="stop_market",
+            stop_price=120.0,
+            trigger_condition="crosses_above",
+        ),
+    )
 
 
 def test_stop_market_rejects_stop_price_equal_to_active_close() -> None:

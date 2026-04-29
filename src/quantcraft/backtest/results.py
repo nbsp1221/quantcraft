@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from quantcraft.trading.domain.events import FillEvent
+from quantcraft.trading.domain.events import FillEvent, OrderRejectedEvent
 from quantcraft.trading.domain.state import TradingState
 
 
@@ -50,6 +50,7 @@ class BacktestResult:
         compare=False,
         repr=False,
     )
+    order_events: tuple[OrderRejectedEvent, ...] = ()
 
 
 __all__ = ["BacktestResult", "BacktestSummary", "ExposureSummary"]

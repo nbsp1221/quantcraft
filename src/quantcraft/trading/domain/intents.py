@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Literal
 
@@ -22,6 +23,8 @@ class OrderIntent:
     tag: str | None = None
 
     def __post_init__(self) -> None:
+        if not math.isfinite(self.quantity) or self.quantity <= 0.0:
+            raise ValueError("OrderIntent requires a positive finite quantity")
         if self.order_type == "limit" and self.limit_price is None:
             raise ValueError("limit orders require a limit_price")
         if _is_stop_order_type(self.order_type):

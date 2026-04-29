@@ -612,7 +612,7 @@ def test_matching_rejects_symbol_mismatch_between_intent_and_tick() -> None:
 
 
 def test_matching_rejects_non_positive_quantities() -> None:
-    with pytest.raises(ValueError, match="positive quantity"):
+    with pytest.raises(ValueError, match="positive finite quantity"):
         match_order(
             Order.from_intent(
                 order_id=1,

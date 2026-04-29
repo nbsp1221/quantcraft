@@ -3,8 +3,6 @@ from __future__ import annotations
 from dataclasses import MISSING, Field, fields
 from typing import Callable, Literal, get_args, get_type_hints
 
-import pytest
-
 from quantcraft.trading.domain import __all__ as trading_domain_exports
 from quantcraft.trading.domain import events as trading_events
 from quantcraft.trading.domain.costs import CostConfig
@@ -129,17 +127,27 @@ def test_pending_order_request_accepts_stop_limit_shape() -> None:
     )
 
 
-def test_pending_order_request_rejects_qty_percent_stop_limit_shape() -> None:
-    with pytest.raises(ValueError, match="qty_percent is not supported for stop_limit"):
-        PendingOrderRequest(
-            symbol="BTC/USDT",
-            side="buy",
-            qty_percent=50.0,
-            order_type="stop_limit",
-            stop_price=105.0,
-            trigger_condition="crosses_above",
-            limit_price=106.0,
-        )
+def test_pending_order_request_accepts_qty_percent_stop_limit_shape() -> None:
+    request = PendingOrderRequest(
+        symbol="BTC/USDT",
+        side="buy",
+        qty_percent=50.0,
+        order_type="stop_limit",
+        stop_price=105.0,
+        trigger_condition="crosses_above",
+        limit_price=106.0,
+    )
+
+    assert request.to_order_intent(quantity=2.0) == OrderIntent(
+        symbol="BTC/USDT",
+        side="buy",
+        quantity=2.0,
+        order_type="stop_limit",
+        trigger_price=105.0,
+        trigger_condition="crosses_above",
+        trigger_type="last",
+        limit_price=106.0,
+    )
 
 
 def test_runtime_order_exposes_trigger_aware_runtime_fields() -> None:
@@ -266,6 +274,22 @@ def test_fill_event_matches_backtest_mvp_minimum_contract() -> None:
     )
 
 
+def test_order_rejected_event_matches_runtime_rejection_contract() -> None:
+    assert hasattr(trading_events, "OrderRejectedEvent")
+    event_fields = fields(trading_events.OrderRejectedEvent)
+
+    assert tuple(field.name for field in event_fields) == (
+        "symbol",
+        "side",
+        "order_type",
+        "reason",
+        "timestamp",
+        "quantity",
+        "order_id",
+        "tag",
+    )
+
+
 def test_cost_config_matches_injected_backtest_mvp_cost_inputs() -> None:
     cost_config_fields = fields(CostConfig)
 
@@ -284,8 +308,13 @@ def test_cost_config_matches_injected_backtest_mvp_cost_inputs() -> None:
     )
 
 
-def test_order_and_timer_events_remain_absent_from_slice_1_trading_surface() -> None:
-    expected_public_event_types = {"TickEvent", "BarEvent", "FillEvent"}
+def test_only_deferred_events_remain_absent_from_trading_surface() -> None:
+    expected_public_event_types = {
+        "TickEvent",
+        "BarEvent",
+        "FillEvent",
+        "OrderRejectedEvent",
+    }
     deferred_event_types = {"OrderEvent", "TimerEvent"}
     exported_event_types = {name for name in trading_domain_exports if name.endswith("Event")}
     module_event_types = {

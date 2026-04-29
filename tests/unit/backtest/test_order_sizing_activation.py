@@ -4,7 +4,7 @@ from quantcraft.backtest.strategy_runtime import _StrategyDriver
 from quantcraft.data import BarSeries, TimeBar
 from quantcraft.research.strategy import Strategy
 from quantcraft.trading.domain.costs import CostConfig
-from quantcraft.trading.domain.events import BarEvent
+from quantcraft.trading.domain.events import BarEvent, OrderRejectedEvent
 from quantcraft.trading.domain.intents import OrderIntent
 from quantcraft.trading.domain.orders import Order
 from quantcraft.trading.domain.state import TradingState
@@ -40,6 +40,11 @@ class FlatSellStopLimitStrategy(Strategy):
             limit_price=94.0,
             tag="flat-stop-limit",
         )
+
+
+class OverBudgetExplicitBuyStrategy(Strategy):
+    def on_bar(self, bar: BarEvent) -> None:
+        self.buy(quantity=20.0, tag="too-large")
 
 
 def _runtime(strategy: Strategy) -> _StrategyDriver:
@@ -165,9 +170,19 @@ def test_flat_sell_qty_percent_resolves_to_no_new_order() -> None:
     )
 
     assert runtime.order_state().active == ()
+    assert runtime.drain_order_events() == (
+        OrderRejectedEvent(
+            symbol="BTC/USDT",
+            side="sell",
+            order_type="market",
+            reason="no_closable_position",
+            timestamp=120,
+            tag="half-exit",
+        ),
+    )
 
 
-def test_dormant_stop_market_buy_does_not_reduce_ordinary_percent_buy_budget() -> None:
+def test_dormant_stop_market_buy_reduces_ordinary_percent_buy_budget() -> None:
     runtime = _runtime(PercentBuyStrategy())
     runtime.initialize(bars=_bars())
     runtime.handle_bar(_bar_event(60), state=TradingState(cash=100.0, equity=100.0))
@@ -194,10 +209,10 @@ def test_dormant_stop_market_buy_does_not_reduce_ordinary_percent_buy_budget() -
         costs=CostConfig(tick_size=0.1, slippage_ticks=0.0, fee_rate=0.0),
     )
 
-    assert tuple(order.quantity for order in runtime.order_state().active) == (1.0, 5.0)
+    assert tuple(order.quantity for order in runtime.order_state().active) == (1.0, 4.0)
 
 
-def test_dormant_stop_limit_buy_does_not_reduce_ordinary_percent_buy_budget() -> None:
+def test_dormant_stop_limit_buy_reduces_ordinary_percent_buy_budget() -> None:
     runtime = _runtime(PercentBuyStrategy())
     runtime.initialize(bars=_bars())
     runtime.handle_bar(_bar_event(60), state=TradingState(cash=100.0, equity=100.0))
@@ -225,7 +240,80 @@ def test_dormant_stop_limit_buy_does_not_reduce_ordinary_percent_buy_budget() ->
         costs=CostConfig(tick_size=0.1, slippage_ticks=0.0, fee_rate=0.0),
     )
 
-    assert tuple(order.quantity for order in runtime.order_state().active) == (1.0, 5.0)
+    assert tuple(order.quantity for order in runtime.order_state().active) == (1.0, 3.95)
+
+
+def test_dormant_stop_market_sell_reduces_ordinary_percent_sell_budget() -> None:
+    runtime = _runtime(PercentSellStrategy())
+    runtime.initialize(bars=_bars())
+    state = TradingState(
+        cash=100.0,
+        position_quantity=10.0,
+        average_entry_price=8.0,
+        equity=200.0,
+    )
+    runtime.handle_bar(_bar_event(60), state=state)
+    runtime.replace_active_orders(
+        (
+            Order.from_intent(
+                order_id=1,
+                intent=OrderIntent(
+                    symbol="BTC/USDT",
+                    side="sell",
+                    quantity=4.0,
+                    order_type="stop_market",
+                    trigger_price=5.0,
+                    trigger_condition="crosses_below",
+                    trigger_type="last",
+                ),
+            ),
+        )
+    )
+
+    runtime.activate_pending_order_requests(
+        bar=_bars().rows[1],
+        state=state,
+        costs=CostConfig(tick_size=0.1, slippage_ticks=0.0, fee_rate=0.0),
+    )
+
+    assert tuple(order.quantity for order in runtime.order_state().active) == (4.0, 3.0)
+
+
+def test_dormant_stop_limit_sell_reduces_ordinary_percent_sell_budget() -> None:
+    runtime = _runtime(PercentSellStrategy())
+    runtime.initialize(bars=_bars())
+    state = TradingState(
+        cash=100.0,
+        position_quantity=10.0,
+        average_entry_price=8.0,
+        equity=200.0,
+    )
+    runtime.handle_bar(_bar_event(60), state=state)
+    runtime.replace_active_orders(
+        (
+            Order.from_intent(
+                order_id=1,
+                intent=OrderIntent(
+                    symbol="BTC/USDT",
+                    side="sell",
+                    quantity=4.0,
+                    order_type="stop_limit",
+                    trigger_price=5.0,
+                    trigger_condition="crosses_below",
+                    trigger_type="last",
+                    limit_price=4.5,
+                ),
+            ),
+        )
+    )
+
+    runtime.activate_pending_order_requests(
+        bar=_bars().rows[1],
+        state=state,
+        costs=CostConfig(tick_size=0.1, slippage_ticks=0.0, fee_rate=0.0),
+    )
+
+    assert tuple(order.quantity for order in runtime.order_state().active) == (4.0, 3.0)
 
 
 def test_flat_sell_stop_limit_resolves_to_no_new_order() -> None:
@@ -240,3 +328,39 @@ def test_flat_sell_stop_limit_resolves_to_no_new_order() -> None:
     )
 
     assert runtime.order_state().active == ()
+    assert runtime.drain_order_events() == (
+        OrderRejectedEvent(
+            symbol="BTC/USDT",
+            side="sell",
+            order_type="stop_limit",
+            reason="insufficient_position",
+            timestamp=120,
+            quantity=1.0,
+            tag="flat-stop-limit",
+        ),
+    )
+
+
+def test_over_budget_explicit_buy_emits_rejection_event_without_order() -> None:
+    runtime = _runtime(OverBudgetExplicitBuyStrategy())
+    runtime.initialize(bars=_bars())
+    runtime.handle_bar(_bar_event(60), state=TradingState(cash=100.0, equity=100.0))
+
+    runtime.activate_pending_order_requests(
+        bar=_bars().rows[1],
+        state=TradingState(cash=100.0, equity=100.0),
+        costs=CostConfig(tick_size=0.1, slippage_ticks=0.0, fee_rate=0.0),
+    )
+
+    assert runtime.order_state().active == ()
+    assert runtime.drain_order_events() == (
+        OrderRejectedEvent(
+            symbol="BTC/USDT",
+            side="buy",
+            order_type="market",
+            reason="insufficient_cash",
+            timestamp=120,
+            quantity=20.0,
+            tag="too-large",
+        ),
+    )

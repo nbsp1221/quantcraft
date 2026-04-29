@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import fields
 
 import pytest
@@ -173,7 +174,7 @@ def test_non_stop_orders_reject_trigger_price_evaluation() -> None:
 
 
 def test_order_rejects_non_positive_quantity_at_creation() -> None:
-    with pytest.raises(ValueError, match="positive quantity"):
+    with pytest.raises(ValueError, match="positive finite quantity"):
         Order.from_intent(
             order_id=1,
             intent=OrderIntent(
@@ -186,7 +187,7 @@ def test_order_rejects_non_positive_quantity_at_creation() -> None:
 
 
 def test_order_rejects_invalid_runtime_state_and_malformed_limit_orders() -> None:
-    with pytest.raises(ValueError, match="cannot be negative"):
+    with pytest.raises(ValueError, match="non-negative finite quantity"):
         Order(
             id=1,
             symbol="BTC/USDT",
@@ -463,6 +464,29 @@ def test_order_direct_construction_rejects_malformed_stop_market_shape() -> None
             trigger_condition="crosses_above",
             trigger_type="last",
             limit_price=100.0,
+        )
+
+
+@pytest.mark.parametrize("quantity", (0.0, -1.0, math.inf, math.nan))
+def test_order_intent_rejects_non_positive_or_non_finite_quantity(quantity: float) -> None:
+    with pytest.raises(ValueError, match="positive finite quantity"):
+        OrderIntent(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=quantity,
+            order_type="market",
+        )
+
+
+@pytest.mark.parametrize("quantity", (0.0, -1.0, math.inf, math.nan))
+def test_order_rejects_non_positive_or_non_finite_quantity(quantity: float) -> None:
+    with pytest.raises(ValueError, match="positive finite quantity"):
+        Order(
+            id=1,
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=quantity,
+            order_type="market",
         )
 
 

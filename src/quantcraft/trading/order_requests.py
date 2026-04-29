@@ -41,8 +41,6 @@ class PendingOrderRequest:
         if self.order_type == "limit" and self.limit_price is None:
             raise ValueError("limit orders require a limit_price")
         if _is_stop_order_type(self.order_type):
-            if self.order_type == "stop_limit" and self.qty_percent is not None:
-                raise ValueError("qty_percent is not supported for stop_limit")
             if self.stop_price is None:
                 raise ValueError(f"{self.order_type} orders require a stop_price")
             if self.trigger_condition is None:

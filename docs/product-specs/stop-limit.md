@@ -2,10 +2,10 @@
 
 ## Status
 
-- Status: `planned`
+- Status: `implemented`
 - Class: `product-spec`
 - Scope:
-  planned first `stop_limit` order slice for the current single-symbol
+  current `stop_limit` order slice for the single-symbol
   long-only research/backtest workflow
 
 Related documents:
@@ -13,13 +13,18 @@ Related documents:
 - [backtest-mvp.md](backtest-mvp.md)
 - [research-ergonomics.md](research-ergonomics.md)
 - [order-sizing.md](order-sizing.md)
+- [order-reservation.md](order-reservation.md)
 - [../plans/2026-04-27-stop-limit-test-scenarios.md](../plans/2026-04-27-stop-limit-test-scenarios.md)
 - [../design-docs/backtest-execution-semantics.md](../design-docs/backtest-execution-semantics.md)
 - [../design-docs/order-lifecycle-and-sizing-design.md](../design-docs/order-lifecycle-and-sizing-design.md)
 - [../../ARCHITECTURE.md](../../ARCHITECTURE.md)
 
-This document defines the next planned product contract for `stop_limit`
-orders. It does not claim the feature is already shipped.
+This document defines the product contract for shipped `stop_limit` orders in
+the current research/backtest workflow.
+
+Conservative resource-reservation behavior for percent-sized stop-limit orders
+is governed by [order-reservation.md](order-reservation.md). That policy is now
+part of the shipped stop-family sizing contract.
 
 The linked test scenario plan is a pre-implementation planning input, not a
 second product authority. Once executable tests exist, those tests become the
@@ -30,7 +35,7 @@ scenario-level source of truth.
 Let strategy authors express a stop-triggered order that becomes a working
 limit order only after its stop condition is reached.
 
-In the first slice, `stop_limit` should extend the existing
+In the current slice, `stop_limit` extends the existing
 `Strategy.buy()` / `Strategy.sell()` research workflow and the public
 `BacktestEngine` path without changing the shared matching boundary.
 
@@ -67,9 +72,9 @@ External references:
 
 ## Current Repository Truth
 
-Current shipped truth before this planned slice:
+Current repository truth:
 
-- `OrderType` supports `market`, `limit`, and `stop_market`.
+- `OrderType` supports `market`, `limit`, `stop_market`, and `stop_limit`.
 - `Strategy.buy()` and `Strategy.sell()` accept `order_type`, `quantity`,
   `qty_percent`, `limit_price`, `stop_price`, and `tag`.
 - `stop_market` uses `stop_price` at strategy intake and normalizes it into
@@ -82,7 +87,8 @@ Current shipped truth before this planned slice:
   by `limit_price`.
 - current backtest execution semantics are owned by `backtest`; matching and
   state transitions stay in `trading`.
-- `qty_percent + stop_market` is explicitly out of scope today.
+- `qty_percent` is supported for `market`, `limit`, `stop_market`, and
+  `stop_limit`.
 
 Repository evidence:
 
@@ -95,7 +101,7 @@ Repository evidence:
 
 ## Public UX Direction
 
-The intended first public strategy API is additive:
+The public strategy API is additive:
 
 ```python
 self.buy(
@@ -119,8 +125,7 @@ Rules:
 
 - `order_type="stop_limit"` requires `stop_price`.
 - `order_type="stop_limit"` requires `limit_price`.
-- `quantity` is supported in the first slice.
-- `qty_percent` is not supported for `stop_limit` in the first slice.
+- `quantity` and `qty_percent` are supported.
 - users do not provide `trigger_condition` directly from the strategy surface.
 - the strategy surface infers `trigger_condition` from `stop_price` relative to
   the last evaluated `last` reference price, matching the current
@@ -139,8 +144,8 @@ snake_case order types such as `stop_market`.
 In `quantcraft`, `stop` is a generic price-trigger primitive. It is not a
 venue-specific synonym for stop-loss, take-profit, bracket, reduce-only, or
 position-close behavior. Those higher-level names describe how a trigger is
-used around a position; this first slice implements the lower-level trigger
-order itself.
+used around a position; this slice implements the lower-level trigger order
+itself.
 
 This means:
 
@@ -365,29 +370,22 @@ Expected result:
 
 ## Sizing Scope
 
-Included in the first slice:
+Included in the current slice:
 
 - `quantity + stop_limit`
-
-Excluded from the first slice:
-
 - `qty_percent + stop_limit`
 
-Reason:
+Sizing policy:
 
-- stop-limit percent sizing needs an explicit buy-side anchor and reservation
-  policy for a dormant order whose eventual execution price may be the limit
-  price, the trigger point, or a later executable point
-- the current product already defers `qty_percent + stop_market`; stop-limit
-  should not widen that unresolved sizing surface first
+- stop-limit percent sizing uses `limit_price` as the buy-side sizing anchor
+- dormant buy stop-limit orders reserve cash at acceptance
+- `qty_percent` resolves to concrete quantity before runtime `Order` creation
+- `qty_percent` does not flow into `Order` or venue-adapter primitives
 
-Reservation guidance for later implementation:
+Reservation guidance:
 
-- dormant buy stop-limit orders should not consume ordinary buy-cash
-  reservations in the first quantity-only slice
-- if future `%` sizing is added, the spec must define whether dormant
-  stop-limit buy orders reserve cash immediately, at trigger, or through an
-  environment-specific buying-power model
+- [order-reservation.md](order-reservation.md) defines the conservative answer:
+  `reserve_on_accept`
 
 ## Order Identity, Priority, And Results
 
@@ -416,19 +414,20 @@ the current event.
 
 Public result guidance:
 
-- the current public `BacktestResult` remains fill-level
+- the public `trade_log` remains fill-level
+- runtime/account failures may appear in `BacktestResult.order_events`
 - trigger-only events do not appear in `trade_log`
 - a later public order-event surface may expose trigger events explicitly, but
   that is out of scope for this slice
 
 ## Included Scope
 
-The first implementation slice should include:
+The current implementation slice includes:
 
 - single symbol
 - single timeframe
 - long + flat position scope
-- `quantity` sizing only
+- `quantity` and `qty_percent` sizing
 - `Strategy.buy(..., order_type="stop_limit", stop_price=..., limit_price=...)`
 - `Strategy.sell(..., order_type="stop_limit", stop_price=..., limit_price=...)`
 - public `BacktestEngine.run(bars=..., strategy=...)`
@@ -440,9 +439,8 @@ The first implementation slice should include:
 
 ## Excluded Scope
 
-This planned slice does not include:
+This implemented slice does not include:
 
-- `qty_percent + stop_limit`
 - trailing stop-limit orders
 - stop-loss or take-profit attachments
 - OTO, OCO, bracket, or parent-child order activation
@@ -464,8 +462,7 @@ This planned slice does not include:
 Strategy intake and order normalization should enforce:
 
 - `stop_limit` requires exactly one supported sizing mode
-- first slice accepts only `quantity`
-- `qty_percent` with `stop_limit` is rejected
+- supported sizing modes are `quantity` and `qty_percent`
 - `stop_limit` requires `stop_price`
 - `stop_limit` requires `limit_price`
 - `stop_price` must be a positive finite float
@@ -529,7 +526,7 @@ Do not:
 - add a backtest-only fill shortcut in `trading`
 - infer stop trigger direction from side, position purpose, or limit price
 - evaluate the pre-trigger path after the order becomes triggered
-- widen first-slice scope into `%` sizing or attached protective orders
+- add attached protective orders
 
 ## Open Decisions For Implementation Planning
 

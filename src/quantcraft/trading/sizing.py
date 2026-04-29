@@ -4,7 +4,6 @@ import math
 from dataclasses import dataclass
 
 from quantcraft.trading.domain.costs import CostConfig
-from quantcraft.trading.domain.intents import _is_stop_order_type
 from quantcraft.trading.domain.orders import Order
 from quantcraft.trading.domain.state import TradingState
 from quantcraft.trading.order_requests import PendingOrderRequest
@@ -66,9 +65,12 @@ def resolve_pending_order_request(
     if request.quantity is not None:
         return _resolve_quantity_request(
             request=request,
+            state=state,
+            active_orders=active_orders,
             market_buy_price=market_buy_price,
             costs=costs,
             constraints=sizing_constraints,
+            reservations=running_reservations,
         )
 
     assert request.qty_percent is not None
@@ -94,9 +96,12 @@ def resolve_pending_order_request(
 def _resolve_quantity_request(
     *,
     request: PendingOrderRequest,
+    state: TradingState,
+    active_orders: tuple[Order, ...],
     market_buy_price: float,
     costs: CostConfig,
     constraints: SizingConstraints,
+    reservations: SizingReservations,
 ) -> ResolvedOrderSizing:
     assert request.quantity is not None
     quantity = _round_down_to_increment(request.quantity, increment=constraints.quantity_increment)
@@ -104,9 +109,15 @@ def _resolve_quantity_request(
         return ResolvedOrderSizing(quantity=None, reason="below_minimum_size")
 
     if request.side == "sell":
+        net_closable = max(
+            state.position_quantity
+            - _active_sell_quantity(active_orders)
+            - reservations.sell_quantity,
+            0.0,
+        )
+        if quantity - net_closable > 1e-12:
+            return ResolvedOrderSizing(quantity=None, reason="insufficient_position")
         return ResolvedOrderSizing(quantity=quantity, sell_quantity_reservation=quantity)
-    if _is_stop_order_type(request.order_type):
-        return ResolvedOrderSizing(quantity=quantity)
 
     anchor_price = _buy_anchor_price(
         request=request,
@@ -114,16 +125,29 @@ def _resolve_quantity_request(
         costs=costs,
     )
     position_budget = round(quantity * anchor_price, 12)
+    cash_consumption = _cash_consumption_for_budget(
+        position_budget=position_budget,
+        fee_rate=costs.fee_rate,
+    )
+    available_cash = max(
+        state.cash
+        - _active_buy_cash_reservation(
+            active_orders=active_orders,
+            market_buy_price=market_buy_price,
+            costs=costs,
+        )
+        - reservations.buy_cash,
+        0.0,
+    )
+    if cash_consumption - available_cash > 1e-12:
+        return ResolvedOrderSizing(quantity=None, reason="insufficient_cash")
     if position_budget < constraints.min_cost:
         return ResolvedOrderSizing(quantity=None, reason="below_minimum_cost")
 
     return ResolvedOrderSizing(
         quantity=quantity,
         position_budget=position_budget,
-        cash_consumption=_cash_consumption_for_budget(
-            position_budget=position_budget,
-            fee_rate=costs.fee_rate,
-        ),
+        cash_consumption=cash_consumption,
     )
 
 
@@ -232,8 +256,6 @@ def _active_buy_cash_reservation(
     for order in active_orders:
         if not order.is_open or order.side != "buy":
             continue
-        if _is_stop_order_type(order.order_type) and not order.is_triggered:
-            continue
         anchor = _order_buy_anchor_price(
             order=order,
             market_buy_price=market_buy_price,
@@ -267,14 +289,15 @@ def _buy_anchor_price(
     market_buy_price: float,
     costs: CostConfig,
 ) -> float:
-    if _is_stop_order_type(request.order_type):
-        raise ValueError(f"{request.order_type} is unsupported in ordinary buy anchor pricing")
-    if request.order_type == "limit":
+    if request.order_type == "stop_market":
+        if request.stop_price is None:
+            raise ValueError("stop_market buy requests require a stop_price")
+        return round(request.stop_price + _slippage(costs), 12)
+    if request.order_type in {"limit", "stop_limit"}:
         if request.limit_price is None:
-            raise ValueError("limit buy requests require a limit_price")
+            raise ValueError(f"{request.order_type} buy requests require a limit_price")
         return request.limit_price
-    slippage = costs.tick_size * costs.slippage_ticks
-    return round(market_buy_price + slippage, 12)
+    return round(market_buy_price + _slippage(costs), 12)
 
 
 def _order_buy_anchor_price(
@@ -284,13 +307,18 @@ def _order_buy_anchor_price(
     costs: CostConfig,
 ) -> float:
     if order.order_type == "stop_market":
-        raise ValueError("stop_market is unsupported in ordinary buy anchor pricing")
+        if order.trigger_price is None:
+            raise ValueError("stop_market buy orders require a trigger_price")
+        return round(order.trigger_price + _slippage(costs), 12)
     if order.executable_order_type == "limit":
         if order.limit_price is None:
             raise ValueError("limit buy orders require a limit_price")
         return order.limit_price
-    slippage = costs.tick_size * costs.slippage_ticks
-    return round(market_buy_price + slippage, 12)
+    return round(market_buy_price + _slippage(costs), 12)
+
+
+def _slippage(costs: CostConfig) -> float:
+    return costs.tick_size * costs.slippage_ticks
 
 
 def _cash_consumption_for_budget(*, position_budget: float, fee_rate: float) -> float:

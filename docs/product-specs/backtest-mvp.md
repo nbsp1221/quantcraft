@@ -106,13 +106,14 @@ Runtime `OrderIntent` minimum fields:
   - `TickEvent`
   - `BarEvent`
   - `FillEvent`
+  - `OrderRejectedEvent`
 - deferred event types for this slice:
   - `OrderEvent`
   - `TimerEvent`
 - `TickEvent` uses an `L2 snapshot` shape
 - `BarEvent` is a general completed bar-aggregation event, not a time-bar-only event
 
-`OrderEvent` and `TimerEvent` remain part of the longer-lived event model direction, but they are deferred for this MVP slice and must not appear in the current public trading surface.
+`OrderEvent` and `TimerEvent` remain part of the longer-lived event model direction, but they are deferred for this MVP slice and must not appear in the current public trading surface. `OrderRejectedEvent` is intentionally narrower than a full order-event hierarchy: it records valid runtime/account failures that the backtest must expose rather than silently skipping.
 
 MVP `BarEvent` minimum fields:
 

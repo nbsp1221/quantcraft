@@ -84,6 +84,7 @@ def test_backtest_runner_exposes_expanded_research_result_surface() -> None:
     )
 
     assert result.execution_model_name == "conservative_ohlcv"
+    assert result.order_events == ()
     assert result.equity_curve == (1000.0, 997.889, 1002.775)
     assert result.summary.final_balance == 1002.775
     assert result.summary.final_equity == 1002.775
@@ -98,6 +99,38 @@ def test_backtest_runner_exposes_expanded_research_result_surface() -> None:
     assert result.summary.exposure.bars_in_position == 1
     assert result.summary.exposure.total_bars == 3
     assert result.summary.exposure.exposure_ratio == 1 / 3
+
+
+def test_backtest_result_preserves_legacy_positional_execution_model_name() -> None:
+    result = BacktestResult(
+        (),
+        (),
+        TradingState(cash=1000.0),
+        BacktestSummary(
+            total_trades=0,
+            total_fills=0,
+            total_fees=0.0,
+            final_balance=1000.0,
+            final_equity=1000.0,
+            total_return=0.0,
+            max_drawdown=0.0,
+            realized_pnl=0.0,
+            unrealized_pnl=0.0,
+            win_rate=0.0,
+            average_win=0.0,
+            average_loss=0.0,
+            profit_factor=0.0,
+            exposure=ExposureSummary(
+                bars_in_position=0,
+                total_bars=0,
+                exposure_ratio=0.0,
+            ),
+        ),
+        "custom_model",
+    )
+
+    assert result.execution_model_name == "custom_model"
+    assert result.order_events == ()
 
 
 def test_backtest_runner_trade_statistics_are_net_of_fees() -> None:

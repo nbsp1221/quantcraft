@@ -153,7 +153,6 @@ class Strategy(ABC):
                 stop_price=stop_price,
                 trigger_condition=self._infer_trigger_condition(
                     order_type=order_type,
-                    qty_percent=qty_percent,
                     stop_price=stop_price,
                 ),
                 tag=tag,
@@ -177,7 +176,6 @@ class Strategy(ABC):
         self,
         *,
         order_type: OrderType,
-        qty_percent: float | None,
         stop_price: float | None,
     ) -> TriggerCondition | None:
         if not _is_stop_order_type(order_type):
@@ -185,8 +183,6 @@ class Strategy(ABC):
                 raise ValueError("stop_price is only valid for stop-family orders")
             return None
 
-        if qty_percent is not None:
-            raise ValueError(f"qty_percent is not supported for {order_type}")
         if stop_price is None:
             raise ValueError(f"{order_type} orders require a stop_price")
 

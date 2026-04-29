@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from quantcraft.trading.domain.events import FillEvent
@@ -29,10 +30,10 @@ class Order:
     filled_quantity: float = 0.0
 
     def __post_init__(self) -> None:
-        if self.quantity <= 0.0:
-            raise ValueError("Order requires a positive quantity")
-        if self.filled_quantity < 0.0:
-            raise ValueError("Order filled_quantity cannot be negative")
+        if not math.isfinite(self.quantity) or self.quantity <= 0.0:
+            raise ValueError("Order requires a positive finite quantity")
+        if not math.isfinite(self.filled_quantity) or self.filled_quantity < 0.0:
+            raise ValueError("Order filled_quantity must be a non-negative finite quantity")
         if self.filled_quantity > self.quantity:
             raise ValueError("Order filled_quantity cannot exceed quantity")
         if self.order_type == "limit" and self.limit_price is None:
