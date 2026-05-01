@@ -30,11 +30,15 @@ The current implemented scope is intentionally small:
 - conservative resource reservation for active and dormant stop-family orders
 - a first `quantcraft.backtest` runtime surface with `BacktestEngine`
 - canonical backtest execution paths via `BacktestEngine.run(bars=..., strategy=...)` and `BacktestEngine.run(source=..., strategy=...)`
+- a typed `result.report` inspection surface for engine-produced backtest
+  results
+- a first `result.plot()` workflow for price, fills, equity, and drawdown
+  inspection
 - canonical quickstart and notebook assets for the current research workflow
 
 The current implemented scope is not yet the first beta target. The beta still
-needs stronger reporting, plotting, parameter exploration, examples, and
-installation documentation.
+needs constrained parameter exploration, richer examples, fresh install
+guidance, and release metadata/documentation cleanup.
 
 ## Initial Canonical User Journeys
 

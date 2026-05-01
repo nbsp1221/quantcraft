@@ -2,7 +2,7 @@
 
 ## Status
 
-- Status: `planned`
+- Status: `implemented`
 - Class: `product-spec`
 - Scope: first-beta `BacktestResult.plot()` test scenarios
 
@@ -13,15 +13,14 @@ Related documents:
 - [backtest-mvp.md](backtest-mvp.md)
 - [../RELIABILITY.md](../RELIABILITY.md)
 
-This document defines the test scenario contract for the first-beta backtest
-plotting feature. It does not claim the tests or the plotting feature are
-already implemented.
+This document defines the test scenario contract for the implemented first-beta
+backtest plotting feature.
 
 ## Goal
 
 Turn the product intent in [backtest-plotting.md](backtest-plotting.md) into a
 test suite that catches likely design, integration, and edge-case bugs before
-plotting implementation is treated as complete.
+plotting changes are treated as complete.
 
 The suite should prove that:
 

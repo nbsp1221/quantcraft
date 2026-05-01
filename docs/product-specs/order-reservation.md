@@ -5,7 +5,7 @@
 - Status: `implemented`
 - Class: `product-spec`
 - Scope:
-  planned MVP policy for percent-sized orders, resource reservation, and
+  implemented MVP policy for percent-sized orders, resource reservation, and
   dormant stop-family orders in the current single-symbol long-only
   research/backtest workflow
 
@@ -81,7 +81,7 @@ It does not mean every submitted strategy request must become an order.
 8. canceled, expired, or otherwise removed orders release the reservation when
    those lifecycle states exist in a future slice
 
-The first planned application of this policy covers:
+The first implemented application of this policy covers:
 
 - `market`
 - `limit`

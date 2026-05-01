@@ -2,7 +2,7 @@
 
 ## Status
 
-- Status: `planned`
+- Status: `implemented`
 - Class: `product-spec`
 - Scope: first-beta backtest result plotting workflow
 
@@ -14,8 +14,8 @@ Related documents:
 - [../design-docs/package-topology-and-naming.md](../design-docs/package-topology-and-naming.md)
 - [../design-docs/quantcraft-architecture.md](../design-docs/quantcraft-architecture.md)
 
-This document defines the product contract for the first-beta backtest plot. It
-does not claim the feature is already implemented.
+This document defines the product contract for the implemented first-beta
+backtest plot.
 The corresponding test scenario contract is
 [backtest-plotting-test-scenarios.md](backtest-plotting-test-scenarios.md).
 
@@ -105,8 +105,8 @@ plotting is a core workflow:
 
 For `quantcraft`, the first-beta product promise is closer to `backtesting.py`,
 `vectorbt`, and `quantstats` than to PyBroker's manual plotting model. Basic
-plotting is listed as a beta gap in the research ergonomics spec, so
-`pip install quantcraft` should be enough for `result.plot()` to work.
+plotting is part of the implemented beta inspection path, so `pip install
+quantcraft` should be enough for `result.plot()` to work.
 This accepts Matplotlib's transitive dependency footprint in favor of a
 zero-extra plotting workflow for the beta user.
 
@@ -433,7 +433,8 @@ The plot feature is successful only if all of the following are true:
 
 ## Beta Positioning Rule
 
-The project should not claim broad first-beta readiness until this plotting
-workflow is implemented and documented alongside readable result reporting,
-fresh install guidance, constrained parameter exploration, richer examples, and
+The project should not claim broad first-beta readiness only because this
+plotting workflow and readable result reporting are implemented. Remaining
+beta-positioning work includes fresh install guidance, constrained parameter
+exploration, richer examples, release metadata/documentation cleanup, and
 explicit unsupported-scope notes.

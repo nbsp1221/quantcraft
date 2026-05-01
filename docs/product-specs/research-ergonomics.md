@@ -61,11 +61,11 @@ reference for paper/live parity, not the beta feature checklist.
 - official examples
 - a canonical quickstart document and notebook
 
-### Not Implemented In The Current Slice
+### Remaining Deferred Scope
 
-The current implemented slice does not include:
+The current implemented slice now includes readable result reporting and a
+basic `result.plot()` workflow. It still does not include:
 
-- plotting
 - parameter sweeps
 - walk-forward tooling
 - dedicated anti-bias diagnostics tooling
@@ -73,10 +73,10 @@ The current implemented slice does not include:
 - live trading
 - guaranteed fallback behavior when `TA-Lib` is unavailable
 
-These items are not all equally deferred. For the first beta, basic plotting,
-clearer result reporting, parameter exploration, and richer examples are
-product gaps to close before broad public positioning. Paper trading and live
-trading stay outside the first beta.
+These items are not all equally deferred. For the first beta, constrained
+parameter exploration, richer examples, fresh install guidance, and release
+metadata/documentation cleanup remain product gaps to close before broad public
+positioning. Paper trading and live trading stay outside the first beta.
 
 ## Official Import Surface
 
@@ -657,11 +657,11 @@ The current implemented slice is successful only if all of the following are tru
    - warmup / `na` behavior
    - executable canonical quickstart flow
 
-Before broad beta positioning, the docs and product surface must also support a
-fresh install path, at least two first-class data paths, readable result
-inspection, a basic plot, constrained parameter exploration, and explicit
-unsupported-scope notes for multi-symbol, shorting, leverage, paper, and live
-trading.
+Before broad beta positioning, the docs and product surface must still support
+a fresh install path, constrained parameter exploration, richer examples, and
+explicit unsupported-scope notes for multi-symbol, shorting, leverage, paper,
+and live trading. The current implementation already supports readable result
+inspection and a basic plot.
 
 ## Harness Constraints
 
