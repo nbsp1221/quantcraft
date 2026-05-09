@@ -226,25 +226,29 @@ The first-beta workflow starts by materializing historical data once:
 from quantleet.backtest import BacktestEngine
 from quantleet.data import DataFrameDataSource
 from quantleet.research import ParameterStudy, ta
-from quantleet.strategy import Strategy
+from quantleet.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
 
 
-class SmaCross(Strategy):
-    def __init__(self, *, fast: int, slow: int) -> None:
-        super().__init__()
-        self.fast_length = fast
-        self.slow_length = slow
+class SmaConfig(StrategyConfig):
+    fast: int = 5
+    slow: int = 20
 
+    def validate(self) -> None:
+        if self.fast >= self.slow:
+            raise StrategyConfigValidationError("fast must be less than slow")
+
+
+class SmaCross(Strategy[SmaConfig]):
     @property
     def display_name(self) -> str:
         return "SMA Cross"
 
     def parameters(self) -> dict[str, object]:
-        return {"fast": self.fast_length, "slow": self.slow_length}
+        return self.config.to_mapping()
 
     def init(self) -> None:
-        self.fast = ta.sma(self.data.close, length=self.fast_length)
-        self.slow = ta.sma(self.data.close, length=self.slow_length)
+        self.fast = ta.sma(self.data.close, length=self.config.fast)
+        self.slow = ta.sma(self.data.close, length=self.config.slow)
 
     def on_bar(self, bar) -> None:
         if self.fast[-1] > self.slow[-1] and not self.position.is_open:
@@ -261,7 +265,7 @@ engine = BacktestEngine(initial_cash=10_000, costs=costs)
 study = ParameterStudy(
     engine=engine,
     bars=bars,
-    strategy_factory=lambda p: SmaCross(fast=p["fast"], slow=p["slow"]),
+    strategy=SmaCross,
 )
 
 results = study.grid_search(
@@ -269,7 +273,7 @@ results = study.grid_search(
         "fast": [5, 10, 20],
         "slow": [20, 50, 100],
     },
-    constraint=lambda p: p["fast"] < p["slow"],
+    constraint=lambda config: config["fast"] < config["slow"],
     objective=("returns.total_return", "max"),
 )
 
@@ -277,24 +281,24 @@ records = results.to_records()
 print(records[:5])
 
 best = results.best()
-print(best.parameters)
+print(best.strategy_config)
 print(best.backtest.report)
 fig = best.backtest.plot()
 ```
 
 `ParameterStudy` can be reused for multiple searches over the same engine, bars,
-and strategy factory:
+and strategy class:
 
 ```python
 coarse = study.grid_search(
     parameters={"fast": [5, 10, 20], "slow": [50, 100, 200]},
-    constraint=lambda p: p["fast"] < p["slow"],
+    constraint=lambda config: config["fast"] < config["slow"],
     objective=("returns.total_return", "max"),
 )
 
 fine = study.grid_search(
     parameters={"fast": [8, 10, 12], "slow": [80, 100, 120]},
-    constraint=lambda p: p["fast"] < p["slow"],
+    constraint=lambda config: config["fast"] < config["slow"],
     objective=("risk.max_drawdown", "min"),
 )
 ```
@@ -304,7 +308,7 @@ Large grids must be deliberate:
 ```python
 results = study.grid_search(
     parameters=large_parameter_grid,
-    constraint=lambda p: p["fast"] < p["slow"],
+    constraint=lambda config: config["fast"] < config["slow"],
     objective=("returns.total_return", "max"),
     max_candidates=5000,
 )
@@ -371,16 +375,17 @@ rejected = results.rejected()
 
 - Users can provide one or more named parameters, each with a finite set of
   ordered candidate values.
-- Parameter names are user-facing labels and must be preserved exactly in
-  comparison output.
-- Parameter names must be non-empty strings. Dotted names and names that match
-  top-level row fields, such as `"status"`, `"run_index"`, or `"error_type"`,
-  are valid user parameter names because exported records keep all parameter
-  values nested under `parameters`.
+- Parameter names are user-facing search-space labels backed by public
+  `StrategyConfig` fields and must be preserved exactly in comparison output.
+- Parameter names must be non-empty strings and must be declared public fields
+  on the strategy's `StrategyConfig`. Unknown names, private names, dotted names
+  that are not config fields, and names that are not valid config field
+  declarations are invalid study definitions.
 - Non-string parameter names are invalid because portable record output uses
   JSON-object-compatible parameter names.
-- Empty parameter grids, empty candidate value lists, and unordered candidate
-  containers such as `set` are invalid.
+- Empty parameter grids are valid and run one default-config candidate. Empty
+  candidate value lists and unordered candidate containers such as `set` are
+  invalid.
 - Duplicate parameter combinations are invalid in beta. Duplicate values within
   a single parameter's candidate list must be rejected because they create
   ambiguous counts and row identities.
@@ -413,7 +418,7 @@ rejected = results.rejected()
 
 - Users can optionally provide a constraint that decides whether a parameter
   combination is admissible.
-- Constraint and strategy-factory callbacks receive a parameter mapping for the
+- Constraints receive the full materialized `strategy_config` mapping for the
   candidate being evaluated. Callback code must not be able to corrupt stored
   row identity or later callback inputs; implementations should satisfy this by
   passing an immutable mapping or a defensive copy.
@@ -434,16 +439,17 @@ rejected = results.rejected()
 ### Run Execution
 
 - `ParameterStudy` is constructed with an existing `BacktestEngine`,
-  materialized `BarSeries`, and a strategy factory.
+  materialized `BarSeries`, and a `Strategy` class.
 - Each admissible combination runs through the existing historical
   `BacktestEngine.run(bars=..., strategy=...)` behavior.
 - Reusing the same `BacktestEngine` object across a study must not leak
   per-run broker, order, strategy, report, or account state across candidate
   runs. The study may rely on `BacktestEngine.run(...)` only if that public run
   path provides run-scoped state isolation.
-- The strategy factory must be called once per admissible run. Reusing and
-  resetting a previously mutated strategy instance is not sufficient because
-  arbitrary user state may not be reset safely.
+- The strategy class must be constructed once per admissible run with the
+  materialized `StrategyConfig`. Reusing and resetting a previously mutated
+  strategy instance is not sufficient because arbitrary user state may not be
+  reset safely.
 - The first-beta feature officially supports materialized `bars=...`.
 - `ParameterStudy` must not accept `source=` in the first beta. Users should
   call `source.load()` once before constructing the study.
@@ -467,12 +473,12 @@ rejected = results.rejected()
   public Quantcraft exception type.
 - Failed rows must identify the stage that failed. Beta stage labels are:
   - `"constraint"` for constraint callable failures
-  - `"strategy_factory"` for strategy construction failures
+  - `"strategy_construction"` for strategy construction failures
   - `"backtest"` for failures during `BacktestEngine.run(...)`, strategy
     `init()`, or strategy `on_bar()` execution
   - `"metric_extraction"` for failures while resolving report metric paths
 - `fail_fast=True` applies to all failed-row stages: `"constraint"`,
-  `"strategy_factory"`, `"backtest"`, and `"metric_extraction"`.
+  `"strategy_construction"`, `"backtest"`, and `"metric_extraction"`.
 
 ### Objective And Selection
 
@@ -593,17 +599,19 @@ rejected = results.rejected()
 - The artifact must be convertible to simple records suitable for notebooks,
   CLI display, CSV/dataframe conversion, or agent inspection. The first beta
   should not require pandas as the only output shape.
-- Parameter values must remain nested under a `parameters` field in record
-  output, so user parameter names cannot collide with top-level row fields.
-- `parameters` is the only required nested field in simple records. Other
-  top-level fields use stable string keys.
+- Candidate overrides must remain nested under `candidate_parameters`, and the
+  full materialized config must remain nested under `strategy_config`, so user
+  parameter names cannot collide with top-level row fields.
+- `candidate_parameters` and `strategy_config` are the required nested config
+  fields in simple records. Other top-level fields use stable string keys.
 - Simple records must expose these non-metric fields with stable keys:
 
   | Key | Success | Rejected | Failed | Notes |
   | --- | --- | --- | --- | --- |
   | `run_index` | `int` | `int` | `int` | Zero-based raw candidate order. |
   | `status` | `"success"` | `"rejected"` | `"failed"` | Exact beta status enum. |
-  | `parameters` | `dict[str, JSON scalar]` | `dict[str, JSON scalar]` | `dict[str, JSON scalar]` | The only required nested field. |
+  | `candidate_parameters` | `dict[str, JSON scalar]` | `dict[str, JSON scalar]` | `dict[str, JSON scalar]` | Partial overrides from the search space. |
+  | `strategy_config` | `dict[str, JSON scalar]` | `dict[str, JSON scalar]` | `dict[str, JSON scalar]` | Full materialized config snapshot. |
   | `run.label` | `str` or `None` | `None` | `None` | From `BacktestReport.run.run_label` when a result exists. |
   | `strategy.class_name` | `str` or `None` | `None` | `None` | From `BacktestReport.run.strategy_class_name`. |
   | `strategy.display_name` | `str` or `None` | `None` | `None` | From `BacktestReport.run.strategy_display_name`. |
@@ -611,9 +619,10 @@ rejected = results.rejected()
   | `run.timeframe` | `str` or `None` | `None` | `None` | From `BacktestReport.run.timeframe`. |
   | `run.initial_cash` | finite `float` or `None` | `None` | `None` | From `BacktestReport.run.initial_cash`. |
   | `execution.model_name` | `str` or `None` | `None` | `None` | From `BacktestReport.execution.execution_model_name`. |
+  | `rejection_stage` | `None` | stage `str` | `None` | `"strategy_config"` or `"constraint"` for rejected rows. |
   | `failure_stage` | `None` | `None` | stage `str` | One of the beta failure-stage labels. |
-  | `error_type` | `None` | `None` | `str` | Exception class name. |
-  | `error_message` | `None` | `None` | `str` | Human-readable exception message. |
+  | `error_type` | `None` | `str` or `None` | `str` | Exception class name when a rejection or failure has an error object. |
+  | `error_message` | `None` | `str` or `None` | `str` | Human-readable rejection or failure message. |
 
   Every exported comparison metric key listed in the beta comparison metric
   path set must also appear in every record, paired with its `_state` key. Metric
@@ -685,7 +694,7 @@ rejected = results.rejected()
 
 ## Nonfunctional Requirements
 
-- Determinism: Given the same bars, engine settings, strategy factory, parameter
+- Determinism: Given the same bars, engine settings, strategy class, parameter
   grid, and constraint, exploration order and successful run metrics should be
   reproducible. Beta P0 execution is sequential, and result row identity must
   not depend on runtime scheduling.
@@ -763,7 +772,7 @@ undefined rather than zero.
 
 ### 6. Keep Runtime Failures Visible
 
-One parameter combination causes the strategy factory or `on_bar()` logic to
+One parameter combination causes strategy construction or `on_bar()` logic to
 raise. The comparison artifact identifies the failed combination and continues
 by default. When debugging, the user can pass `fail_fast=True` to raise on the
 first failed combination.

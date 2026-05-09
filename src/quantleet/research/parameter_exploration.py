@@ -9,6 +9,7 @@ from typing import Literal, TypeAlias
 
 from quantleet.backtest import BacktestResult
 from quantleet.data import BarSeries
+from quantleet.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
 
 JSONScalar: TypeAlias = str | int | float | bool | None
 Objective: TypeAlias = tuple[str, Literal["max", "min"]]
@@ -20,14 +21,22 @@ MetricState: TypeAlias = Literal[
 ]
 FailureStage: TypeAlias = Literal[
     "constraint",
-    "strategy_factory",
+    "strategy_construction",
     "backtest",
     "metric_extraction",
 ]
+RejectionStage: TypeAlias = Literal["strategy_config", "constraint"]
 RowStatus: TypeAlias = Literal["success", "rejected", "failed"]
 MetricValue: TypeAlias = int | float | None
-StrategyFactory: TypeAlias = Callable[[Mapping[str, JSONScalar]], object]
 Constraint: TypeAlias = Callable[[Mapping[str, JSONScalar]], bool]
+
+
+@dataclass(frozen=True, slots=True)
+class _RunnableCandidate:
+    run_index: int
+    candidate_parameters: Mapping[str, JSONScalar]
+    config: StrategyConfig
+    strategy_config: Mapping[str, JSONScalar]
 
 
 def _final_equity(result: BacktestResult) -> float:
@@ -93,16 +102,23 @@ _UNDEFINED_STATES: Mapping[str, MetricState] = MappingProxyType(
 class GridSearchRow:
     run_index: int
     status: RowStatus
-    parameters: Mapping[str, JSONScalar]
+    candidate_parameters: Mapping[str, JSONScalar]
+    strategy_config: Mapping[str, JSONScalar]
     backtest: BacktestResult | None
     metrics: Mapping[str, MetricValue]
     metric_states: Mapping[str, MetricState]
+    rejection_stage: RejectionStage | None
     failure_stage: FailureStage | None
     error_type: str | None
     error_message: str | None
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "parameters", MappingProxyType(dict(self.parameters)))
+        object.__setattr__(
+            self,
+            "candidate_parameters",
+            MappingProxyType(dict(self.candidate_parameters)),
+        )
+        object.__setattr__(self, "strategy_config", MappingProxyType(dict(self.strategy_config)))
         object.__setattr__(self, "metrics", MappingProxyType(dict(self.metrics)))
         object.__setattr__(self, "metric_states", MappingProxyType(dict(self.metric_states)))
 
@@ -111,7 +127,8 @@ class GridSearchRow:
         cls,
         *,
         run_index: int,
-        parameters: Mapping[str, JSONScalar],
+        candidate_parameters: Mapping[str, JSONScalar],
+        strategy_config: Mapping[str, JSONScalar],
         backtest: BacktestResult,
         metrics: Mapping[str, MetricValue],
     ) -> GridSearchRow:
@@ -119,10 +136,12 @@ class GridSearchRow:
         return cls(
             run_index=run_index,
             status="success",
-            parameters=parameters,
+            candidate_parameters=candidate_parameters,
+            strategy_config=strategy_config,
             backtest=backtest,
             metrics=normalized_metrics,
             metric_states=metric_states,
+            rejection_stage=None,
             failure_stage=None,
             error_type=None,
             error_message=None,
@@ -133,18 +152,23 @@ class GridSearchRow:
         cls,
         *,
         run_index: int,
-        parameters: Mapping[str, JSONScalar],
+        candidate_parameters: Mapping[str, JSONScalar],
+        strategy_config: Mapping[str, JSONScalar],
+        rejection_stage: RejectionStage,
+        error: BaseException | None = None,
     ) -> GridSearchRow:
         return cls(
             run_index=run_index,
             status="rejected",
-            parameters=parameters,
+            candidate_parameters=candidate_parameters,
+            strategy_config=strategy_config,
             backtest=None,
             metrics={},
             metric_states=_UNDEFINED_STATES,
+            rejection_stage=rejection_stage,
             failure_stage=None,
-            error_type=None,
-            error_message=None,
+            error_type=type(error).__name__ if error is not None else None,
+            error_message=str(error) if error is not None else None,
         )
 
     @classmethod
@@ -152,17 +176,20 @@ class GridSearchRow:
         cls,
         *,
         run_index: int,
-        parameters: Mapping[str, JSONScalar],
+        candidate_parameters: Mapping[str, JSONScalar],
+        strategy_config: Mapping[str, JSONScalar],
         failure_stage: FailureStage,
         error: BaseException,
     ) -> GridSearchRow:
         return cls(
             run_index=run_index,
             status="failed",
-            parameters=parameters,
+            candidate_parameters=candidate_parameters,
+            strategy_config=strategy_config,
             backtest=None,
             metrics={},
             metric_states=_UNDEFINED_STATES,
+            rejection_stage=None,
             failure_stage=failure_stage,
             error_type=type(error).__name__,
             error_message=str(error),
@@ -251,24 +278,24 @@ class GridSearchResult:
 
 
 class ParameterStudy:
-    __slots__ = ("engine", "bars", "strategy_factory")
+    __slots__ = ("engine", "bars", "strategy")
 
     def __init__(
         self,
         *,
         engine: object,
         bars: BarSeries,
-        strategy_factory: StrategyFactory,
+        strategy: type[Strategy[StrategyConfig]],
     ) -> None:
         if not hasattr(engine, "run") or not callable(engine.run):
             raise TypeError("engine must expose a callable run method")
         if not isinstance(bars, BarSeries):
             raise TypeError("bars must be a BarSeries instance")
-        if not callable(strategy_factory):
-            raise TypeError("strategy_factory must be callable")
+        if not isinstance(strategy, type) or not issubclass(strategy, Strategy):
+            raise TypeError("strategy must be a Strategy class")
         self.engine = engine
         self.bars = bars
-        self.strategy_factory = strategy_factory
+        self.strategy = strategy
 
     def grid_search(
         self,
@@ -287,20 +314,35 @@ class ParameterStudy:
             raise ValueError(
                 f"raw candidate count {candidate_count} exceeds max_candidates {limit}"
             )
+        _validate_parameter_keys(grid, self.strategy.config_type)
+
+        prepared_candidates: list[_RunnableCandidate | GridSearchRow] = []
+        for run_index, candidate in _iter_candidates(grid):
+            prepared_candidates.append(
+                _prepare_candidate(
+                    run_index=run_index,
+                    candidate=candidate,
+                    config_type=self.strategy.config_type,
+                )
+            )
 
         rows: list[GridSearchRow] = []
-        for run_index, candidate in _iter_candidates(grid):
-            callback_parameters = MappingProxyType(dict(candidate))
+        for prepared in prepared_candidates:
+            if isinstance(prepared, GridSearchRow):
+                rows.append(prepared)
+                continue
             try:
                 if constraint is not None:
-                    outcome = constraint(callback_parameters)
+                    outcome = constraint(prepared.strategy_config)
                     if not isinstance(outcome, bool):
                         raise TypeError("constraint must return bool")
                     if not outcome:
                         rows.append(
                             GridSearchRow.rejected(
-                                run_index=run_index,
-                                parameters=candidate,
+                                run_index=prepared.run_index,
+                                candidate_parameters=prepared.candidate_parameters,
+                                strategy_config=prepared.strategy_config,
+                                rejection_stage="constraint",
                             )
                         )
                         continue
@@ -310,21 +352,23 @@ class ParameterStudy:
                     fail_fast=fail_fast,
                     error=error,
                     stage="constraint",
-                    run_index=run_index,
-                    parameters=candidate,
+                    run_index=prepared.run_index,
+                    candidate_parameters=prepared.candidate_parameters,
+                    strategy_config=prepared.strategy_config,
                 )
                 continue
 
             try:
-                strategy = self.strategy_factory(callback_parameters)
+                strategy = self.strategy(prepared.config)
             except Exception as error:
                 _raise_or_record(
                     rows=rows,
                     fail_fast=fail_fast,
                     error=error,
-                    stage="strategy_factory",
-                    run_index=run_index,
-                    parameters=candidate,
+                    stage="strategy_construction",
+                    run_index=prepared.run_index,
+                    candidate_parameters=prepared.candidate_parameters,
+                    strategy_config=prepared.strategy_config,
                 )
                 continue
 
@@ -332,7 +376,7 @@ class ParameterStudy:
                 backtest = self.engine.run(
                     bars=self.bars,
                     strategy=strategy,
-                    label=f"grid-search-{run_index}",
+                    label=f"grid-search-{prepared.run_index}",
                 )
             except Exception as error:
                 _raise_or_record(
@@ -340,8 +384,9 @@ class ParameterStudy:
                     fail_fast=fail_fast,
                     error=error,
                     stage="backtest",
-                    run_index=run_index,
-                    parameters=candidate,
+                    run_index=prepared.run_index,
+                    candidate_parameters=prepared.candidate_parameters,
+                    strategy_config=prepared.strategy_config,
                 )
                 continue
 
@@ -353,15 +398,17 @@ class ParameterStudy:
                     fail_fast=fail_fast,
                     error=error,
                     stage="metric_extraction",
-                    run_index=run_index,
-                    parameters=candidate,
+                    run_index=prepared.run_index,
+                    candidate_parameters=prepared.candidate_parameters,
+                    strategy_config=prepared.strategy_config,
                 )
                 continue
 
             rows.append(
                 GridSearchRow.success(
-                    run_index=run_index,
-                    parameters=candidate,
+                    run_index=prepared.run_index,
+                    candidate_parameters=prepared.candidate_parameters,
+                    strategy_config=prepared.strategy_config,
                     backtest=backtest,
                     metrics=metrics,
                 )
@@ -375,8 +422,6 @@ def _validate_parameter_grid(
 ) -> dict[str, tuple[JSONScalar, ...]]:
     if not isinstance(parameters, Mapping):
         raise TypeError("parameters must be a mapping")
-    if not parameters:
-        raise ValueError("parameters must contain at least one parameter")
 
     grid: dict[str, tuple[JSONScalar, ...]] = {}
     for name, values in parameters.items():
@@ -399,6 +444,50 @@ def _validate_parameter_grid(
         grid[name] = normalized_values
 
     return grid
+
+
+def _validate_parameter_keys(
+    grid: Mapping[str, Sequence[JSONScalar]],
+    config_type: type[StrategyConfig],
+) -> None:
+    config_type.validate_override_names(tuple(grid))
+
+
+def _candidate_strategy_config_snapshot(
+    config_type: type[StrategyConfig],
+    candidate: Mapping[str, JSONScalar],
+) -> Mapping[str, JSONScalar]:
+    return MappingProxyType(config_type.diagnostic_mapping_from_overrides(candidate))
+
+
+def _prepare_candidate(
+    *,
+    run_index: int,
+    candidate: Mapping[str, JSONScalar],
+    config_type: type[StrategyConfig],
+) -> _RunnableCandidate | GridSearchRow:
+    candidate_parameters: Mapping[str, JSONScalar] = MappingProxyType(dict(candidate))
+    try:
+        config = config_type(**candidate)
+    except StrategyConfigValidationError as error:
+        rejected_strategy_config = _candidate_strategy_config_snapshot(
+            config_type,
+            candidate,
+        )
+        return GridSearchRow.rejected(
+            run_index=run_index,
+            candidate_parameters=candidate_parameters,
+            strategy_config=rejected_strategy_config,
+            rejection_stage="strategy_config",
+            error=error,
+        )
+
+    return _RunnableCandidate(
+        run_index=run_index,
+        candidate_parameters=candidate_parameters,
+        config=config,
+        strategy_config=MappingProxyType(config.to_mapping()),
+    )
 
 
 def _validate_json_scalar(name: str, value: object) -> JSONScalar:
@@ -499,7 +588,8 @@ def _row_to_record(row: GridSearchRow) -> dict[str, object]:
     record: dict[str, object] = {
         "run_index": row.run_index,
         "status": row.status,
-        "parameters": dict(row.parameters),
+        "candidate_parameters": dict(row.candidate_parameters),
+        "strategy_config": dict(row.strategy_config),
         "run.label": report.run.run_label if report is not None else None,
         "strategy.class_name": report.run.strategy_class_name if report is not None else None,
         "strategy.display_name": report.run.strategy_display_name if report is not None else None,
@@ -509,6 +599,7 @@ def _row_to_record(row: GridSearchRow) -> dict[str, object]:
         "execution.model_name": (
             report.execution.execution_model_name if report is not None else None
         ),
+        "rejection_stage": row.rejection_stage,
         "failure_stage": row.failure_stage,
         "error_type": row.error_type,
         "error_message": row.error_message,
@@ -528,16 +619,19 @@ def _raise_or_record(
     error: BaseException,
     stage: FailureStage,
     run_index: int,
-    parameters: Mapping[str, JSONScalar],
+    candidate_parameters: Mapping[str, JSONScalar],
+    strategy_config: Mapping[str, JSONScalar],
 ) -> None:
     if fail_fast:
         error.add_note(f"stage={stage}")
-        error.add_note(f"parameters={dict(parameters)!r}")
+        error.add_note(f"candidate_parameters={dict(candidate_parameters)!r}")
+        error.add_note(f"strategy_config={dict(strategy_config)!r}")
         raise error
     rows.append(
         GridSearchRow.failed(
             run_index=run_index,
-            parameters=parameters,
+            candidate_parameters=candidate_parameters,
+            strategy_config=strategy_config,
             failure_stage=stage,
             error=error,
         )

@@ -1,16 +1,35 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 from types import SimpleNamespace
 
 import pytest
 
 from quantleet.data import BarSeries
-from quantleet.research import ParameterStudy, Strategy
+from quantleet.research import ParameterStudy
+from quantleet.strategy import Strategy, StrategyConfig
 from quantleet.trading.domain.events import BarEvent
 from tests.integration.research.test_parameter_study_grid_search import crossing_bars, engine
 from tests.unit.research.support_parameter_study import NoTradeStrategy
+
+
+class FailureConfig(StrategyConfig):
+    case: str = "ok"
+
+
+class MixedFailureStrategy(Strategy[FailureConfig]):
+
+    def __init__(self, config: FailureConfig | None = None) -> None:
+        if config is not None and config.case == "construction":
+            raise ValueError("construction exploded")
+        super().__init__(config)
+
+    def init(self) -> None:
+        if self.config.case == "init":
+            raise RuntimeError("init exploded")
+
+    def on_bar(self, bar: BarEvent) -> None:
+        return None
 
 
 class RaisingInitStrategy(NoTradeStrategy):
@@ -24,49 +43,44 @@ class RaisingOnBarStrategy(NoTradeStrategy):
 
 
 def test_mixed_failures_continue_by_default() -> None:
-    def factory(parameters: Mapping[str, object]) -> Strategy:
-        if parameters["case"] == "factory":
-            raise ValueError("factory exploded")
-        if parameters["case"] == "init":
-            return RaisingInitStrategy(parameters)
-        return NoTradeStrategy(parameters)
-
     result = ParameterStudy(
         engine=engine(),
         bars=crossing_bars(),
-        strategy_factory=factory,
-    ).grid_search(parameters={"case": ["ok", "factory", "init", "later"]})
+        strategy=MixedFailureStrategy,
+    ).grid_search(parameters={"case": ["ok", "construction", "init", "later"]})
 
     assert result.successful_count == 2
     assert result.failed_count == 2
     assert [(row.run_index, row.failure_stage, row.error_type) for row in result.failed()] == [
-        (1, "strategy_factory", "ValueError"),
+        (1, "strategy_construction", "ValueError"),
         (2, "backtest", "RuntimeError"),
     ]
 
 
-def test_fail_fast_reraises_original_exception_with_stage_and_parameters() -> None:
-    def factory(parameters: Mapping[str, object]) -> Strategy:
-        if parameters["case"] == "factory":
-            raise ValueError("factory exploded")
-        return NoTradeStrategy(parameters)
-
-    with pytest.raises(ValueError, match="factory exploded") as exc_info:
+def test_fail_fast_reraises_original_exception_with_stage_and_config_context() -> None:
+    with pytest.raises(ValueError, match="construction exploded") as exc_info:
         ParameterStudy(
             engine=engine(),
             bars=crossing_bars(),
-            strategy_factory=factory,
-        ).grid_search(parameters={"case": ["ok", "factory", "later"]}, fail_fast=True)
+            strategy=MixedFailureStrategy,
+        ).grid_search(parameters={"case": ["ok", "construction", "later"]}, fail_fast=True)
 
-    assert any(note == "stage=strategy_factory" for note in exc_info.value.__notes__)
-    assert any("'case': 'factory'" in note for note in exc_info.value.__notes__)
+    assert any(note == "stage=strategy_construction" for note in exc_info.value.__notes__)
+    assert any(
+        "candidate_parameters={'case': 'construction'}" in note
+        for note in exc_info.value.__notes__
+    )
+    assert any(
+        "strategy_config={'case': 'construction'}" in note
+        for note in exc_info.value.__notes__
+    )
 
 
 def test_backtest_on_bar_failures_are_backtest_failed_rows() -> None:
     result = ParameterStudy(
         engine=engine(),
         bars=crossing_bars(),
-        strategy_factory=lambda parameters: RaisingOnBarStrategy(parameters),
+        strategy=RaisingOnBarStrategy,
     ).grid_search(parameters={"x": [1]})
 
     assert result.failed_count == 1
@@ -82,7 +96,7 @@ def test_backtest_fail_fast_reraises_original_exception_with_context() -> None:
         ParameterStudy(
             engine=engine(),
             bars=crossing_bars(),
-            strategy_factory=lambda parameters: RaisingOnBarStrategy(parameters),
+            strategy=RaisingOnBarStrategy,
         ).grid_search(parameters={"x": [1]}, fail_fast=True)
 
     assert any(note == "stage=backtest" for note in exc_info.value.__notes__)
@@ -94,7 +108,7 @@ def test_non_bool_constraint_fail_fast_raises_type_error_with_context() -> None:
         ParameterStudy(
             engine=engine(),
             bars=crossing_bars(),
-            strategy_factory=lambda parameters: NoTradeStrategy(parameters),
+            strategy=NoTradeStrategy,
         ).grid_search(
             parameters={"x": [1]},
             constraint=lambda parameters: "yes",  # type: ignore[return-value]
@@ -152,7 +166,7 @@ def test_metric_extraction_failures_are_failed_rows_and_fail_fast_raises() -> No
     result = ParameterStudy(
         engine=MetricExtractionFailingEngine(),
         bars=crossing_bars(),
-        strategy_factory=lambda parameters: NoTradeStrategy(parameters),
+        strategy=NoTradeStrategy,
     ).grid_search(parameters={"x": [1]})
 
     assert result.failed_count == 1
@@ -162,7 +176,7 @@ def test_metric_extraction_failures_are_failed_rows_and_fail_fast_raises() -> No
         ParameterStudy(
             engine=MetricExtractionFailingEngine(),
             bars=crossing_bars(),
-            strategy_factory=lambda parameters: NoTradeStrategy(parameters),
+            strategy=NoTradeStrategy,
         ).grid_search(parameters={"x": [1]}, fail_fast=True)
 
     assert any(note == "stage=metric_extraction" for note in exc_info.value.__notes__)

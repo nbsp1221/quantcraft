@@ -43,8 +43,8 @@ implement all four slices in one batch.
 
 ## Why This Roadmap Exists
 
-WFA was paused because implementing it now would likely harden the current
-`strategy_factory`-centered research API into a larger public contract. The
+WFA was paused because implementing it too early would have hardened the old
+callable construction research API into a larger public contract. The
 actual blocker is not the walk-forward algorithm. The actual blocker is the
 absence of a canonical strategy configuration contract shared by backtesting,
 research, paper trading, and future live trading.
@@ -54,8 +54,8 @@ only focuses on the first `StrategyConfig` discussion, it may forget why that
 work was started:
 
 - WFA needs fresh strategy creation for train candidates and selected test runs.
-- `ParameterStudy` currently teaches `strategy_factory` as the canonical public
-  path.
+- `ParameterStudy` now teaches `strategy=StrategyClass` plus `StrategyConfig`
+  as the canonical public path.
 - `BacktestReport.run.strategy_parameters` currently depends on
   `Strategy.parameters()`, not on a framework-owned execution config snapshot.
 - The long-lived runtime direction wants one strategy codebase to move through
@@ -83,8 +83,8 @@ Primary questions:
 - What values are true strategy config values versus runtime dependencies or
   environment settings?
 - How does the framework create a fresh strategy instance for one run?
-- Should `strategy_factory` remain an advanced escape hatch, and if so what is
-  its precise role?
+- How should custom construction needs preserve the framework-owned
+  `StrategyConfig` contract?
 
 Required product outcome:
 
@@ -115,9 +115,8 @@ Primary questions:
 
 - Should `ParameterStudy(..., strategy=StrategyClass)` become the canonical
   public path?
-- How long should `strategy_factory=...` remain supported?
-- Is `strategy_factory` documented as compatibility, advanced escape hatch, or
-  internal adapter?
+- Stage 2 resolved this as a breaking migration: the old callable construction
+  keyword is not supported in active public API.
 - How should error messages guide users from old factory examples to the new
   canonical path?
 - What tests and public docs must change to keep the first-beta research story
@@ -127,8 +126,8 @@ Required product outcome:
 
 - A migration product spec that defines the new `ParameterStudy` public input
   surface.
-- A compatibility policy for existing `strategy_factory` workflows.
-- A decision on whether this migration is additive, deprecating, or breaking.
+- A clear breaking-migration policy for old callable construction examples.
+- A decision that the migration is breaking before public beta release.
 - A clear preservation rule for fresh strategy instance guarantees.
 
 Non-goals for this stage:
@@ -227,7 +226,7 @@ scope drift is not acceptable.
 
 - Do not treat this roadmap as permission to implement WFA.
 - Do not use this roadmap to skip the dedicated product spec for Stage 1.
-- Do not solve Stage 1 by preserving the current `strategy_factory` path merely
+- Do not solve Stage 1 by preserving the current legacy callable construction API path merely
   because it is already implemented.
 - Do not solve Stage 1 by overbuilding paper/live infrastructure before the
   strategy config contract is clear.
@@ -254,9 +253,8 @@ This roadmap is successful when:
   `Strategy Configuration Contract`?
 - Should Stage 2 and Stage 3 be separate product specs, or can they be combined
   if Stage 1 makes their scope small?
-- Should `strategy_factory` be deprecated immediately after Stage 2, kept as a
-  documented advanced escape hatch, or hidden from canonical docs while still
-  supported?
+- Stage 2 resolved that the old callable construction path is removed from
+  active code, tests, examples, and public docs.
 - Should the reporting config snapshot be added to `BacktestEngine.run(...)`, to
   strategy construction normalization, or to a separate run manifest builder?
 - What is the earliest point at which WFA can safely resume without creating

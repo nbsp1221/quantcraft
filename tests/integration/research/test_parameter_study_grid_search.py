@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from typing import ClassVar
 
 from quantleet.backtest import BacktestEngine
 from quantleet.data import BarSeries, TimeBar
-from quantleet.research import ParameterStudy, Strategy
+from quantleet.research import ParameterStudy
+from quantleet.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
 from quantleet.trading.domain.costs import CostConfig
 from quantleet.trading.domain.events import BarEvent
 
@@ -36,21 +37,31 @@ def engine() -> BacktestEngine:
     )
 
 
-class ParameterizedRoundTripStrategy(Strategy):
-    def __init__(self, *, fast: int, slow: int, instance_ids: list[int] | None = None) -> None:
-        super().__init__()
-        self._fast = fast
-        self._slow = slow
-        self._instance_ids = instance_ids
-        if instance_ids is not None:
-            instance_ids.append(id(self))
+class RoundTripConfig(StrategyConfig):
+    fast: int = 5
+    slow: int = 20
+
+    def validate(self) -> None:
+        if self.fast >= self.slow:
+            raise StrategyConfigValidationError("fast must be less than slow")
+
+
+class ParameterizedRoundTripStrategy(Strategy[RoundTripConfig]):
+    instance_ids: ClassVar[list[int] | None] = None
+    constructed_configs: ClassVar[list[dict[str, object]]] = []
+
+    def __init__(self, config: RoundTripConfig | None = None) -> None:
+        super().__init__(config)
+        type(self).constructed_configs.append(self.config.to_mapping())
+        if type(self).instance_ids is not None:
+            type(self).instance_ids.append(id(self))
 
     @property
     def display_name(self) -> str:
         return "Parameterized Round Trip"
 
     def parameters(self) -> dict[str, object]:
-        return {"fast": self._fast, "slow": self._slow}
+        return self.config.to_mapping()
 
     def init(self) -> None:
         self._seen_bars = 0
@@ -67,10 +78,7 @@ def test_canonical_small_grid_search_uses_real_backtest_engine() -> None:
     study = ParameterStudy(
         engine=engine(),
         bars=crossing_bars(),
-        strategy_factory=lambda parameters: ParameterizedRoundTripStrategy(
-            fast=int(parameters["fast"]),
-            slow=int(parameters["slow"]),
-        ),
+        strategy=ParameterizedRoundTripStrategy,
     )
 
     result = study.grid_search(
@@ -90,7 +98,9 @@ def test_canonical_small_grid_search_uses_real_backtest_engine() -> None:
     assert best.backtest is not None
     assert best.backtest.report.run.run_label == f"grid-search-{best.run_index}"
     assert best.backtest.report.run.strategy_display_name == "Parameterized Round Trip"
-    assert best.backtest.report.run.strategy_parameters == dict(best.parameters)
+    assert dict(best.strategy_config) == {"fast": 5, "slow": 10}
+    assert dict(best.candidate_parameters) == {"fast": 5, "slow": 10}
+    assert best.backtest.report.run.strategy_parameters == dict(best.strategy_config)
 
     records = result.to_records()
     assert len(records) == 4
@@ -98,30 +108,26 @@ def test_canonical_small_grid_search_uses_real_backtest_engine() -> None:
     assert records[2]["status"] == "rejected"
 
 
-def test_strategy_factory_runs_once_per_admissible_candidate_with_fresh_instances() -> None:
-    factory_inputs: list[dict[str, object]] = []
+def test_strategy_class_constructs_once_per_admissible_candidate_with_fresh_instances() -> None:
     instance_ids: list[int] = []
+    ParameterizedRoundTripStrategy.instance_ids = instance_ids
+    ParameterizedRoundTripStrategy.constructed_configs = []
 
-    def factory(parameters: Mapping[str, object]) -> Strategy:
-        factory_inputs.append(dict(parameters))
-        return ParameterizedRoundTripStrategy(
-            fast=int(parameters["fast"]),
-            slow=int(parameters["slow"]),
-            instance_ids=instance_ids,
+    try:
+        result = ParameterStudy(
+            engine=engine(),
+            bars=crossing_bars(),
+            strategy=ParameterizedRoundTripStrategy,
+        ).grid_search(
+            parameters={"fast": [5, 20], "slow": [10, 30]},
+            constraint=lambda parameters: parameters["fast"] < parameters["slow"],
         )
-
-    result = ParameterStudy(
-        engine=engine(),
-        bars=crossing_bars(),
-        strategy_factory=factory,
-    ).grid_search(
-        parameters={"fast": [5, 20], "slow": [10, 30]},
-        constraint=lambda parameters: parameters["fast"] < parameters["slow"],
-    )
+    finally:
+        ParameterizedRoundTripStrategy.instance_ids = None
 
     assert result.successful_count == 3
     assert result.rejected_count == 1
-    assert factory_inputs == [
+    assert ParameterizedRoundTripStrategy.constructed_configs == [
         {"fast": 5, "slow": 10},
         {"fast": 5, "slow": 30},
         {"fast": 20, "slow": 30},

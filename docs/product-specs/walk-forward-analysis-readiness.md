@@ -41,11 +41,9 @@ discussion, the project reached a stable WFA product position:
 - Advanced splitter/CV toolkit concepts should stay internal or delayed.
 
 The discussion also revealed a deeper concern: WFA depends on a strategy
-parameter contract that is probably not mature enough to harden. The current
-implemented parameter exploration surface uses a `strategy_factory` callable.
-That is workable as an implementation adapter, but it may be the wrong primary
-contract for a framework intended to support coherent backtest, research,
-paper-trading, and live-trading workflows.
+parameter contract that must not harden ad hoc construction. Stage 2 resolves
+the active parameter exploration surface around `strategy=StrategyClass` plus
+`StrategyConfig`, which is the contract future WFA work should build on.
 
 Pausing WFA prevents an expedient implementation path from becoming an
 accidental long-lived API.
@@ -56,9 +54,9 @@ accidental long-lived API.
   research layer.
 - `BacktestEngine.run(...)` currently receives an already constructed strategy
   object.
-- `ParameterStudy(...).grid_search(...)` currently receives
-  `strategy_factory`, calls it for each parameter candidate, and runs the
-  returned fresh strategy instance.
+- `ParameterStudy(...).grid_search(...)` receives a `Strategy` class,
+  materializes `StrategyConfig` snapshots, and constructs a fresh strategy
+  instance for each admissible candidate.
 - `BacktestResult.report` records strategy identity and public strategy
   parameters through the strategy metadata/reporting surface.
 - The current beta parameter exploration contract is implemented and
@@ -79,9 +77,8 @@ Why it matters for WFA:
 
 - WFA will instantiate strategies many times across train candidates and test
   folds.
-- If WFA exposes `strategy_factory` as the primary public contract, that may
-  entrench a construction pattern the project already suspects is not the
-  desired framework UX.
+- WFA must not reintroduce the old callable construction path as its primary
+  public contract.
 - If WFA exposes `strategy=StrategyClass` before the config contract is
   defined, implementation will invent normalization rules under pressure.
 
@@ -90,8 +87,7 @@ Known candidate directions:
 - `Strategy` plus explicit `StrategyConfig`.
 - Backtrader-style class-level `params`.
 - Freqtrade-style parameter descriptors.
-- Existing `strategy_factory` retained as an internal adapter or advanced
-  escape hatch.
+- Config-backed `Strategy` plus `StrategyConfig` as the active contract.
 
 Initial assessment:
 
@@ -127,8 +123,8 @@ Initial assessment:
 
 Question:
 
-- If the canonical public contract changes away from `strategy_factory`, how
-  should existing `ParameterStudy` users migrate?
+- How should WFA compose the config-backed `ParameterStudy` contract without
+  expanding the public API prematurely?
 
 Why it matters for WFA:
 
@@ -360,11 +356,8 @@ dedicated product spec for the selected prerequisite.
   descriptor-based parameter declarations?
 - Should the first config contract use plain dataclasses, a custom base class,
   or another validation approach?
-- Should `strategy_factory` remain a public advanced escape hatch, become
-  internal-only, or stay supported for compatibility?
-- Should `ParameterStudy` gain `strategy=StrategyClass` while preserving
-  `strategy_factory`, or should a migration happen in a larger research API
-  revision?
+- Stage 2 resolved that `ParameterStudy` uses `strategy=StrategyClass` only.
+- WFA must not preserve or reintroduce the old callable construction path.
 - Which strategy settings are true optimizable parameters versus environment,
   dependency, or runtime settings?
 - How should selected config values be reflected in `BacktestResult.report`?

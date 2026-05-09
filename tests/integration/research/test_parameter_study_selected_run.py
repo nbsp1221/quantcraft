@@ -15,10 +15,7 @@ def test_selected_successful_row_retains_engine_result_report_and_plot_path() ->
     result = ParameterStudy(
         engine=engine(),
         bars=crossing_bars(),
-        strategy_factory=lambda parameters: ParameterizedRoundTripStrategy(
-            fast=int(parameters["fast"]),
-            slow=int(parameters["slow"]),
-        ),
+        strategy=ParameterizedRoundTripStrategy,
     ).grid_search(
         parameters={"fast": [5], "slow": [10]},
         objective=("returns.total_return", "max"),
@@ -40,10 +37,7 @@ def test_rejected_and_failed_rows_do_not_expose_fake_backtests() -> None:
     result = ParameterStudy(
         engine=engine(),
         bars=crossing_bars(),
-        strategy_factory=lambda parameters: ParameterizedRoundTripStrategy(
-            fast=int(parameters["fast"]),
-            slow=int(parameters["slow"]),
-        ),
+        strategy=ParameterizedRoundTripStrategy,
     ).grid_search(
         parameters={"fast": [20], "slow": [10]},
         constraint=lambda parameters: False,

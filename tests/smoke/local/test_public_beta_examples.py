@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
-
 import matplotlib
 from matplotlib.figure import Figure
 
@@ -10,7 +8,7 @@ matplotlib.use("Agg")
 from quantleet.backtest import BacktestEngine, CostConfig
 from quantleet.data import BarSeries, DataFrameDataSource, TimeBar
 from quantleet.research import ParameterStudy, qc, ta
-from quantleet.strategy import Strategy
+from quantleet.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
 
 
 def test_public_sma_crossover_quickstart_example_runs() -> None:
@@ -92,18 +90,21 @@ def test_public_orders_and_sizing_example_runs() -> None:
 
 
 def test_public_parameter_exploration_example_runs() -> None:
-    class ParameterizedSmaStrategy(Strategy):
-        def __init__(self, *, fast: int, slow: int) -> None:
-            super().__init__()
-            self._fast_length = fast
-            self._slow_length = slow
+    class SmaConfig(StrategyConfig):
+        fast: int = 2
+        slow: int = 3
 
+        def validate(self) -> None:
+            if self.fast >= self.slow:
+                raise StrategyConfigValidationError("fast must be less than slow")
+
+    class ParameterizedSmaStrategy(Strategy[SmaConfig]):
         def parameters(self) -> dict[str, object]:
-            return {"fast": self._fast_length, "slow": self._slow_length}
+            return self.config.to_mapping()
 
         def init(self) -> None:
-            self.fast = ta.sma(self.data.close, length=self._fast_length)
-            self.slow = ta.sma(self.data.close, length=self._slow_length)
+            self.fast = ta.sma(self.data.close, length=self.config.fast)
+            self.slow = ta.sma(self.data.close, length=self.config.slow)
 
         def on_bar(self, bar) -> None:
             if qc.is_na(self.fast[0]) or qc.is_na(self.slow[0]):
@@ -113,16 +114,10 @@ def test_public_parameter_exploration_example_runs() -> None:
             elif self.position.is_open and qc.crossunder(self.fast, self.slow):
                 self.sell(quantity=1.0, tag="exit")
 
-    def factory(parameters: Mapping[str, object]) -> Strategy:
-        return ParameterizedSmaStrategy(
-            fast=int(parameters["fast"]),
-            slow=int(parameters["slow"]),
-        )
-
     result = ParameterStudy(
         engine=_engine(),
         bars=_bars((10.0, 9.0, 8.0, 11.0, 12.0, 10.0, 8.0)),
-        strategy_factory=factory,
+        strategy=ParameterizedSmaStrategy,
     ).grid_search(
         parameters={"fast": [2, 3], "slow": [3, 4]},
         constraint=lambda parameters: parameters["fast"] < parameters["slow"],

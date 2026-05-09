@@ -41,7 +41,7 @@ Quantleet currently has a useful first-beta research loop:
 - users subclass `Strategy`
 - `BacktestEngine.run(...)` executes an already constructed strategy instance
 - `ParameterStudy(...).grid_search(...)` runs finite parameter grids through a
-  user-provided `strategy_factory`
+  user-provided legacy callable construction API
 - `BacktestReport.run.strategy_parameters` is populated from
   `Strategy.parameters()`
 
@@ -61,7 +61,7 @@ repeat the following pattern across train and test folds:
 7. report fold-level out-of-sample outcomes without confusing selected values,
    defaults, and runtime metadata
 
-If Quantleet builds WFA directly on the current `strategy_factory` public API,
+If Quantleet builds WFA directly on the current legacy callable construction API public API,
 the product risks turning a transitional implementation adapter into a durable
 user-facing contract. The issue is not the WFA algorithm itself. The issue is
 that Quantleet does not yet have a canonical strategy configuration contract.
@@ -86,8 +86,8 @@ This spec solves the product-contract problem before implementation continues.
   reporting.
 - Preserve fresh strategy construction as a framework guarantee for study
   workflows.
-- Keep `strategy_factory` available only as an advanced escape hatch or
-  migration path, not as the canonical study UX.
+- Remove the old callable construction path from active study workflows so the
+  config-backed `strategy=StrategyClass` contract is the only public study UX.
 - Record downstream decisions needed for `ParameterStudy` migration and
   reporting metadata cleanup without requiring all downstream migrations in one
   implementation slice.
@@ -127,9 +127,9 @@ They want to:
 - trust that study result rows, selected configurations, and report metadata do
   not silently disagree
 - vary search spaces per experiment without editing the strategy source
-- avoid lambda factory boilerplate for ordinary strategies
-- keep an escape hatch for advanced construction when they knowingly accept
-  responsibility for weaker framework guarantees
+- avoid ad hoc construction boilerplate for ordinary strategies
+- use custom strategy constructors only when they preserve the framework config
+  contract
 
 They are not asking Quantleet to infer profitable strategies or hide
 overfitting risk. They are asking Quantleet to make the strategy configuration
@@ -305,15 +305,14 @@ configurable fields. Quantleet treats them as having an empty config.
 Any study-level search space with non-empty `parameters` requires a declared
 config schema containing those keys.
 
-### Strategy Factory Role
+### Removed Callable Construction Role
 
-`strategy_factory` is not the canonical strategy configuration contract.
+legacy callable construction API is not the canonical strategy configuration contract.
 
-It may remain as an advanced escape hatch or migration compatibility path for
-custom construction, dependency wiring, or unusual strategy lifecycles. Factory
-workflows are user-responsibility paths and may not receive the same validation,
-reporting, portability, or config materialization guarantees as canonical
-`strategy=StrategyClass` workflows.
+It is not part of the active `ParameterStudy` public API. Custom construction
+needs must be expressed through `Strategy` classes that still preserve the
+framework-owned config materialization, reporting, validation, and portability
+guarantees.
 
 ### Shared Product Surface
 
@@ -435,9 +434,9 @@ MVP `StrategyConfig` field annotations support only:
 
 `Literal`, `Enum`, collection types, object types, custom classes, callables,
 models, and runtime dependencies are not canonical config field annotations in
-Stage 1. Advanced users may still wire custom objects through custom
-construction or factory paths, but canonical validation, snapshot, and
-portability guarantees do not apply to those values.
+Stage 1. Custom runtime dependencies belong outside `StrategyConfig`; active
+study workflows still use config-backed `Strategy` classes and must preserve
+canonical validation, snapshot, and portability guarantees.
 
 Public config exceptions:
 
@@ -480,9 +479,8 @@ Stage 2 should migrate `ParameterStudy` so that:
 
 - `ParameterStudy(..., strategy=StrategyClass)` is the canonical construction
   path
-- `strategy` and `strategy_factory` are mutually exclusive
+- the old callable construction path is not accepted in the active public API
 - new documentation and tests center `strategy=...`
-- `strategy_factory` remains only as an advanced escape hatch or migration path
 
 Grid/search result rows should expose candidate-level partial overrides as
 `candidate_parameters`, not `parameters`. The name `parameters` is reserved for
@@ -497,9 +495,8 @@ Rows are created only after study-level preflight succeeds. Runtime-failed rows
 retain the materialized `strategy_config` used or intended for the run.
 
 This row-level `strategy_config` guarantee applies to canonical
-`strategy=StrategyClass` workflows. Factory-based rows are an advanced path and
-must not be assumed to provide the same materialized-config guarantees unless
-Stage 2 explicitly designs a factory-row representation.
+`strategy=StrategyClass` workflows. The old callable construction path is not
+part of the active row contract.
 
 `GridSearchResult.best()` should continue returning the best eligible row. The
 canonical selected execution settings are exposed as `best.strategy_config`;
@@ -571,11 +568,12 @@ A simple buy-and-hold style strategy declares no config. Direct backtests and
 empty-parameter study workflows treat it as empty config. Non-empty
 `parameters` fail preflight because there is no schema field to target.
 
-### Scenario 5: Advanced Factory Path
+### Scenario 5: Unsupported Legacy Construction Path
 
-An advanced user supplies `strategy_factory` for custom construction. Quantleet
-allows the path, but it is documented as user-responsibility and not as the
-canonical portability/reporting guarantee path.
+An advanced user attempts to supply the legacy callable construction path for
+custom construction. Quantleet rejects that path in active study workflows
+because config-backed strategy classes are the canonical portability and
+reporting guarantee path.
 
 ### Scenario 6: Future WFA Fold
 
@@ -641,7 +639,7 @@ Stage 1:
 - config-less strategies are allowed and map to empty config
 - inherited config fields are allowed with base fields first, then subclass
   fields
-- `strategy_factory` is advanced/migration only
+- legacy callable construction is not part of the active public study API
 - study preflight fails fast for schema/search-space mistakes
 - MVP config defaults and search-space values are report-safe JSON scalars
 - MVP annotations are primitive `str`/`int`/`float`/`bool` plus explicit
@@ -680,7 +678,7 @@ configuration contract:
 - enforced config immutability
 - contract-level config discovery, materialization, and validation behavior
   needed by future study preflight
-- `strategy_factory` positioning as advanced/migration
+- removal of the old callable construction path from active study workflows
 - shared strategy/runtime ownership, not research-only ownership
 
 Stage 1 does not have to migrate `ParameterStudy`. If Stage 1 ships helper
@@ -694,21 +692,21 @@ path.
 Stage 2 should specify and implement the `ParameterStudy` migration:
 
 - canonical `strategy=StrategyClass`
-- mutually exclusive `strategy` and `strategy_factory`
+- `ParameterStudy(engine=..., bars=..., strategy=StrategyClass)` as the only
+  active study construction path
 - `candidate_parameters`
 - row-level `strategy_config`
 - best-row UX centered on `best.strategy_config`
 - empty `parameters={}` producing one default-config candidate in canonical
   config-aware workflows
 - preflight error types and messages for schema/search-space mistakes
-- whether constraints receive partial `candidate_parameters`, full
-  `strategy_config`, or both
-- the factory-row representation for advanced `strategy_factory` workflows
+- constraints receive full `strategy_config` mappings
+- the config-backed row representation for current research workflows
 - deterministic malformed-grid behavior for unordered candidate containers,
   empty value lists, duplicate or duplicate-equivalent values, non-finite
   floats, unsupported containers, and candidate-limit violations
-- when rejected or failed candidate rows are materialized, and whether rows
-  rejected by constraints expose `strategy_config`
+- rejected and failed candidate rows are materialized with full
+  `strategy_config`; constraint-rejected rows expose `strategy_config`
 
 ### Downstream Stage 3 Requirements
 
@@ -723,7 +721,7 @@ Stage 3 should specify and implement the reporting source-of-truth change:
 
 WFA remains paused until the relevant prior stages are completed or explicitly
 superseded. WFA must not resume on a public contract that hardens
-`strategy_factory` as the canonical research-study path.
+the old callable construction path as the canonical research-study path.
 
 ## Success Conditions
 
@@ -735,7 +733,8 @@ This product spec is successful when:
   `parameters`, `candidate_parameters`, and `strategy_config`
 - reporting planning can cite a clear rule that materialized config snapshots
   are the source of truth
-- WFA planning can resume later without hardening the old `strategy_factory`
+- WFA planning can resume later without hardening the old callable construction
+  path
   UX
 - the spec keeps ordinary strategy authoring lightweight while preserving a
   path to reproducible paper/live portability
@@ -745,14 +744,13 @@ This product spec is successful when:
 
 - Should a future `config=` base override be added to `ParameterStudy`,
   `BacktestEngine`, both, or neither?
-- In Stage 2, do constraints receive partial `candidate_parameters`, full
-  `strategy_config`, or both?
-- In Stage 2, what row shape should advanced `strategy_factory` workflows
-  expose?
+- Stage 2 resolved that constraints receive full `strategy_config` mappings.
+- Stage 2 resolved that the old callable construction path has no active row
+  shape because it is not part of the public study API.
 - In Stage 2, should duplicate-equivalent values such as `1` and `1.0` be
   normalized, rejected, or treated as distinct according to field type?
-- In Stage 2, should constraint-rejected rows expose `strategy_config`, or are
-  they excluded before row materialization?
+- Stage 2 resolved that constraint-rejected rows expose full
+  `strategy_config`.
 - In Stage 3, is `strategy_parameters` removed immediately or kept temporarily
   as a compatibility alias during migration?
 - When should Quantleet introduce range/choice validators or descriptor-style
@@ -763,5 +761,5 @@ This product spec is successful when:
   reporting?
 - Should `BacktestEngine.run(strategy=StrategyClass, config=...)` become the
   primary direct backtest API in a future backtest API spec?
-- What migration wording should docs use while the current beta remains
-  unpublished but existing in-repo examples still show `strategy_factory`?
+- What migration wording should docs use if external pre-release readers saw
+  old callable construction examples before the public beta?

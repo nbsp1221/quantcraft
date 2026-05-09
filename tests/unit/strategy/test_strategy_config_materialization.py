@@ -19,6 +19,15 @@ class RsiConfig(StrategyConfig):
     maybe_period: int | None = None
 
 
+class SmaConfig(StrategyConfig):
+    fast: int = 10
+    slow: int = 20
+
+    def validate(self) -> None:
+        if self.fast >= self.slow:
+            raise StrategyConfigValidationError("fast must be less than slow")
+
+
 def test_partial_overrides_preserve_non_searched_defaults() -> None:
     config = RsiConfig(period=7, oversold=20.0)
 
@@ -39,6 +48,53 @@ def test_unknown_and_private_overrides_raise_validation_error() -> None:
 
     with pytest.raises(StrategyConfigValidationError, match="_private"):
         RsiConfig(_private=1)
+
+
+def test_validate_accepts_cross_field_invariants_after_materialization() -> None:
+    config = SmaConfig(fast=5, slow=20)
+
+    assert config.fast == 5
+    assert config.slow == 20
+
+
+def test_validate_rejects_cross_field_invariants() -> None:
+    with pytest.raises(StrategyConfigValidationError, match="fast must be less than slow"):
+        SmaConfig(fast=20, slow=10)
+
+
+def test_validate_sees_defaulted_values() -> None:
+    with pytest.raises(StrategyConfigValidationError, match="fast must be less than slow"):
+        SmaConfig(fast=25)
+
+
+def test_validate_runs_after_unknown_field_validation() -> None:
+    with pytest.raises(StrategyConfigValidationError, match="unknown strategy config field"):
+        SmaConfig(missing=1)
+
+
+def test_validate_override_names_rejects_unknown_fields() -> None:
+    SmaConfig.validate_override_names(("fast", "slow"))
+
+    with pytest.raises(StrategyConfigValidationError, match="unknown strategy config field"):
+        SmaConfig.validate_override_names(("missing",))
+
+
+def test_diagnostic_mapping_from_overrides_returns_snapshot_before_domain_validation() -> None:
+    snapshot = SmaConfig.diagnostic_mapping_from_overrides({"fast": 25})
+
+    assert snapshot == {"fast": 25, "slow": 20}
+
+
+def test_diagnostic_mapping_from_overrides_preserves_schema_invalid_values() -> None:
+    assert SmaConfig.diagnostic_mapping_from_overrides({"fast": "bad"}) == {
+        "fast": "bad",
+        "slow": 20,
+    }
+
+
+def test_diagnostic_mapping_from_overrides_rejects_unknown_fields() -> None:
+    with pytest.raises(StrategyConfigValidationError, match="unknown strategy config field"):
+        SmaConfig.diagnostic_mapping_from_overrides({"missing": 1})
 
 
 @pytest.mark.parametrize("value", [1, 7])

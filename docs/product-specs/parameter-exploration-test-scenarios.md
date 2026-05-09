@@ -91,7 +91,7 @@ In scope:
 - parameter grid validation and deterministic enumeration
 - raw cartesian candidate counting and `max_candidates` behavior
 - constraint filtering, constraint failures, and all-rejected grids
-- strategy factory call behavior and fresh strategy state per admissible run
+- strategy class construction behavior and fresh strategy state per admissible run
 - composition with real `BacktestEngine.run(bars=..., strategy=...)`
 - rejected, successful, and failed row contracts
 - single-objective validation, ranking, ties, `best()`, and `top(n)`
@@ -123,9 +123,9 @@ Out of scope:
 | Unit | `tests/unit/research/test_parameter_grid_validation.py` | Finite ordered grid validation, JSON-scalar value policy, candidate counting, and deterministic enumeration. |
 | Unit | `tests/unit/research/test_parameter_study_preflight.py` | Public call-shape validation, materialized-bars requirement, `max_candidates`, objective validation, and no-run preflight failures. |
 | Unit | `tests/unit/research/test_grid_search_result_selection.py` | `best()`, `top(n)`, eligibility, ties, missing objectives, and non-finite ranking behavior. |
-| Unit | `tests/unit/research/test_grid_search_records.py` | Stable simple-record shape, nested parameters, metric-state fields, and failure diagnostics. |
+| Unit | `tests/unit/research/test_grid_search_records.py` | Stable simple-record shape, nested candidate/config snapshots, metric-state fields, and failure diagnostics. |
 | Integration | `tests/integration/research/test_parameter_study_grid_search.py` | Real `ParameterStudy` plus `BacktestEngine` finite-grid workflows over deterministic `BarSeries`. |
-| Integration | `tests/integration/research/test_parameter_study_failures.py` | Constraint, strategy factory, backtest, and metric-extraction failure behavior with real public workflows where practical. |
+| Integration | `tests/integration/research/test_parameter_study_failures.py` | Constraint, strategy construction, backtest, and metric-extraction failure behavior with real public workflows where practical. |
 | Integration | `tests/integration/research/test_parameter_study_selected_run.py` | Selected-row access to normal `BacktestResult.report` and `BacktestResult.plot()`. |
 | Smoke | `tests/smoke/local/test_public_imports.py` | `ParameterStudy` remains importable from `quantleet.research`. |
 | Structure | `tests/structure/architecture/test_parameter_exploration_boundaries.py` | Research owns study UX, composes public backtest surface, and does not add Tier A or optimizer dependency drift. |
@@ -154,7 +154,7 @@ regression data shape.
 | `two_trade_bars` | deterministic win/loss outcomes | finite profit factor and win-rate assertions. |
 | `profit_factor_infinite_report` | minimal result/report object or real run that produces wins and no losses | meaningful `math.inf` ranking and record-state behavior. |
 | `fake_counting_engine` | contract-shaped fake with `run(...)` call log | prove preflight failures do not run backtests and admissible runs call the engine once. |
-| `raising_strategy_factory` | factory that raises for one parameter value | `strategy_factory` failure rows and `fail_fast=True`. |
+| `raising_strategy_construction` | strategy constructor that raises for one parameter value | `strategy_construction` failure rows and `fail_fast=True`. |
 | `raising_strategy` | strategy whose `init()` or `on_bar()` raises for one parameter value | `backtest` failure rows and continue-by-default behavior. |
 | `constraint_raises` | constraint that raises for one combination | constraint failure rows and `fail_fast=True`. |
 | `constraint_returns_non_bool` | constraint returning `1`, `0`, `None`, or `"yes"` | invalid constraint outcome behavior. |
@@ -210,11 +210,13 @@ Scenarios:
 | --- | --- | --- |
 | one parameter | `{"fast": [5, 10]}` | accepted, two candidates. |
 | multiple ordered parameters | `{"fast": [5, 10], "slow": [20, 50]}` | deterministic cartesian rows in documented order. |
-| empty grid | `{}` | invalid with a clear diagnostic. |
+| empty grid | `{}` | accepted as one default-config candidate. |
 | non-string parameter name | `{1: [5]}` | invalid and identifies the key type. |
 | empty parameter name | `{"": [5]}` | invalid and identifies the empty name. |
-| dotted parameter name | `{"fast.length": [5]}` | accepted and preserved under `parameters`. |
-| reserved-looking parameter name | `{"status": [5], "run_index": [1]}` | accepted and preserved under `parameters` without overwriting top-level fields. |
+| unknown parameter name | `{"missing": [5]}` | invalid before any backtest because the key is not a public `StrategyConfig` field. |
+| private parameter name | `{"_fast": [5]}` | invalid before any backtest because private config fields are not public search-space fields. |
+| dotted parameter name | `{"fast.length": [5]}` | invalid unless it is a declared public config field, which normal `StrategyConfig` declarations do not support. |
+| reserved-looking parameter name | `{"status": [5]}` | accepted only when `status` is a declared public config field and remains nested under `candidate_parameters` and `strategy_config`. |
 | empty value list | `{"fast": []}` | invalid and names `fast`. |
 | unordered values | `{"fast": {5, 10}}` | invalid because row identity would be unstable. |
 | duplicate values | `{"fast": [5, 5]}` | invalid because candidate identity is ambiguous. |
@@ -223,13 +225,16 @@ Scenarios:
 
 Required assertions:
 
-- validation happens before strategy factory or engine calls
+- validation happens before strategy construction or engine calls
 - invalid values raise `ValueError`; invalid argument types or call shapes raise
   `TypeError`
-- parameter names remain exact user-facing labels in accepted candidate rows
-- parameter values remain nested under `parameters` in exported records
+- parameter names remain exact user-facing config field names in accepted
+  candidate rows
+- candidate overrides remain nested under `candidate_parameters` and full
+  config snapshots remain nested under `strategy_config` in exported records
 - top-level record fields remain intact when parameter names match fields such
-  as `status`, `run_index`, `parameters`, or `error_type`
+  as `status`, `run_index`, `candidate_parameters`, `strategy_config`, or
+  `error_type`
 
 ### U2: Raw Candidate Limit
 
@@ -251,7 +256,7 @@ Required assertions:
 - failure diagnostics include raw candidate count and configured limit
 - invalid `max_candidates` values use `ValueError` for invalid values and
   `TypeError` for invalid types
-- no strategy factory or engine call occurs on limit failure
+- no strategy construction or engine call occurs on limit failure
 
 ### U3: Constraint Outcomes
 
@@ -269,8 +274,8 @@ Scenarios:
 - truthy/falsy non-boolean constraint returns are invalid outcomes and produce
   constraint failed rows by default
 - `fail_fast=True` raises on non-boolean constraint returns
-- a constraint or strategy factory that attempts to mutate its received
-  parameter mapping cannot corrupt stored row identity or later callback inputs
+- a constraint that attempts to mutate its received full `strategy_config`
+  mapping cannot corrupt stored row identity or later callback inputs
 
 Required assertions:
 
@@ -303,7 +308,7 @@ Scenarios:
 - multi-objective lists, weighted expressions, Pareto requests, and callables
   are invalid
 - unknown objective paths and non-scalar objective paths fail as whole-search
-  input errors before any strategy factory or engine calls
+  input errors before any strategy construction or engine calls
 
 Required assertions:
 
@@ -333,7 +338,8 @@ Scenarios:
 
 Required assertions:
 
-- returned selected rows expose `parameters` and their retained `BacktestResult`
+- returned selected rows expose `candidate_parameters`, `strategy_config`, and
+  their retained `BacktestResult`
   when successful
 - selection tests do not depend on private sorting helpers
 
@@ -344,18 +350,19 @@ default records.
 
 Scenarios:
 
-- strategy factory raises for one combination
+- strategy construction raises for one combination
 - real strategy `init()` raises for one combination
 - real strategy `on_bar()` raises for one combination
 - metric extraction unexpectedly fails for a known comparison metric
 - each default failure path continues to later combinations
 - `fail_fast=True` raises on the first failed-row stage:
-  `"constraint"`, `"strategy_factory"`, `"backtest"`, or
+  `"constraint"`, `"strategy_construction"`, `"backtest"`, or
   `"metric_extraction"`
 
 Required assertions:
 
-- failed rows include `parameters`, `failure_stage`, `error_type`, and
+- failed rows include `candidate_parameters`, `strategy_config`,
+  `failure_stage`, `error_type`, and
   `error_message`
 - `error_type` is the exception class name, such as `"ValueError"`
 - default records do not include traceback, cause chains, or local traceback
@@ -375,12 +382,15 @@ Scenarios:
 - successful, rejected, and failed rows share a stable top-level shape
 - every record includes a top-level `status` value of `"success"`,
   `"rejected"`, or `"failed"`
-- parameter values are nested under `parameters`
-- `parameters` is the only required nested field
+- candidate overrides are nested under `candidate_parameters`
+- full materialized configs are nested under `strategy_config`
+- `candidate_parameters` and `strategy_config` are the required nested config
+  fields
 - non-metric fields use the product-spec record keys and row-state nullability:
-  `run_index`, `status`, `parameters`, `run.label`, `strategy.class_name`,
+  `run_index`, `status`, `candidate_parameters`, `strategy_config`, `run.label`, `strategy.class_name`,
   `strategy.display_name`, `run.symbol`, `run.timeframe`, `run.initial_cash`,
-  `execution.model_name`, `failure_stage`, `error_type`, and `error_message`
+  `execution.model_name`, `rejection_stage`, `failure_stage`, `error_type`,
+  and `error_message`
 - metric keys use dotted report paths such as `"returns.total_return"`
 - companion metric-state fields append `_state`, such as
   `"returns.total_return_state"`
@@ -409,7 +419,7 @@ Purpose: protect the beta UX from accepting deferred-scope shortcuts.
 
 Scenarios:
 
-- constructing `ParameterStudy(engine=..., bars=..., strategy_factory=...)`
+- constructing `ParameterStudy(engine=..., bars=..., strategy=StrategyClass)`
   succeeds with materialized `BarSeries`
 - passing `source=` to `ParameterStudy` or `grid_search(...)` is not accepted
   in beta
@@ -435,7 +445,7 @@ Flow:
 1. build deterministic `crossing_bars`
 2. construct `BacktestEngine(initial_cash=...)`
 3. define an SMA-style `Strategy` subclass with `fast` and `slow`
-4. construct `ParameterStudy(engine=engine, bars=bars, strategy_factory=...)`
+4. construct `ParameterStudy(engine=engine, bars=bars, strategy=StrategyClass)`
 5. call `grid_search(parameters=..., constraint=..., objective=...)`
 
 Required assertions:
@@ -445,7 +455,7 @@ Required assertions:
 - all admissible combinations produce successful rows
 - row order and `run_index` are deterministic
 - `to_records()` includes comparison metrics and metric-state fields
-- `best()` returns a successful selected row with matching parameters
+- `best()` returns a successful selected row with matching `strategy_config`
 
 ### I2: Fresh Strategy State Per Run
 
@@ -461,11 +471,11 @@ Flow:
 
 Required assertions:
 
-- strategy factory is called once per admissible run
+- strategy class is constructed once per admissible run
 - no mutated strategy instance is reused across combinations
 - no broker, order, report, account, or strategy runtime state leaks through a
   reused `BacktestEngine` object across candidate runs
-- rejected rows do not call the strategy factory
+- rejected rows do not construct the strategy
 
 ### I3: Continue By Default On Mixed Failures
 
@@ -473,7 +483,7 @@ Purpose: prove routine failures remain visible without aborting the whole study.
 
 Flow:
 
-1. define a grid with one normal combination, one strategy-factory failure, and
+1. define a grid with one normal combination, one strategy-construction failure, and
    one backtest runtime failure
 2. run with default `fail_fast=False`
 

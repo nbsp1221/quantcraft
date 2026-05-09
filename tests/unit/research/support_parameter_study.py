@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
 from quantleet.backtest import BacktestEngine, BacktestResult
 from quantleet.data import BarSeries, TimeBar
-from quantleet.research import Strategy
+from quantleet.strategy import Strategy, StrategyConfig
 from quantleet.trading.domain.costs import CostConfig
 from quantleet.trading.domain.events import BarEvent
 
@@ -37,16 +36,24 @@ def make_engine() -> BacktestEngine:
     )
 
 
-class NoTradeStrategy(Strategy):
-    def __init__(self, parameters: Mapping[str, object] | None = None) -> None:
-        super().__init__()
-        self._parameters = dict(parameters or {})
+class NoTradeConfig(StrategyConfig):
+    x: int = 1
+    fast: int = 5
+    slow: int = 20
+    name: str = "alpha"
+    count: int = 3
+    ratio: float = 0.5
+    enabled: bool = True
+    maybe: int | None = None
+    status: str = "reserved-looking"
 
-    def parameters(self) -> dict[str, object]:
-        return dict(self._parameters)
 
+class NoTradeStrategy(Strategy[NoTradeConfig]):
     def on_bar(self, bar: BarEvent) -> None:
         return None
+
+    def parameters(self) -> dict[str, object]:
+        return self.config.to_mapping()
 
 
 class BuyOnceStrategy(NoTradeStrategy):

@@ -50,8 +50,8 @@ The core product contract is:
 - study/report/export-facing snapshots are normalized plain mappings
 - materialized configs are immutable run snapshots enforced by the framework
 - ordinary strategy authors do not need `__init__` just to receive config
-- custom constructors and `strategy_factory` are advanced/user-responsibility
-  paths
+- custom constructors are advanced/user-responsibility paths that must preserve
+  the framework config contract
 - search-space/schema mistakes fail before any backtest execution hook starts
 - config defaults and candidate search-space values are JSON scalars in the MVP
 - supported annotations are primitive `str`/`int`/`float`/`bool` plus explicit
@@ -131,7 +131,7 @@ In scope for Stage 1:
 In scope as downstream Stage 2/3 test hooks:
 
 - `ParameterStudy(..., strategy=StrategyClass)` canonical construction
-- mutually exclusive `strategy` and `strategy_factory`
+- old callable construction keyword rejected by the active public API
 - `candidate_parameters` row naming
 - row-level `strategy_config`
 - empty `parameters={}` producing one default-config candidate in canonical
@@ -262,10 +262,11 @@ Tests must verify:
 - `bool` is not accepted as `int` or `float`
 - `int` is accepted for `float`
 - search-space/schema mistakes prevent backtest/study execution hooks
-- config-contract failures occur before constraints, factories, constructors,
+- config-contract failures occur before constraints, strategy constructors,
   lifecycle methods, or execution hooks with user-visible side effects
 - custom constructors are allowed but not part of canonical guarantee tests
-- `strategy_factory` remains outside canonical guarantee tests
+- the old callable construction keyword is rejected outside canonical guarantee
+  tests
 
 ## What Tests Must Not Verify
 
@@ -474,9 +475,9 @@ ParameterStudy(
 Expected:
 
 - canonical construction accepts `strategy=StrategyClass`
-- `strategy` and `strategy_factory` are mutually exclusive
-- `strategy_factory` remains advanced and does not receive canonical
-  materialized-config row guarantees unless Stage 2 defines them
+- old callable construction keyword is rejected
+- canonical materialized-config row guarantees apply to
+  `strategy=StrategyClass` workflows
 
 ### S2-2: Empty Search Space
 
@@ -527,12 +528,10 @@ Expected future canonical behavior:
 
 ### S2-4: Constraint Input
 
-Product decision still open:
+Resolved Stage 2 behavior:
 
-- constraints may receive `candidate_parameters`, full `strategy_config`, or
-  both
-
-No Stage 2 test should be written until that decision is closed.
+- constraints receive full `strategy_config`
+- constraints do not receive partial `candidate_parameters`
 
 ### S2-5: Malformed Grid Carry-Forward
 
@@ -553,17 +552,12 @@ product spec deliberately changes them:
 
 ### S2-6: Constraint-Rejected And Failed Candidate Rows
 
-Product decisions are still open:
+Resolved Stage 2 behavior:
 
-- whether constraints receive partial `candidate_parameters`, full
-  `strategy_config`, or both
-- whether rows rejected by constraints are materialized and expose
-  `strategy_config`
-- whether runtime-failed rows always retain the materialized `strategy_config`
-  intended for execution
-
-No Stage 2 tests should assert row shape for rejected or failed candidates until
-those decisions are closed.
+- constraints receive full `strategy_config`
+- rows rejected by constraints are materialized with `strategy_config`
+- runtime-failed rows retain the materialized `strategy_config` intended for
+  execution
 
 ## Downstream Stage 3 Test Hooks
 
@@ -624,8 +618,7 @@ Assertions after relevant stages:
 
 - `Strategy.parameters()` is not used as canonical execution-config source of
   truth
-- current `strategy_factory` examples are updated, moved to advanced sections,
-  or explicitly marked transitional
+- old callable construction examples are removed from active docs/examples
 - tests no longer teach `GridSearchRow.parameters` as the canonical row field
   after Stage 2 migration
 
@@ -661,7 +654,7 @@ Assertions after relevant stages:
 - deterministic grid-shape carry-forward once Stage 2 starts
 - Stage 2 empty-search-space row shape
 - Stage 2 config-less empty-search-space row shape
-- Stage 2 factory-row representation after the decision is closed
+- Stage 2 config-backed row representation after the decision is closed
 - Stage 3 report `strategy_config` snapshot
 
 ### P2
@@ -696,13 +689,12 @@ The test suite derived from this document is successful when:
 
 ## Open Questions
 
-- In Stage 2, do constraints receive `candidate_parameters`, full
-  `strategy_config`, or both?
+- Stage 2 resolved that constraints receive full `strategy_config` mappings.
 - In Stage 2, should duplicate-equivalent values such as `1` and `1.0` be
   normalized, rejected, or treated as distinct according to field type?
-- In Stage 2, do constraint-rejected rows expose `strategy_config`, or are they
-  excluded before materialized rows exist?
-- In Stage 2, what row shape should advanced `strategy_factory` workflows
-  expose?
+- Stage 2 resolved that constraint-rejected rows expose full
+  `strategy_config`.
+- Stage 2 resolved that old callable construction workflows have no active row
+  shape because the keyword is rejected.
 - In Stage 3, is `strategy_parameters` removed immediately or kept temporarily
   as a compatibility alias during migration?

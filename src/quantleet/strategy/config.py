@@ -99,6 +99,7 @@ class StrategyConfig:
             values[name] = value
 
         object.__setattr__(self, "_values", MappingProxyType(values))
+        self.validate()
         object.__setattr__(self, "_frozen", True)
 
     def __getattribute__(self, name: str) -> object:
@@ -130,6 +131,33 @@ class StrategyConfig:
     def to_mapping(self) -> dict[str, JSONConfigScalar]:
         values: Mapping[str, JSONConfigScalar] = object.__getattribute__(self, "_values")
         return dict(values)
+
+    def validate(self) -> None:
+        pass
+
+    @classmethod
+    def validate_override_names(cls, names: tuple[str, ...] | list[str] | set[str]) -> None:
+        for name in names:
+            cls._field_for_override(name)
+
+    @classmethod
+    def diagnostic_mapping_from_overrides(
+        cls,
+        overrides: Mapping[str, JSONConfigScalar],
+    ) -> dict[str, JSONConfigScalar]:
+        """Return a name-valid snapshot for rejected-candidate diagnostics.
+
+        This helper intentionally does not run primitive validation or
+        domain-level ``validate()``.
+        Normal execution must materialize ``StrategyConfig(**overrides)``.
+        """
+        values: dict[str, JSONConfigScalar] = {
+            field.name: field.default for field in cls.__config_fields__
+        }
+        for name, value in overrides.items():
+            cls._field_for_override(name)
+            values[name] = value
+        return values
 
     @classmethod
     def _field_for_override(cls, name: str) -> _ConfigField:

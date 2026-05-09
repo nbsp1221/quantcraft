@@ -8,6 +8,8 @@ from typing import Any
 import pytest
 
 from quantleet.research import ParameterStudy
+from quantleet.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
+from quantleet.trading.domain.events import BarEvent
 from tests.unit.research.support_parameter_study import (
     CountingEngine,
     NoTradeStrategy,
@@ -19,11 +21,25 @@ class ParameterEnum(IntEnum):
     FAST = 5
 
 
+class SmaConfig(StrategyConfig):
+    fast: int = 10
+    slow: int = 20
+
+    def validate(self) -> None:
+        if self.fast >= self.slow:
+            raise StrategyConfigValidationError("fast must be less than slow")
+
+
+class SmaStrategy(Strategy[SmaConfig]):
+    def on_bar(self, bar: BarEvent) -> None:
+        return None
+
+
 def make_study(*, engine: CountingEngine | None = None) -> ParameterStudy:
     return ParameterStudy(
         engine=engine or CountingEngine(),
         bars=make_bars(),
-        strategy_factory=lambda parameters: NoTradeStrategy(dict(parameters)),
+        strategy=NoTradeStrategy,
     )
 
 
@@ -34,11 +50,57 @@ def test_parameter_grid_enumerates_mapping_order_then_value_order() -> None:
     )
 
     assert [row.run_index for row in result.rows] == [0, 1, 2, 3]
-    assert [dict(row.parameters) for row in result.rows] == [
+    assert [dict(row.candidate_parameters) for row in result.rows] == [
         {"fast": 5, "slow": 20},
         {"fast": 5, "slow": 50},
         {"fast": 10, "slow": 20},
         {"fast": 10, "slow": 50},
+    ]
+    assert [dict(row.strategy_config) for row in result.rows] == [
+        {
+            "x": 1,
+            "fast": 5,
+            "slow": 20,
+            "name": "alpha",
+            "count": 3,
+            "ratio": 0.5,
+            "enabled": True,
+            "maybe": None,
+            "status": "reserved-looking",
+        },
+        {
+            "x": 1,
+            "fast": 5,
+            "slow": 50,
+            "name": "alpha",
+            "count": 3,
+            "ratio": 0.5,
+            "enabled": True,
+            "maybe": None,
+            "status": "reserved-looking",
+        },
+        {
+            "x": 1,
+            "fast": 10,
+            "slow": 20,
+            "name": "alpha",
+            "count": 3,
+            "ratio": 0.5,
+            "enabled": True,
+            "maybe": None,
+            "status": "reserved-looking",
+        },
+        {
+            "x": 1,
+            "fast": 10,
+            "slow": 50,
+            "name": "alpha",
+            "count": 3,
+            "ratio": 0.5,
+            "enabled": True,
+            "maybe": None,
+            "status": "reserved-looking",
+        },
     ]
     assert result.candidate_count == 4
     assert result.successful_count == 4
@@ -47,7 +109,6 @@ def test_parameter_grid_enumerates_mapping_order_then_value_order() -> None:
 @pytest.mark.parametrize(
     ("parameters", "error_type", "match"),
     [
-        ({}, ValueError, "parameters"),
         ({1: [5]}, TypeError, "parameter name"),
         ({"": [5]}, ValueError, "parameter name"),
         ({"fast": []}, ValueError, "fast"),
@@ -74,6 +135,24 @@ def test_invalid_parameter_grids_fail_before_running(
     assert engine.calls == []
 
 
+def test_empty_parameter_grid_runs_default_config_once() -> None:
+    result = make_study().grid_search(parameters={})
+
+    assert result.candidate_count == 1
+    assert result.successful_count == 1
+    assert result.rows[0].candidate_parameters == {}
+    assert dict(result.rows[0].strategy_config)["x"] == 1
+
+
+def test_unknown_parameter_key_fails_before_running() -> None:
+    engine = CountingEngine()
+
+    with pytest.raises(StrategyConfigValidationError, match="unknown"):
+        make_study(engine=engine).grid_search(parameters={"missing": [1]})
+
+    assert engine.calls == []
+
+
 def test_supported_json_scalar_parameter_values_are_preserved_in_records() -> None:
     result = make_study().grid_search(
         parameters={
@@ -88,7 +167,7 @@ def test_supported_json_scalar_parameter_values_are_preserved_in_records() -> No
 
     record = result.to_records()[0]
 
-    assert record["parameters"] == {
+    assert record["candidate_parameters"] == {
         "name": "alpha",
         "count": 3,
         "ratio": 0.5,
@@ -96,6 +175,18 @@ def test_supported_json_scalar_parameter_values_are_preserved_in_records() -> No
         "maybe": None,
         "status": "reserved-looking",
     }
+    assert record["strategy_config"] == {
+        "x": 1,
+        "fast": 5,
+        "slow": 20,
+        "name": "alpha",
+        "count": 3,
+        "ratio": 0.5,
+        "enabled": True,
+        "maybe": None,
+        "status": "reserved-looking",
+    }
+    assert "parameters" not in record
     assert record["status"] == "success"
 
 
@@ -155,8 +246,81 @@ def test_constraint_rejections_are_rows_not_failures() -> None:
     assert result.successful_count == 1
     assert result.rejected_count == 1
     assert result.failed_count == 0
-    assert [dict(row.parameters) for row in result.rejected()] == [{"fast": 20, "slow": 10}]
-    assert [call["strategy"].parameters() for call in engine.calls] == [{"fast": 5, "slow": 10}]
+    assert [dict(row.candidate_parameters) for row in result.rejected()] == [
+        {"fast": 20, "slow": 10}
+    ]
+    assert result.rejected()[0].rejection_stage == "constraint"
+    assert [call["strategy"].parameters() for call in engine.calls] == [
+        {
+            "x": 1,
+            "fast": 5,
+            "slow": 10,
+            "name": "alpha",
+            "count": 3,
+            "ratio": 0.5,
+            "enabled": True,
+            "maybe": None,
+            "status": "reserved-looking",
+        }
+    ]
+
+
+def test_strategy_config_validation_rejections_are_rows_without_running() -> None:
+    engine = CountingEngine()
+
+    result = ParameterStudy(
+        engine=engine,
+        bars=make_bars(),
+        strategy=SmaStrategy,
+    ).grid_search(parameters={"fast": [5, 25]})
+
+    assert result.candidate_count == 2
+    assert result.successful_count == 1
+    assert result.rejected_count == 1
+    assert len(engine.calls) == 1
+    rejected = result.rejected()[0]
+    assert rejected.rejection_stage == "strategy_config"
+    assert rejected.error_type == "StrategyConfigValidationError"
+    assert rejected.error_message == "fast must be less than slow"
+    assert dict(rejected.candidate_parameters) == {"fast": 25}
+    assert dict(rejected.strategy_config) == {"fast": 25, "slow": 20}
+
+
+def test_strategy_config_validation_happens_before_constraint() -> None:
+    seen_configs: list[dict[str, object]] = []
+
+    result = ParameterStudy(
+        engine=CountingEngine(),
+        bars=make_bars(),
+        strategy=SmaStrategy,
+    ).grid_search(
+        parameters={"fast": [25]},
+        constraint=lambda config: seen_configs.append(dict(config)) is None,
+    )
+
+    assert seen_configs == []
+    assert result.rejected_count == 1
+    assert result.rejected()[0].rejection_stage == "strategy_config"
+
+
+def test_strategy_config_type_validation_rejections_are_rows_without_running() -> None:
+    engine = CountingEngine()
+
+    result = ParameterStudy(
+        engine=engine,
+        bars=make_bars(),
+        strategy=SmaStrategy,
+    ).grid_search(parameters={"fast": ["bad"]})
+
+    assert engine.calls == []
+    assert result.candidate_count == 1
+    assert result.rejected_count == 1
+    rejected = result.rejected()[0]
+    assert rejected.rejection_stage == "strategy_config"
+    assert rejected.error_type == "StrategyConfigValidationError"
+    assert rejected.error_message == "fast expects int"
+    assert dict(rejected.candidate_parameters) == {"fast": "bad"}
+    assert dict(rejected.strategy_config) == {"fast": "bad", "slow": 20}
 
 
 def test_constraint_exceptions_continue_by_default_and_fail_fast_raises() -> None:
@@ -173,7 +337,7 @@ def test_constraint_exceptions_continue_by_default_and_fail_fast_raises() -> Non
     assert failed.failure_stage == "constraint"
     assert failed.error_type == "RuntimeError"
     assert failed.error_message == "bad constraint"
-    assert dict(failed.parameters) == {"x": 2}
+    assert dict(failed.candidate_parameters) == {"x": 2}
 
     with pytest.raises(RuntimeError, match="bad constraint") as exc_info:
         make_study().grid_search(
@@ -183,6 +347,8 @@ def test_constraint_exceptions_continue_by_default_and_fail_fast_raises() -> Non
         )
 
     assert any("stage=constraint" in note for note in exc_info.value.__notes__)
+    assert any("candidate_parameters={'x': 2}" in note for note in exc_info.value.__notes__)
+    assert any("'slow': 20" in note for note in exc_info.value.__notes__)
 
 
 @pytest.mark.parametrize("constraint_result", [1, 0, None, "yes"])
@@ -208,5 +374,28 @@ def test_callbacks_cannot_mutate_stored_or_later_parameter_identity() -> None:
 
     result = make_study().grid_search(parameters={"x": [1, 2]}, constraint=constraint)
 
-    assert seen == [{"x": 1}, {"x": 2}]
-    assert [dict(row.parameters) for row in result.rows] == [{"x": 1}, {"x": 2}]
+    assert seen == [
+        {
+            "x": 1,
+            "fast": 5,
+            "slow": 20,
+            "name": "alpha",
+            "count": 3,
+            "ratio": 0.5,
+            "enabled": True,
+            "maybe": None,
+            "status": "reserved-looking",
+        },
+        {
+            "x": 2,
+            "fast": 5,
+            "slow": 20,
+            "name": "alpha",
+            "count": 3,
+            "ratio": 0.5,
+            "enabled": True,
+            "maybe": None,
+            "status": "reserved-looking",
+        },
+    ]
+    assert [dict(row.candidate_parameters) for row in result.rows] == [{"x": 1}, {"x": 2}]

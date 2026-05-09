@@ -17,10 +17,12 @@ def row(
     return GridSearchRow(
         run_index=run_index,
         status=status,
-        parameters={"x": run_index},
+        candidate_parameters={"x": run_index},
+        strategy_config={"x": run_index, "enabled": True},
         backtest=None,
         metrics={"returns.total_return": metric},
         metric_states={"returns.total_return": state},
+        rejection_stage=None,
         failure_stage=None,
         error_type=None,
         error_message=None,
@@ -34,6 +36,7 @@ def test_best_and_top_rank_by_explicit_max_and_min_objectives() -> None:
     )
 
     assert result.best().run_index == 1
+    assert dict(result.best().strategy_config) == {"x": 1, "enabled": True}
     assert [selected.run_index for selected in result.top(2)] == [1, 2]
     assert [
         selected.run_index for selected in result.top(2, objective=("returns.total_return", "min"))

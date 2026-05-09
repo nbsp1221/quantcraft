@@ -9,7 +9,7 @@ def test_no_trade_metrics_are_undefined_not_zero() -> None:
     result = ParameterStudy(
         engine=engine(),
         bars=crossing_bars(),
-        strategy_factory=lambda parameters: NoTradeStrategy(parameters),
+        strategy=NoTradeStrategy,
     ).grid_search(
         parameters={"x": [1]},
         objective=("returns.total_return", "max"),

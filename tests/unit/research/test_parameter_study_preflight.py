@@ -5,6 +5,7 @@ import inspect
 import pytest
 
 from quantleet.research import GridSearchResult, GridSearchRow, ParameterStudy
+from quantleet.strategy import StrategyConfigValidationError
 from tests.unit.research.support_parameter_study import (
     CountingEngine,
     NoTradeStrategy,
@@ -18,12 +19,12 @@ def test_public_import_surface_exposes_parameter_study_types() -> None:
     assert GridSearchRow is not None
 
 
-def test_parameter_study_requires_materialized_bars_and_callable_factory() -> None:
+def test_parameter_study_requires_materialized_bars_and_strategy_class() -> None:
     engine = CountingEngine()
     study = ParameterStudy(
         engine=engine,
         bars=make_bars(),
-        strategy_factory=lambda parameters: NoTradeStrategy(parameters),
+        strategy=NoTradeStrategy,
     )
 
     assert study.grid_search(parameters={"x": [1]}).successful_count == 1
@@ -32,11 +33,24 @@ def test_parameter_study_requires_materialized_bars_and_callable_factory() -> No
         ParameterStudy(
             engine=engine,
             bars=object(),
-            strategy_factory=lambda parameters: NoTradeStrategy(parameters),
+            strategy=NoTradeStrategy,
         )
 
-    with pytest.raises(TypeError, match="strategy_factory"):
-        ParameterStudy(engine=engine, bars=make_bars(), strategy_factory=object())
+    with pytest.raises(TypeError, match="strategy"):
+        ParameterStudy(engine=engine, bars=make_bars(), strategy=NoTradeStrategy())
+
+    with pytest.raises(TypeError, match="strategy"):
+        ParameterStudy(engine=engine, bars=make_bars(), strategy=object)  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError):
+        legacy_kwargs = {
+            "strategy" + "_factory": lambda parameters: NoTradeStrategy(),
+        }
+        ParameterStudy(
+            engine=engine,
+            bars=make_bars(),
+            **legacy_kwargs,  # type: ignore[arg-type]
+        )
 
 
 def test_beta_public_signatures_do_not_accept_deferred_controls() -> None:
@@ -51,7 +65,7 @@ def test_beta_public_signatures_do_not_accept_deferred_controls() -> None:
     study = ParameterStudy(
         engine=CountingEngine(),
         bars=make_bars(),
-        strategy_factory=lambda parameters: NoTradeStrategy(parameters),
+        strategy=NoTradeStrategy,
     )
 
     with pytest.raises(TypeError):
@@ -77,7 +91,7 @@ def test_all_beta_objective_paths_are_accepted(objective: tuple[str, str]) -> No
     result = ParameterStudy(
         engine=CountingEngine(),
         bars=make_bars(),
-        strategy_factory=lambda parameters: NoTradeStrategy(parameters),
+        strategy=NoTradeStrategy,
     ).grid_search(parameters={"x": [1]}, objective=objective)
 
     assert result.objective == objective
@@ -104,7 +118,42 @@ def test_invalid_objectives_fail_before_any_backtest(
         ParameterStudy(
             engine=engine,
             bars=make_bars(),
-            strategy_factory=lambda parameters: NoTradeStrategy(parameters),
+            strategy=NoTradeStrategy,
         ).grid_search(parameters={"x": [1]}, objective=objective)  # type: ignore[arg-type]
+
+    assert engine.calls == []
+
+
+def test_empty_search_space_runs_one_default_config_candidate() -> None:
+    result = ParameterStudy(
+        engine=CountingEngine(),
+        bars=make_bars(),
+        strategy=NoTradeStrategy,
+    ).grid_search(parameters={})
+
+    assert result.candidate_count == 1
+    assert result.rows[0].candidate_parameters == {}
+    assert dict(result.rows[0].strategy_config) == {
+        "x": 1,
+        "fast": 5,
+        "slow": 20,
+        "name": "alpha",
+        "count": 3,
+        "ratio": 0.5,
+        "enabled": True,
+        "maybe": None,
+        "status": "reserved-looking",
+    }
+
+
+def test_unknown_config_field_fails_before_any_backtest() -> None:
+    engine = CountingEngine()
+
+    with pytest.raises(StrategyConfigValidationError, match="unknown"):
+        ParameterStudy(
+            engine=engine,
+            bars=make_bars(),
+            strategy=NoTradeStrategy,
+        ).grid_search(parameters={"missing": [1]})
 
     assert engine.calls == []

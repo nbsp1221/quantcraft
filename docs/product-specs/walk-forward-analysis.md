@@ -28,7 +28,7 @@ be treated as authorization to implement WFA.
 
 The pause is intentional. WFA remains a desired validation-study workflow, but
 design discussion exposed a deeper product-contract risk: the current
-`strategy_factory`-centered parameter-study surface may be an implementation
+legacy callable construction API-centered parameter-study surface may be an implementation
 adapter rather than the long-lived user-facing strategy configuration contract
 needed by research, backtest, paper trading, and live trading. Implementing WFA
 directly on top of that transitional surface could harden the wrong public API
@@ -105,11 +105,10 @@ Reason for pausing:
 
 - WFA would exercise the strategy parameter contract harder than the current
   single-slice `ParameterStudy`.
-- Current `ParameterStudy` uses `strategy_factory` as the public construction
-  path.
-- The emerging product direction favors an explicit `Strategy` plus
-  `StrategyConfig` style contract, with factory behavior treated as an
-  adapter or advanced escape hatch.
+- Current `ParameterStudy` uses `strategy=StrategyClass` plus
+  `StrategyConfig` as the public construction path.
+- The product direction favors an explicit `Strategy` plus `StrategyConfig`
+  contract, and WFA must not reintroduce the old callable construction path.
 - Choosing the WFA implementation path before resolving that contract would
   likely turn an expedient API into a long-lived product promise.
 
@@ -278,7 +277,7 @@ training candidate and each selected test run.
 
 The product-level contract is:
 
-- users may provide a strategy class or a callable strategy factory
+- users provide a strategy class with a declared `StrategyConfig`
 - every attempted run receives fresh strategy state
 - selected parameters are passed into the strategy construction path without
   mutating shared strategy objects
@@ -497,7 +496,7 @@ Expected outcome:
 
 ### Scenario 4: Strategy Construction Failure
 
-One parameter combination causes the strategy factory to raise.
+One parameter combination causes strategy construction to raise.
 
 Expected outcome:
 
@@ -579,8 +578,7 @@ The product slice is successful when a user can:
 
 ## Open Questions
 
-1. Should the public constructor argument be `strategy` only, or should both
-   `strategy` and `strategy_factory` be accepted?
+1. Stage 2 resolved the public constructor argument as `strategy` only.
 2. If a strategy class is provided, should Quantleet call it as
    `StrategyClass(**params)`, require a `parameters` constructor convention, or
    require users to pass an explicit factory?
