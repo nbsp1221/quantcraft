@@ -465,13 +465,14 @@ for the run. The name `strategy_parameters` should be removed to avoid
 confusion with study-level `parameters` search spaces and partial candidate
 mappings.
 
-Config-less strategies and direct instance runs without a framework-owned config
-snapshot report an empty config snapshot `{}`.
+Config-less strategies report an empty config snapshot `{}`. Direct instance
+runs remain valid when the strategy instance exposes framework-owned
+`StrategyConfig` metadata.
 
-Stage 1 and Stage 2 must not rely on current report-level
-`strategy_parameters` as the source of truth for canonical study configuration.
-Until Stage 3 changes report models, canonical study result objects should carry
-their own materialized `strategy_config` snapshots.
+Stage 1 and Stage 2 must not rely on old report-level `strategy_parameters` as
+the source of truth for canonical study configuration. Canonical study result
+objects carry their own materialized `strategy_config` snapshots, and Stage 3
+aligns reports to the same source.
 
 ### ParameterStudy Downstream Contract
 
@@ -652,10 +653,10 @@ Downstream Stage 2:
 
 - future grid rows use `candidate_parameters`, not row-level `parameters`
 
-Downstream Stage 3:
+Stage 3:
 
 - report-facing config snapshots are plain mappings
-- future reporting uses `strategy_config`, not `strategy_parameters`
+- reporting uses `strategy_config`, not `strategy_parameters`
 
 Low-level backtest boundary:
 
@@ -708,7 +709,7 @@ Stage 2 should specify and implement the `ParameterStudy` migration:
 - rejected and failed candidate rows are materialized with full
   `strategy_config`; constraint-rejected rows expose `strategy_config`
 
-### Downstream Stage 3 Requirements
+### Stage 3 Requirements
 
 Stage 3 should specify and implement the reporting source-of-truth change:
 
@@ -751,8 +752,8 @@ This product spec is successful when:
   normalized, rejected, or treated as distinct according to field type?
 - Stage 2 resolved that constraint-rejected rows expose full
   `strategy_config`.
-- In Stage 3, is `strategy_parameters` removed immediately or kept temporarily
-  as a compatibility alias during migration?
+- Stage 3 resolved that `strategy_parameters` is removed immediately rather
+  than kept as a compatibility alias.
 - When should Quantleet introduce range/choice validators or descriptor-style
   parameter declarations?
 - Should `search_space` become an alias for study-level `parameters` after the

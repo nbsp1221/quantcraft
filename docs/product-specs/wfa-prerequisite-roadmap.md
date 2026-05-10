@@ -56,8 +56,9 @@ work was started:
 - WFA needs fresh strategy creation for train candidates and selected test runs.
 - `ParameterStudy` now teaches `strategy=StrategyClass` plus `StrategyConfig`
   as the canonical public path.
-- `BacktestReport.run.strategy_parameters` currently depends on
-  `Strategy.parameters()`, not on a framework-owned execution config snapshot.
+- Stage 3 replaced report-authored `strategy_parameters` with
+  `BacktestReport.run.strategy_config`, using the framework-owned execution
+  config snapshot.
 - The long-lived runtime direction wants one strategy codebase to move through
   research, backtest, paper, and live workflows.
 
@@ -146,19 +147,23 @@ Purpose:
 
 Primary questions:
 
-- Should `BacktestReport.run.strategy_parameters` come from the framework-owned
-  config snapshot?
-- What role remains for `Strategy.parameters()` after the config contract exists?
-- How should selected study values, default config values, and non-optimizable
-  runtime settings be represented?
-- How should fold-level selected parameters later line up with per-run reports?
-- What values must be portable enough for JSON/CSV-style record output?
+- Stage 3 resolved that reports expose the framework-owned config snapshot as
+  `report.run.strategy_config`.
+- Stage 3 resolved that `Strategy.parameters()` is removed from the canonical
+  strategy surface and ignored by reporting.
+- Stage 3 resolved that selected study values, defaults, and report metadata
+  line up through the full materialized `StrategyConfig` snapshot.
+- Fold-level WFA selected parameters should line up with per-run reports through
+  the same `strategy_config` snapshot vocabulary.
+- Report config snapshots remain JSON-scalar mappings in the first-beta scope.
 
 Required product outcome:
 
 - A reporting product spec that defines config snapshot ownership.
 - A rule that selected parameters and report metadata cannot silently disagree.
-- A compatibility position for current `Strategy.parameters()` behavior.
+- A breaking pre-beta compatibility position: `Strategy.parameters()` is not a
+  report metadata fallback and is no longer part of the canonical strategy
+  surface.
 - A record/export expectation that future WFA fold results can reuse.
 
 Non-goals for this stage:
@@ -219,8 +224,8 @@ scope drift is not acceptable.
 | --- | --- | --- | --- | --- |
 | Unified Strategy Configuration Contract | high | high | high | P0 |
 | ParameterStudy Strategy API Migration | high | high | high | P0 |
-| Reporting Config Source Of Truth | medium | high | medium-high | P1 |
-| WFA Resume Spec | medium | high | high after prerequisites | Blocked |
+| Reporting Config Source Of Truth | medium | high | medium-high | Completed |
+| WFA Resume Spec | medium | high | high after prerequisites | Next blocked on resume-spec review |
 
 ## Guardrails
 

@@ -243,9 +243,6 @@ class SmaCross(Strategy[SmaConfig]):
     def display_name(self) -> str:
         return "SMA Cross"
 
-    def parameters(self) -> dict[str, object]:
-        return self.config.to_mapping()
-
     def init(self) -> None:
         self.fast = ta.sma(self.data.close, length=self.config.fast)
         self.slow = ta.sma(self.data.close, length=self.config.slow)
@@ -825,8 +822,9 @@ contracts:
   surface.
 - `quantleet.research.Strategy` remains a compatibility re-export until the
   migration path is removed by a later spec.
-- `Strategy.display_name` and `Strategy.parameters()` are explicit strategy
-  metadata hooks.
+- `Strategy.display_name` is human-readable strategy identity metadata.
+- Reportable execution config comes from the materialized `StrategyConfig`
+  snapshot.
 - `BacktestEngine.run(...)` is the current historical execution entry point.
 - `bars` must be a `quantleet.data.BarSeries`.
 - `source.load()` returns a `BarSeries`, but `ParameterStudy` itself receives

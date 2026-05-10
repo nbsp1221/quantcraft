@@ -13,7 +13,7 @@ def test_product_docs_promote_result_report_as_primary_inspection_path() -> None
     assert "result.report" in product_spec
     assert "BacktestEngine.run(..., label=...)" in product_spec
     assert "Strategy.display_name" in product_spec
-    assert "Strategy.parameters()" in product_spec
+    assert "StrategyConfig" in product_spec
     assert "next_bar" in product_spec
     assert "conservative_ohlcv" in product_spec
     assert "mark_to_market" in product_spec

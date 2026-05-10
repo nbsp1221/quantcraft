@@ -529,8 +529,9 @@ Current summary semantics for the implemented slice:
 Current beta report semantics:
 
 - `BacktestEngine.run(..., label=...)` may attach a user-visible run label
-- `Strategy.display_name` and `Strategy.parameters()` are the explicit metadata
-  hooks for report identity
+- `Strategy.display_name` is the explicit human-readable strategy identity hook
+- reportable execution config comes from the materialized `StrategyConfig`
+  snapshot
 - execution assumptions use stable structured identifiers:
   `next_bar`, `conservative_ohlcv`, and `mark_to_market`
 - undefined report metrics use `None` structurally and `n/a` in human-readable

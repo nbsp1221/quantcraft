@@ -316,7 +316,7 @@
       "start_timestamp": 1735689600000,
       "strategy_class_name": "CanonicalEmaCrossStrategy",
       "strategy_display_name": null,
-      "strategy_parameters": {},
+      "strategy_config": {},
       "symbol": "BTC/USDT:USDT",
       "timeframe": "1h"
     },
@@ -650,7 +650,7 @@
       "start_timestamp": 1735689600000,
       "strategy_class_name": "CanonicalMacdCrossStrategy",
       "strategy_display_name": null,
-      "strategy_parameters": {},
+      "strategy_config": {},
       "symbol": "BTC/USDT:USDT",
       "timeframe": "1h"
     },
@@ -984,7 +984,7 @@
       "start_timestamp": 1735689600000,
       "strategy_class_name": "CanonicalRsi3070Strategy",
       "strategy_display_name": null,
-      "strategy_parameters": {},
+      "strategy_config": {},
       "symbol": "BTC/USDT:USDT",
       "timeframe": "1h"
     },

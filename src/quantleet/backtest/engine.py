@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from quantleet.backtest.results import BacktestResult
 from quantleet.backtest.runtime import _run_backtest
-from quantleet.backtest.strategy_runtime import StrategyLike
+from quantleet.backtest.strategy_runtime import StrategyLike, validate_strategy_like_config
 from quantleet.data import BarSeries
 from quantleet.data.sources import HistoricalDataSource
 from quantleet.trading.domain.costs import CostConfig
@@ -32,22 +32,18 @@ class BacktestEngine:
             raise ValueError("label must be a non-empty string or None")
         if (bars is None) == (source is None):
             raise ValueError("provide exactly one of bars or source")
-
+        strategy_config = validate_strategy_like_config(strategy).to_mapping()
         if bars is not None:
-            return _run_backtest(
-                bars=_validated_bars(bars),
-                strategy=strategy,
-                initial_cash=self.initial_cash,
-                costs=self.costs,
-                label=label,
-            )
-
-        if source is None:
-            raise ValueError("source must be provided")
+            raw_bars = bars
+        else:
+            assert source is not None
+            raw_bars = source.load()
+        run_bars = _validated_bars(raw_bars)
 
         return _run_backtest(
-            bars=_validated_bars(source.load()),
+            bars=run_bars,
             strategy=strategy,
+            strategy_config=strategy_config,
             initial_cash=self.initial_cash,
             costs=self.costs,
             label=label,

@@ -89,6 +89,10 @@ def test_config_less_strategy_has_empty_config_and_runtime_state() -> None:
     assert len(runtime.order_state().pending) == 1
 
 
+def test_base_strategy_does_not_expose_parameters_reporting_hook() -> None:
+    assert "parameters" not in Strategy.__dict__
+
+
 def test_strategy_config_reassignment_is_rejected() -> None:
     strategy = ConfiguredStrategy()
 

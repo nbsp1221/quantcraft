@@ -51,9 +51,6 @@ class ExperimentSmaCross(Strategy[ExperimentSmaCrossConfig]):
     def display_name(self) -> str:
         return "Experiment SMA Cross"
 
-    def parameters(self) -> dict[str, object]:
-        return self.config.to_mapping()
-
     def init(self) -> None:
         self.fast = ta.sma(self.data.close, length=self.config.fast)
         self.slow = ta.sma(self.data.close, length=self.config.slow)
@@ -80,9 +77,6 @@ class ExperimentRsiMeanReversion(Strategy[ExperimentRsiMeanReversionConfig]):
     def display_name(self) -> str:
         return "Experiment RSI Mean Reversion"
 
-    def parameters(self) -> dict[str, object]:
-        return self.config.to_mapping()
-
     def init(self) -> None:
         self.rsi = ta.rsi(self.data.close, length=self.config.length)
 
@@ -104,9 +98,6 @@ class ExperimentDonchianBreakout(Strategy[ExperimentDonchianBreakoutConfig]):
     @property
     def display_name(self) -> str:
         return "Experiment Donchian Breakout"
-
-    def parameters(self) -> dict[str, object]:
-        return self.config.to_mapping()
 
     def on_bar(self, bar: BarEvent) -> None:
         if len(self.data.close) <= self.config.entry:
@@ -211,7 +202,8 @@ def test_parameter_study_pins_validated_canonical_btc_grid_outputs(
 
     assert best.backtest is not None
     report = best.backtest.report
-    assert report.run.strategy_parameters == dict(best.strategy_config)
+    assert report.run.strategy_config == dict(best.strategy_config)
+    assert not hasattr(report.run, "strategy_parameters")
     assert report.returns.total_return == pytest.approx(expected.total_return)
     assert report.returns.final_equity == pytest.approx(expected.final_equity)
     assert report.risk.max_drawdown == pytest.approx(expected.max_drawdown)

@@ -8,6 +8,7 @@ from typing import Any
 
 from quantleet.backtest.analytics import drawdown_for_equity, max_drawdown_from_curve
 from quantleet.data import BarSeries
+from quantleet.strategy.config import JSONConfigScalar
 from quantleet.trading.domain.costs import CostConfig
 from quantleet.trading.domain.events import FillEvent, OrderRejectedEvent
 from quantleet.trading.domain.orders import Order
@@ -36,7 +37,7 @@ class RunManifest:
     execution_model_name: str
     strategy_class_name: str
     strategy_display_name: str | None
-    strategy_parameters: dict[str, object]
+    strategy_config: dict[str, JSONConfigScalar]
     run_label: str | None
 
 
@@ -296,6 +297,7 @@ class _ReportBuilder:
         costs: CostConfig,
         execution_model_name: str,
         strategy: Any,
+        strategy_config: dict[str, JSONConfigScalar],
         run_label: str | None,
         final_state: TradingState,
         order_rejections: tuple[OrderRejectedEvent, ...],
@@ -338,7 +340,7 @@ class _ReportBuilder:
                 execution_model_name=execution_model_name,
                 strategy_class_name=type(strategy).__name__,
                 strategy_display_name=_strategy_display_name(strategy),
-                strategy_parameters=_strategy_parameters(strategy),
+                strategy_config=dict(strategy_config),
                 run_label=run_label,
             ),
             execution=ExecutionAssumptions(
@@ -708,22 +710,6 @@ def _strategy_display_name(strategy: Any) -> str | None:
         return None
     if not isinstance(value, str) or not value:
         raise ValueError("Strategy.display_name must be a non-empty string or None")
-    return value
-
-
-def _strategy_parameters(strategy: Any) -> dict[str, object]:
-    parameters = strategy.parameters()
-    if not isinstance(parameters, dict):
-        parameters = dict(parameters)
-    for key in parameters:
-        if not isinstance(key, str) or not key:
-            raise ValueError("Strategy.parameters() keys must be non-empty strings")
-    return {key: _normalize_public_value(value) for key, value in parameters.items()}
-
-
-def _normalize_public_value(value: object) -> object:
-    if isinstance(value, float) and math.isnan(value):
-        return None
     return value
 
 

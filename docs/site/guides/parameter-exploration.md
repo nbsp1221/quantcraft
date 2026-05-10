@@ -18,9 +18,6 @@ class SmaConfig(StrategyConfig):
 
 
 class ParameterizedSmaStrategy(Strategy[SmaConfig]):
-    def parameters(self) -> dict[str, object]:
-        return self.config.to_mapping()
-
     def init(self) -> None:
         self.fast = ta.sma(self.data.close, length=self.config.fast)
         self.slow = ta.sma(self.data.close, length=self.config.slow)

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol, cast
 
 from quantleet.data import BarSeries, TimeBar
+from quantleet.strategy.config import StrategyConfig
 from quantleet.trading.domain.costs import CostConfig
 from quantleet.trading.domain.events import BarEvent, OrderRejectedEvent, OrderRejectionReason
 from quantleet.trading.domain.intents import OrderIntent, _is_stop_order_type
@@ -30,6 +31,7 @@ class _PositionLike(Protocol):
 
 class StrategyLike(Protocol):
     _pending_order_requests: list[PendingOrderRequest]
+    config: StrategyConfig
     data: Any
     position: _PositionLike
 
@@ -39,8 +41,6 @@ class StrategyLike(Protocol):
 
     @property
     def display_name(self) -> str | None: ...
-
-    def parameters(self) -> dict[str, object]: ...
 
     def _handle_bar(self, bar: BarEvent) -> None: ...
 
@@ -244,4 +244,16 @@ def _rejection_reason(reason: str | None) -> OrderRejectionReason:
     return cast(OrderRejectionReason, reason)
 
 
-__all__ = ["StrategyLike", "_StrategyDriver", "_StrategyOrderState"]
+def validate_strategy_like_config(strategy: object) -> StrategyConfig:
+    config = getattr(strategy, "config", None)
+    if not isinstance(config, StrategyConfig):
+        raise ValueError("strategy must expose StrategyConfig config metadata")
+    return config
+
+
+__all__ = [
+    "StrategyLike",
+    "_StrategyDriver",
+    "_StrategyOrderState",
+    "validate_strategy_like_config",
+]

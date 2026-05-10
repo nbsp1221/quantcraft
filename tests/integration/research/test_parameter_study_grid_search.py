@@ -40,6 +40,7 @@ def engine() -> BacktestEngine:
 class RoundTripConfig(StrategyConfig):
     fast: int = 5
     slow: int = 20
+    enabled: bool = False
 
     def validate(self) -> None:
         if self.fast >= self.slow:
@@ -59,9 +60,6 @@ class ParameterizedRoundTripStrategy(Strategy[RoundTripConfig]):
     @property
     def display_name(self) -> str:
         return "Parameterized Round Trip"
-
-    def parameters(self) -> dict[str, object]:
-        return self.config.to_mapping()
 
     def init(self) -> None:
         self._seen_bars = 0
@@ -98,9 +96,11 @@ def test_canonical_small_grid_search_uses_real_backtest_engine() -> None:
     assert best.backtest is not None
     assert best.backtest.report.run.run_label == f"grid-search-{best.run_index}"
     assert best.backtest.report.run.strategy_display_name == "Parameterized Round Trip"
-    assert dict(best.strategy_config) == {"fast": 5, "slow": 10}
+    assert dict(best.strategy_config) == {"fast": 5, "slow": 10, "enabled": False}
     assert dict(best.candidate_parameters) == {"fast": 5, "slow": 10}
-    assert best.backtest.report.run.strategy_parameters == dict(best.strategy_config)
+    assert dict(best.candidate_parameters) != dict(best.strategy_config)
+    assert best.backtest.report.run.strategy_config == dict(best.strategy_config)
+    assert not hasattr(best.backtest.report.run, "strategy_parameters")
 
     records = result.to_records()
     assert len(records) == 4
@@ -128,8 +128,8 @@ def test_strategy_class_constructs_once_per_admissible_candidate_with_fresh_inst
     assert result.successful_count == 3
     assert result.rejected_count == 1
     assert ParameterizedRoundTripStrategy.constructed_configs == [
-        {"fast": 5, "slow": 10},
-        {"fast": 5, "slow": 30},
-        {"fast": 20, "slow": 30},
+        {"fast": 5, "slow": 10, "enabled": False},
+        {"fast": 5, "slow": 30, "enabled": False},
+        {"fast": 20, "slow": 30, "enabled": False},
     ]
     assert len(instance_ids) == len(set(instance_ids)) == 3

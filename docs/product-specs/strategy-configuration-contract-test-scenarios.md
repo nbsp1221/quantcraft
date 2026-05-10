@@ -696,5 +696,5 @@ The test suite derived from this document is successful when:
   `strategy_config`.
 - Stage 2 resolved that old callable construction workflows have no active row
   shape because the keyword is rejected.
-- In Stage 3, is `strategy_parameters` removed immediately or kept temporarily
-  as a compatibility alias during migration?
+- Stage 3 resolved that `strategy_parameters` is removed immediately rather
+  than kept temporarily as a compatibility alias.

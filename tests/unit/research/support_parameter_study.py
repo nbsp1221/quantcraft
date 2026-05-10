@@ -52,9 +52,6 @@ class NoTradeStrategy(Strategy[NoTradeConfig]):
     def on_bar(self, bar: BarEvent) -> None:
         return None
 
-    def parameters(self) -> dict[str, object]:
-        return self.config.to_mapping()
-
 
 class BuyOnceStrategy(NoTradeStrategy):
     def init(self) -> None:

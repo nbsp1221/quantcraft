@@ -14,6 +14,7 @@ from quantleet.backtest.results import (
 )
 from quantleet.backtest.strategy_runtime import StrategyLike, _StrategyDriver
 from quantleet.data import BarSeries
+from quantleet.strategy.config import JSONConfigScalar
 from quantleet.trading.domain.costs import CostConfig
 from quantleet.trading.domain.events import BarEvent, FillEvent, OrderRejectedEvent
 from quantleet.trading.domain.matching import is_order_triggered, match_order
@@ -25,6 +26,7 @@ def _run_backtest(
     *,
     bars: BarSeries,
     strategy: StrategyLike,
+    strategy_config: dict[str, JSONConfigScalar],
     initial_cash: float,
     costs: CostConfig,
     label: str | None,
@@ -262,6 +264,7 @@ def _run_backtest(
         costs=costs,
         execution_model_name=execution_model.name,
         strategy=strategy,
+        strategy_config=strategy_config,
         run_label=label,
         final_state=state,
         order_rejections=order_events_tuple,

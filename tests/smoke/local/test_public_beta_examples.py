@@ -99,9 +99,6 @@ def test_public_parameter_exploration_example_runs() -> None:
                 raise StrategyConfigValidationError("fast must be less than slow")
 
     class ParameterizedSmaStrategy(Strategy[SmaConfig]):
-        def parameters(self) -> dict[str, object]:
-            return self.config.to_mapping()
-
         def init(self) -> None:
             self.fast = ta.sma(self.data.close, length=self.config.fast)
             self.slow = ta.sma(self.data.close, length=self.config.slow)
@@ -127,7 +124,9 @@ def test_public_parameter_exploration_example_runs() -> None:
     assert result.candidate_count == 4
     assert result.rejected_count == 1
     assert result.successful_count == 3
-    assert result.best().backtest is not None
+    best = result.best()
+    assert best.backtest is not None
+    assert best.backtest.report.run.strategy_config == dict(best.strategy_config)
     assert len(result.to_records()) == 4
 
 

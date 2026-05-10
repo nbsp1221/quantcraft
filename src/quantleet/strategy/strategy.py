@@ -121,9 +121,6 @@ class Strategy(ABC, Generic[ConfigT]):
     def display_name(self) -> str | None:
         return None
 
-    def parameters(self) -> dict[str, object]:
-        return {}
-
     @abstractmethod
     def on_bar(self, bar: BarEvent) -> None:
         raise NotImplementedError
