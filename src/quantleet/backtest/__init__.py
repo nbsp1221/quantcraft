@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from quantleet.backtest.engine import BacktestEngine
+from quantleet.backtest.engine import BacktestEngine, BacktestStrategyConstructionError
 from quantleet.backtest.reporting import (
     BacktestReport,
     ClosedTrade,
@@ -21,6 +21,7 @@ __all__ = [
     "BacktestEngine",
     "BacktestReport",
     "BacktestResult",
+    "BacktestStrategyConstructionError",
     "BacktestSummary",
     "ClosedTrade",
     "CostConfig",

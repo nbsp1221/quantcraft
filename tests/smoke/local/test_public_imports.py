@@ -28,6 +28,12 @@ def test_research_public_import_surface_exposes_strategy_and_parameter_study() -
     assert getattr(research_module, "ParameterStudy", None) is not None
     assert getattr(research_module, "GridSearchResult", None) is not None
     assert getattr(research_module, "GridSearchRow", None) is not None
+    assert getattr(research_module, "WalkForwardStudy", None) is not None
+    assert getattr(research_module, "WalkForwardResult", None) is not None
+    assert getattr(research_module, "WalkForwardFold", None) is not None
+    assert getattr(research_module, "WalkForwardDiagnostic", None) is not None
+    assert getattr(research_module, "WalkForwardOosSummary", None) is not None
+    assert getattr(research_module, "WalkForwardExecutionScale", None) is not None
     assert getattr(research_module, "ta", None) is not None
     assert getattr(research_module, "qc", None) is not None
     assert not hasattr(research_module, "run_backtest")
@@ -56,6 +62,7 @@ def test_capability_public_surfaces_import_cleanly() -> None:
     ccxt_module = importlib.import_module("quantleet.integrations.venues.ccxt")
 
     assert getattr(backtest_module, "BacktestEngine", None) is not None
+    assert getattr(backtest_module, "BacktestStrategyConstructionError", None) is not None
     assert getattr(backtest_module, "CostConfig", None) is not None
     assert getattr(backtest_module, "BacktestReport", None) is not None
     assert getattr(backtest_module, "RunManifest", None) is not None
@@ -75,6 +82,7 @@ def test_capability_public_surfaces_import_cleanly() -> None:
     assert getattr(strategy_module, "StrategyConfig", None) is not None
     assert getattr(research_module, "Strategy", None) is not None
     assert getattr(research_module, "ParameterStudy", None) is not None
+    assert getattr(research_module, "WalkForwardStudy", None) is not None
     assert getattr(ccxt_module, "Exchange", None) is not None
     assert getattr(ccxt_module, "MarketType", None) is not None
     for name in (

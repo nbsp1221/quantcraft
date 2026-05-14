@@ -12,6 +12,7 @@ Related documents:
 - [research-ergonomics.md](research-ergonomics.md)
 - [parameter-exploration.md](parameter-exploration.md)
 - [direct-backtest-class-config-api.md](direct-backtest-class-config-api.md)
+- [walk-forward-analysis-resume.md](walk-forward-analysis-resume.md)
 - [walk-forward-analysis-readiness.md](walk-forward-analysis-readiness.md)
 - [backtest-mvp.md](backtest-mvp.md)
 - [backtest-plotting.md](backtest-plotting.md)
@@ -44,6 +45,11 @@ This product spec therefore defines what must be preserved when WFA is
 resumed: user intent, result semantics, naming decisions, and validation-study
 positioning. It intentionally leaves lower-level module layout, helper names,
 test mechanics, and prerequisite refactoring scope to later documents.
+
+For the Stage 4 resumed first-slice product contract, read
+[walk-forward-analysis-resume.md](walk-forward-analysis-resume.md). That
+document narrows the first implementation slice after the prerequisite roadmap
+and records decisions made after Stage 3.5.
 
 ## Background And Problem Definition
 
@@ -211,9 +217,8 @@ The user-facing model is a research-level study object:
   `ParameterStudy`.
 - `ParameterStudy` remains the primitive for comparing parameters within one
   training slice.
-- The first slice should support objective aliases for user ergonomics, but the
-  canonical metric contract remains compatible with existing report metric
-  paths.
+- The Stage 4 resume slice defers objective aliases and uses the existing
+  `ParameterStudy` objective tuple contract.
 - Canonical structured output is records, not a pandas-only dataframe.
 - Out-of-sample summary output must be clearly labeled as fold-based OOS
   validation, not as a continuous live-equivalent portfolio simulation.
@@ -317,8 +322,7 @@ Requirements:
 - the canonical objective contract must remain compatible with existing
   `ParameterStudy` metric paths and directions
 - concise aliases such as `"sharpe"`, `"total_return"`, and `"max_drawdown"`
-  may be supported for ergonomics
-- aliases must resolve to explicit metric paths and directions
+  are deferred from the Stage 4 resume slice
 - unknown objectives must fail before any backtest is run
 - objective selection must be recorded in the result
 
@@ -582,24 +586,22 @@ The product slice is successful when a user can:
 ## Open Questions
 
 1. Stage 2 resolved the public constructor argument as `strategy` only.
-2. If a strategy class is provided, should Quantleet call it as
-   `StrategyClass(**params)`, require a `parameters` constructor convention, or
-   require users to pass an explicit factory?
-3. Which objective aliases are part of the first public contract?
-4. Should callable objectives be supported in the first slice or deferred until
-   after metric-path objectives are stable?
-5. Should the first WFA run continue by default after a fold failure, or should
-   fold-level failures fail the whole study unless a `continue_on_error` option
-   is set?
-6. What is the exact name for the OOS aggregate: `oos_summary`, `oos_report`,
-   `oos_result`, or another name that avoids continuous-account confusion?
+2. Stage 3.5 resolved strategy construction as `strategy=StrategyClass` plus
+   `StrategyConfig`.
+3. Stage 4 resume defers objective aliases from the first slice.
+4. Stage 4 resume defers callable objectives from the first slice.
+5. Stage 4 resume resolves that preflight input errors fail strictly while
+   fold-level execution failures are recorded and the study continues by
+   default.
+6. Stage 4 resume resolves the OOS aggregate name as `oos_summary` for
+   independent test-fold summaries, not continuous-account output.
 7. Should successful test `BacktestResult` objects be retained for every fold,
    or should the first slice retain only structured metrics to bound memory?
 8. Should there be a `max_candidates` guardrail on each training fold, inherited
    directly from `ParameterStudy`, or a WFA-specific total-run guardrail across
    all folds?
-9. Should `step_size` default to `test_size` in all future modes, or only in
-   rolling mode?
+9. Stage 4 resume resolves `step_size=None` as `step_size == test_size` for
+   rolling mode only.
 10. Should optional pandas `to_frame()` be in the first slice, or should record
     output be the only public export until dependency policy is revisited?
 11. Which diagnostics are required for the first product slice versus later

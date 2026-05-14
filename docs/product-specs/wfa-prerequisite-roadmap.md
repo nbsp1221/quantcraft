@@ -13,6 +13,8 @@ Related documents:
 - [direct-backtest-class-config-api.md](direct-backtest-class-config-api.md)
 - [direct-backtest-class-config-api-test-scenarios.md](direct-backtest-class-config-api-test-scenarios.md)
 - [walk-forward-analysis.md](walk-forward-analysis.md)
+- [walk-forward-analysis-resume.md](walk-forward-analysis-resume.md)
+- [walk-forward-analysis-resume-test-scenarios.md](walk-forward-analysis-resume-test-scenarios.md)
 - [walk-forward-analysis-readiness.md](walk-forward-analysis-readiness.md)
 - [research-ergonomics.md](research-ergonomics.md)
 - [parameter-exploration.md](parameter-exploration.md)
@@ -254,7 +256,7 @@ Primary questions:
 
 Required product outcome:
 
-- An updated WFA product spec or resume addendum.
+- A WFA resume product spec or resume addendum.
 - Confirmation that WFA no longer hardens a transitional strategy construction
   API.
 - A technical implementation plan can then be written from the resumed product

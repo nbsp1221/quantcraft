@@ -55,14 +55,14 @@ def test_trading_to_research_dependency_is_rejected() -> None:
 
 
 def test_research_public_surface_exposes_slice_1_entrypoints() -> None:
-    assert set(research_package.__all__) == {
+    assert {
         "GridSearchResult",
         "GridSearchRow",
         "ParameterStudy",
         "Strategy",
         "ta",
         "qc",
-    }
+    }.issubset(set(research_package.__all__))
 
 
 def test_slice_1_public_trading_surface_excludes_deferred_event_types() -> None:
