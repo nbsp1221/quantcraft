@@ -2,7 +2,7 @@
 
 Follow this path:
 
-1. Install the package or sync a local checkout with Python 3.13.
+1. Install the package or sync a local checkout with Python 3.12.
 2. Run the in-memory [quickstart](../quickstart.md).
 3. Read the [beta scope](../concepts/beta-scope.md).
 4. Use the [backtesting guide](../guides/backtesting.md) for `source` and

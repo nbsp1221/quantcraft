@@ -39,7 +39,7 @@ Unsupported in the first public beta:
 
 Requirements:
 
-- Python 3.13
+- Python 3.12
 - `uv` for local contributor setup
 
 Package-user installation for the first beta will use the published package

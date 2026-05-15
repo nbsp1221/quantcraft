@@ -9,7 +9,7 @@ def test_public_beta_package_metadata() -> None:
 
     assert project["name"] == "quantleet"
     assert project["version"] == "0.1.0b1"
-    assert project["requires-python"] == ">=3.13"
+    assert project["requires-python"] == ">=3.12"
     assert project["license"] == "MIT"
     assert "Single-symbol Python backtesting" in project["description"]
 
@@ -20,7 +20,7 @@ def test_public_beta_package_metadata() -> None:
         "Intended Audience :: Financial and Insurance Industry",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.12",
         "Typing :: Typed",
     }
 

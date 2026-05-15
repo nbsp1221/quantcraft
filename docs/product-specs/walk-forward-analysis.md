@@ -458,7 +458,7 @@ later if the dependency policy allows it.
   invalid.
 - Memory use bounded by the existing parameter exploration safety model.
 - Structured failures instead of swallowed exceptions for per-fold run errors.
-- Strong type hints consistent with the existing Python 3.13 strict mypy
+- Strong type hints consistent with the existing Python 3.12 strict mypy
   policy.
 - No pandas requirement for canonical output.
 - No new dependency that weakens the current package footprint without a

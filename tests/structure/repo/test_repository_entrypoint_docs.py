@@ -66,7 +66,7 @@ def test_readme_presents_public_beta_docs_surface() -> None:
 
     for marker in [
         "single-symbol",
-        "Python 3.13",
+        "Python 3.12",
         "from quantleet.backtest import BacktestEngine, CostConfig",
         "from quantleet.data import DataFrameDataSource",
         "from quantleet.research import qc, ta",

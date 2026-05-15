@@ -1,6 +1,6 @@
 # Installation
 
-Quantleet requires Python 3.13.
+Quantleet requires Python 3.12.
 
 The first beta package is `0.1.0b1`. Once published, package users should
 install that release from the configured Python package index.
