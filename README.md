@@ -149,10 +149,6 @@ requirements.
 See [SECURITY.md](SECURITY.md) for vulnerability reporting, secrets handling,
 and financial safety boundaries.
 
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for release notes.
-
 ## Financial Disclaimer
 
 Quantleet is research and software tooling, not financial advice. Backtest

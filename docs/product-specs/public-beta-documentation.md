@@ -232,7 +232,6 @@ documents:
 - `README.md`
 - `CONTRIBUTING.md`
 - `SECURITY.md`
-- `CHANGELOG.md`
 - `.github/PULL_REQUEST_TEMPLATE.md`
 
 The repository also depends on these existing or separately managed documents:
@@ -251,9 +250,8 @@ Their expected roles are:
   docs update expectations, issue/PR norms
 - `SECURITY.md`: vulnerability reporting, secrets policy, and financial
   safety boundaries
-- `CHANGELOG.md`: release history and user-visible changes
 - `.github/PULL_REQUEST_TEMPLATE.md`: PR summary, linked issue when
-  applicable, change type, docs impact, verification evidence, changelog impact
+  applicable, change type, docs impact, verification evidence, release impact
   when applicable, and AI-assisted contribution ownership disclosure
 - `AGENTS.md`: agent workflow contract and internal authority routing
 - `ARCHITECTURE.md`: concise public architecture map and safety tier summary
@@ -314,7 +312,7 @@ The PR template should ask for:
 - change type
 - docs impact
 - test/verification evidence
-- release note or changelog impact when applicable
+- release impact when applicable
 - whether any AI-generated or AI-assisted code was reviewed line-by-line by the
   human PR author
 - confirmation that the human PR author understands and stands behind the
@@ -338,7 +336,6 @@ Public package metadata should identify:
 - documentation URL
 - repository URL
 - issue tracker URL
-- changelog URL
 - relevant keywords
 - relevant classifiers
 
@@ -478,8 +475,6 @@ commitment.
 - A translated or generated docs page is edited manually after localization is
   introduced.
 - A package metadata field points to a docs URL that is not yet published.
-- A changelog entry claims release readiness before install and example checks
-  pass.
 - A public page presents a detailed roadmap as a commitment rather than current
   beta scope.
 - Public docs make AI-agent-led development the main product pitch and weaken
@@ -543,8 +538,7 @@ The public beta documentation product is ready when:
 - Public docs include explicit fixed `qty`, `qty_percent`, reservation, fills,
   positions, and stop-family examples.
 - Public docs state unsupported beta scope plainly.
-- Root `CONTRIBUTING.md`, `SECURITY.md`, and `CHANGELOG.md` exist and are
-  accurate.
+- Root `CONTRIBUTING.md` and `SECURITY.md` exist and are accurate.
 - Root `LICENSE` exists, identifies MIT licensing, and was not created or
   modified by this documentation cleanup work.
 - `.github/PULL_REQUEST_TEMPLATE.md` exists and asks for verification evidence

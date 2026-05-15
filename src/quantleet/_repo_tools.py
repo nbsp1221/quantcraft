@@ -11,7 +11,6 @@ REQUIRED_DOCS = (
     "README.md",
     "CONTRIBUTING.md",
     "SECURITY.md",
-    "CHANGELOG.md",
     ".github/PULL_REQUEST_TEMPLATE.md",
     "AGENTS.md",
     "ARCHITECTURE.md",

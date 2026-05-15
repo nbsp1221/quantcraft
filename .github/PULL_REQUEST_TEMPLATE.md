@@ -29,10 +29,6 @@ List exact commands and results.
 
 ```
 
-## Changelog
-
-- [ ] `CHANGELOG.md` updated or not needed
-
 ## AI-Assisted Contribution
 
 - [ ] Any AI-assisted or generated output was reviewed line by line by the human author

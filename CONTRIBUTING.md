@@ -66,7 +66,7 @@ Pull requests should include:
 - change type
 - docs impact
 - verification evidence
-- changelog or release impact when applicable
+- release impact when applicable
 
 If a change used AI-assisted or generated output, the human PR author must
 review it line by line, understand it, verify it, and own the result. The human

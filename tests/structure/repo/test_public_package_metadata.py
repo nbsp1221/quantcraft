@@ -28,5 +28,5 @@ def test_public_beta_package_metadata() -> None:
     assert urls["Homepage"] == "https://github.com/nbsp1221/quantleet"
     assert urls["Repository"] == "https://github.com/nbsp1221/quantleet"
     assert urls["Issues"] == "https://github.com/nbsp1221/quantleet/issues"
-    assert urls["Changelog"] == "https://github.com/nbsp1221/quantleet/blob/main/CHANGELOG.md"
+    assert "Changelog" not in urls
     assert "Documentation" not in urls

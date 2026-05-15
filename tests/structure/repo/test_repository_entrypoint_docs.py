@@ -12,7 +12,6 @@ def test_release_facing_repository_docs_exist_and_are_not_empty() -> None:
     for relative_path in [
         "CONTRIBUTING.md",
         "SECURITY.md",
-        "CHANGELOG.md",
         ".github/PULL_REQUEST_TEMPLATE.md",
     ]:
         path = ROOT / relative_path
@@ -23,7 +22,6 @@ def test_release_facing_repository_docs_exist_and_are_not_empty() -> None:
 def test_release_facing_repository_docs_cover_public_beta_workflow() -> None:
     contributing = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
     security = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
-    changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     pr_template = (ROOT / ".github/PULL_REQUEST_TEMPLATE.md").read_text(encoding="utf-8")
 
     for marker in [
@@ -45,15 +43,11 @@ def test_release_facing_repository_docs_cover_public_beta_workflow() -> None:
     ]:
         assert marker.lower() in security.lower()
 
-    assert "## Unreleased" in changelog
-    assert "## 0.1.0b1" in changelog
-
     for marker in [
         "Summary",
         "Change type",
         "Docs impact",
         "Verification",
-        "Changelog",
         "AI-assisted",
         "human",
     ]:
@@ -85,7 +79,6 @@ def test_readme_presents_public_beta_docs_surface() -> None:
         "docs/site",
         "CONTRIBUTING.md",
         "SECURITY.md",
-        "CHANGELOG.md",
         "MIT",
     ]:
         assert marker in readme
@@ -104,6 +97,8 @@ def test_readme_presents_public_beta_docs_surface() -> None:
         "docs/product-specs",
         "docs/design-docs",
         "docs/research",
+        "CHANGELOG.md",
+        "Changelog",
         "from quantleet import BacktestEngine",
         "from quantleet.trading.domain.costs import CostConfig",
         "TimeInForce",

@@ -50,14 +50,10 @@ def write_minimal_repo_docs(tmp_path) -> None:
         ),
         encoding="utf-8",
     )
-    (tmp_path / "CHANGELOG.md").write_text(
-        "# Changelog\n\n## Unreleased\n\n## 0.1.0b1\n",
-        encoding="utf-8",
-    )
     github_dir = tmp_path / ".github"
     github_dir.mkdir()
     (github_dir / "PULL_REQUEST_TEMPLATE.md").write_text(
-        "Summary\nChange type\nDocs impact\nVerification\nChangelog\nAI-assisted\nhuman\n",
+        "Summary\nChange type\nDocs impact\nVerification\nAI-assisted\nhuman\n",
         encoding="utf-8",
     )
     (tmp_path / "AGENTS.md").write_text(

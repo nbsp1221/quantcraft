@@ -28,7 +28,6 @@ dependencies = [
 Homepage = "https://github.com/nbsp1221/quantleet"
 Repository = "https://github.com/nbsp1221/quantleet"
 Issues = "https://github.com/nbsp1221/quantleet/issues"
-Changelog = "https://github.com/nbsp1221/quantleet/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
