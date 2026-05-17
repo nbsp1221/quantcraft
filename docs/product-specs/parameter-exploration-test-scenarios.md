@@ -713,8 +713,8 @@ The test suite derived from this spec is sufficient when:
 - success, rejection, and failure outcomes are visible and distinguishable
 - record output is stable, structured, and portable
 - selected successful rows can inspect normal reports and plots without reruns
-- default verification covers cheap unit/integration/structure/smoke scenarios
-- runtime-sensitive implementation work also runs `uv run poe verify-runtime`
+- default check covers cheap unit/integration/structure/smoke scenarios
+- runtime-sensitive implementation work also runs `uv run poe check-runtime`
 - no test encodes private implementation details that would block a legitimate
   internal refactor
 

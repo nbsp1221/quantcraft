@@ -421,7 +421,7 @@ and must not be weakened:
 - `tests/integration/research/test_canonical_rsi_contract.py`
 - `tests/perf/test_rsi_backtest_benchmark.py`
 - `tests/structure/architecture/test_domain_boundaries.py`
-- `tests/structure/repo/test_runtime_verification_lane.py`
+- `tests/structure/repo/test_runtime_check_lane.py`
 
 ## Required Verification Gates
 
@@ -445,14 +445,14 @@ After any slice touching one of the following paths, run:
 
 Required command:
 
-- `uv run poe verify-runtime`
+- `uv run poe check-runtime`
 
 ### End Of Batch
 
 Before closing the plan, run all of:
 
-- `uv run poe verify`
-- `uv run poe verify-runtime`
+- `uv run poe check`
+- `uv run poe check-runtime`
 
 ## Review Protocol
 

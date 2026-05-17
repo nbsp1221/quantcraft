@@ -17,13 +17,22 @@ def test_pyproject_defines_coverage_poe_task() -> None:
     assert "coverage-gates" in tasks
 
 
-def test_poe_verify_includes_coverage_gate() -> None:
-    verify = _pyproject()["tool"]["poe"]["tasks"]["verify"]
+def test_poe_check_includes_quality_and_coverage_gates() -> None:
+    check = _pyproject()["tool"]["poe"]["tasks"]["check"]
 
-    assert "coverage-gates" in verify["sequence"]
-    assert "test" not in verify["sequence"]
-    assert "coverage" not in verify["sequence"]
-    assert "coverage-diff" not in verify["sequence"]
+    assert check["sequence"] == [
+        "format-check",
+        "lint",
+        "typecheck",
+        "coverage-gates",
+        "build",
+        "twine-check",
+        "repo-check",
+        "notebook-validate",
+    ]
+    assert "test" not in check["sequence"]
+    assert "coverage" not in check["sequence"]
+    assert "coverage-diff" not in check["sequence"]
 
 
 def test_repository_defines_approved_coverage_thresholds() -> None:
@@ -55,8 +64,7 @@ def test_coverage_diff_poe_task_uses_diff_cover_for_changed_lines() -> None:
         {"cmd": "coverage xml -o coverage.xml --fail-under=0"},
         {
             "cmd": (
-                "diff-cover coverage.xml --compare-branch HEAD "
-                "--include-untracked --fail-under 80"
+                "diff-cover coverage.xml --compare-branch HEAD --include-untracked --fail-under 80"
             ),
         },
     ]
@@ -72,8 +80,7 @@ def test_coverage_gates_poe_task_reuses_one_pytest_run_for_both_gates() -> None:
         {"cmd": "coverage xml -o coverage.xml --fail-under=0"},
         {
             "cmd": (
-                "diff-cover coverage.xml --compare-branch HEAD "
-                "--include-untracked --fail-under 80"
+                "diff-cover coverage.xml --compare-branch HEAD --include-untracked --fail-under 80"
             ),
         },
     ]

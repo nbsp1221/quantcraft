@@ -53,7 +53,7 @@ From a local checkout today:
 
 ```bash
 uv sync
-uv run poe verify
+uv run poe check
 ```
 
 Useful targeted checks:
@@ -63,7 +63,7 @@ uv run poe repo-check
 uv run pytest tests/smoke/local -q
 ```
 
-Live tests are excluded from the default verification lane and must be run
+Live tests are excluded from the default check lane and must be run
 explicitly when needed.
 
 ## Quickstart
@@ -140,7 +140,7 @@ with:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, verification, docs
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, check, docs
 expectations, pull request guidance, and AI-assisted contribution ownership
 requirements.
 

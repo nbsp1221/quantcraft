@@ -7,7 +7,7 @@ scope is single-symbol historical backtesting and quant research tooling.
 
 ```bash
 uv sync
-uv run poe verify
+uv run poe check
 ```
 
 Useful targeted checks:
@@ -21,7 +21,7 @@ uv run pytest tests/smoke/local -q
 Runtime-sensitive backtest or research changes may need the stronger lane:
 
 ```bash
-uv run poe verify-runtime
+uv run poe check-runtime
 ```
 
 ## Documentation
@@ -65,11 +65,11 @@ Pull requests should include:
 - linked issue when applicable
 - change type
 - docs impact
-- verification evidence
+- check evidence
 - release impact when applicable
 
 If a change used AI-assisted or generated output, the human PR author must
-review it line by line, understand it, verify it, and own the result. The human
+review it line by line, understand it, check it, and own the result. The human
 author stands behind the change.
 
 Changes under `trading` or `execution` have stricter review expectations because

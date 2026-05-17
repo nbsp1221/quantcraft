@@ -53,7 +53,7 @@ jobs:
         run: uv run poe build
 
       - name: Check distributions
-        run: uvx twine check --strict dist/*
+        run: uvx twine check --strict dist/*.whl dist/*.tar.gz
 
       - name: Smoke test wheel install
         run: |

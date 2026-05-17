@@ -97,7 +97,7 @@ Purpose:
 Collect:
 
 - default test command result
-- full verification command result
+- full check command result
 - failed test count
 - error count
 - skipped count
@@ -106,11 +106,11 @@ Collect:
 Recommended command surface:
 
 ```bash
-uv run poe verify
-uv run poe verify-runtime
+uv run poe check
+uv run poe check-runtime
 ```
 
-Use `verify-runtime` when the evaluation touches runtime-sensitive backtest or
+Use `check-runtime` when the evaluation touches runtime-sensitive backtest or
 research behavior.
 
 ### Coverage
@@ -328,7 +328,7 @@ Use this template for an actual evaluation report.
 
 | Command | Result | Runtime | Notes |
 | --- | --- | ---: | --- |
-| `uv run poe verify` |  |  |  |
+| `uv run poe check` |  |  |  |
 
 ## Quantitative Metrics
 
@@ -445,7 +445,7 @@ from the relevant spec.
 For the next feature cycle, use these as recommendations rather than permanent
 thresholds:
 
-- default verification must pass
+- default check must pass
 - repository coverage floor must hold
 - no unexplained new skipped or xfailed tests
 - no known flaky tests in the default lane

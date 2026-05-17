@@ -21,7 +21,7 @@ From a local checkout:
 
 ```bash
 uv sync
-uv run poe verify
+uv run poe check
 ```
 
 For a faster local documentation and import check:

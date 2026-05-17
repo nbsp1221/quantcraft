@@ -52,8 +52,9 @@ executor = "uv"
 [tool.poe.tasks]
 lint = "ruff check ."
 format = "ruff format ."
+format-check = "ruff format --check ."
 perf-check = "pytest tests/perf -q -x --run-perf"
-verify-runtime = ["verify", "perf-check"]
+check-runtime = ["check", "perf-check"]
 typecheck = "mypy src"
 test = "pytest -q"
 test-unit = "pytest tests/unit -q"
@@ -76,14 +77,17 @@ coverage-gates = [
     { cmd = "diff-cover coverage.xml --compare-branch HEAD --include-untracked --fail-under 80" },
 ]
 build = "uv build"
+twine-check = "uvx twine check --strict dist/*.whl dist/*.tar.gz"
 repo-check = "uv run python scripts/repo_check.py"
 notebook-validate = "uv run python scripts/notebook_validate.py"
 live-smoke = "uv run python scripts/live_smoke.py"
-verify = [
+check = [
+    "format-check",
     "lint",
     "typecheck",
     "coverage-gates",
     "build",
+    "twine-check",
     "repo-check",
     "notebook-validate",
 ]
@@ -160,8 +164,9 @@ executor = "uv"
 [tool.poe.tasks]
 lint = "ruff check ."
 format = "ruff format ."
+format-check = "ruff format --check ."
 perf-check = "pytest tests/perf -q -x --run-perf"
-verify-runtime = ["verify", "perf-check"]
+check-runtime = ["check", "perf-check"]
 typecheck = "mypy src"
 test = "pytest -q"
 test-unit = "pytest tests/unit -q"
@@ -184,14 +189,17 @@ coverage-gates = [
     { cmd = "diff-cover coverage.xml --compare-branch HEAD --include-untracked --fail-under 80" },
 ]
 build = "uv build"
+twine-check = "uvx twine check --strict dist/*.whl dist/*.tar.gz"
 repo-check = "uv run python scripts/repo_check.py"
 notebook-validate = "uv run python scripts/notebook_validate.py"
 live-smoke = "uv run python scripts/live_smoke.py"
-verify = [
+check = [
+    "format-check",
     "lint",
     "typecheck",
     "coverage-gates",
     "build",
+    "twine-check",
     "repo-check",
     "notebook-validate",
 ]
@@ -242,8 +250,9 @@ executor = "uv"
 [tool.poe.tasks]
 lint = "ruff check ."
 format = "ruff format ."
+format-check = "ruff format --check ."
 perf-check = "pytest tests/perf -q -x --run-perf"
-verify-runtime = ["verify", "perf-check"]
+check-runtime = ["check", "perf-check"]
 typecheck = "mypy src"
 test = "pytest -q"
 test-unit = "pytest tests/unit -q"
@@ -266,14 +275,17 @@ coverage-gates = [
     { cmd = "diff-cover coverage.xml --compare-branch HEAD --include-untracked --fail-under 80" },
 ]
 build = "uv build"
+twine-check = "uvx twine check --strict dist/*.whl dist/*.tar.gz"
 repo-check = "uv run python scripts/repo_check.py"
 notebook-validate = "uv run python scripts/notebook_validate.py"
 live-smoke = "uv run python scripts/live_smoke.py"
-verify = [
+check = [
+    "format-check",
     "lint",
     "typecheck",
     "coverage-gates",
     "build",
+    "twine-check",
     "repo-check",
     "notebook-validate",
 ]

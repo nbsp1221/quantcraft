@@ -69,9 +69,9 @@ def test_agents_routes_to_governing_docs_and_repo_checks() -> None:
         "docs/design-docs/index.md",
         "docs/RELIABILITY.md",
         "docs/SECURITY.md",
-        "uv run poe verify",
+        "uv run poe check",
         "uv run poe repo-check",
-        "uv run poe verify-runtime",
+        "uv run poe check-runtime",
     ]:
         assert reference in agents
 

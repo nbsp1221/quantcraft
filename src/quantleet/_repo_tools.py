@@ -100,8 +100,9 @@ ROUTING_INDEX_CONFIG = {
 REQUIRED_POE_TASKS = (
     "lint",
     "format",
+    "format-check",
     "perf-check",
-    "verify-runtime",
+    "check-runtime",
     "typecheck",
     "test",
     "test-unit",
@@ -113,10 +114,15 @@ REQUIRED_POE_TASKS = (
     "coverage-diff",
     "coverage-gates",
     "build",
+    "twine-check",
     "repo-check",
     "notebook-validate",
     "live-smoke",
+    "check",
+)
+FORBIDDEN_POE_TASKS = (
     "verify",
+    "verify-runtime",
 )
 
 
@@ -371,6 +377,9 @@ def collect_doc_issues(root: Path) -> list[str]:
         for task_name in REQUIRED_POE_TASKS:
             if task_name not in poe_tasks:
                 issues.append(f"Missing required Poe task: {task_name}")
+        for task_name in FORBIDDEN_POE_TASKS:
+            if task_name in poe_tasks:
+                issues.append(f"Forbidden Poe task alias: {task_name}")
 
     indexed_doc_dirs = (
         (

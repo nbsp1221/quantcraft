@@ -13,7 +13,7 @@ Use this reference when adding or moving tests in `quantleet`.
 ## Placement Rules
 
 - Put isolated deterministic behavior in `tests/unit`
-- Put cross-module and command-surface verification in `tests/integration`
+- Put cross-module and command-surface check in `tests/integration`
 - Put explicit-only performance regression checks in `tests/perf`
 - Put repository, docs, and architecture rules in `tests/structure`
 - Put sanity checks in `tests/smoke`
@@ -48,7 +48,7 @@ Do not force repository-rule checks into a source mirror.
 
 ## Smoke Policy
 
-- `tests/smoke/local` is for local smoke verification
+- `tests/smoke/local` is for local smoke check
 - `tests/smoke/live` is for explicit-only network-backed checks
 - live tests do not belong in the default `pytest` lane
 - use `uv run poe test-live` when you explicitly want the live lane

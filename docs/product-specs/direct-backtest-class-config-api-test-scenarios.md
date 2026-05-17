@@ -639,8 +639,8 @@ Stage 3.5 implementation touches runtime-sensitive backtest and research paths.
 The implementation plan should run at least:
 
 ```bash
-uv run poe verify-runtime
-uv run poe verify
+uv run poe check-runtime
+uv run poe check
 ```
 
 Useful targeted commands during development:

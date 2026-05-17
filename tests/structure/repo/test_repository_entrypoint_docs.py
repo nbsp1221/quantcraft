@@ -26,7 +26,7 @@ def test_release_facing_repository_docs_cover_public_beta_workflow() -> None:
 
     for marker in [
         "uv sync",
-        "uv run poe verify",
+        "uv run poe check",
         "uv run poe repo-check",
         "docs/site",
         "AI-assisted",

@@ -7,8 +7,9 @@ from tests.support import ROOT
 REQUIRED_POE_TASKS = [
     "lint",
     "format",
+    "format-check",
     "perf-check",
-    "verify-runtime",
+    "check-runtime",
     "typecheck",
     "test",
     "test-unit",
@@ -20,10 +21,11 @@ REQUIRED_POE_TASKS = [
     "coverage-diff",
     "coverage-gates",
     "build",
+    "twine-check",
     "repo-check",
     "notebook-validate",
     "live-smoke",
-    "verify",
+    "check",
 ]
 
 
@@ -31,9 +33,9 @@ def write_minimal_repo_docs(tmp_path) -> None:
     (tmp_path / "README.md").write_text(
         (
             "# quantleet\n\n## Installation\n\n"
-            "uv run poe verify\n"
+            "uv run poe check\n"
             "uv run poe perf-check\n"
-            "uv run poe verify-runtime\n"
+            "uv run poe check-runtime\n"
             "Quantleet is research and software tooling, not financial advice. "
             "Backtest results do not guarantee future performance. "
             "Users are responsible for data quality, assumptions, execution risk, "
@@ -42,7 +44,7 @@ def write_minimal_repo_docs(tmp_path) -> None:
         encoding="utf-8",
     )
     (tmp_path / "CONTRIBUTING.md").write_text(
-        "uv sync\nuv run poe verify\nuv run poe repo-check\ndocs/site\nAI-assisted\nhuman\n",
+        "uv sync\nuv run poe check\nuv run poe repo-check\ndocs/site\nAI-assisted\nhuman\n",
         encoding="utf-8",
     )
     (tmp_path / "SECURITY.md").write_text(
@@ -64,9 +66,9 @@ def write_minimal_repo_docs(tmp_path) -> None:
             "docs/design-docs/index.md\n"
             "docs/RELIABILITY.md\n"
             "docs/SECURITY.md\n"
-            "uv run poe verify\n"
+            "uv run poe check\n"
             "uv run poe perf-check\n"
-            "uv run poe verify-runtime\n"
+            "uv run poe check-runtime\n"
             "uv run poe coverage\n"
             "uv run poe coverage-diff\n"
             "uv run poe coverage-gates\n"
@@ -143,7 +145,7 @@ def write_minimal_repo_docs(tmp_path) -> None:
         encoding="utf-8",
     )
     (docs_dir / "RELIABILITY.md").write_text(
-        "uv run poe verify\nuv run poe verify-runtime\nuv build\n",
+        "uv run poe check\nuv run poe check-runtime\nuv build\n",
         encoding="utf-8",
     )
     (docs_dir / "SECURITY.md").write_text(
@@ -279,18 +281,22 @@ def test_pyproject_defines_required_poe_tasks() -> None:
     task_names = pyproject["tool"]["poe"]["tasks"].keys()
     for task_name in REQUIRED_POE_TASKS:
         assert task_name in task_names
+    assert "verify" not in task_names
+    assert "verify-runtime" not in task_names
     assert "test-integration-extended" not in task_names
 
 
-def test_poe_verify_sequence_matches_default_local_verification_bundle() -> None:
+def test_poe_check_sequence_matches_default_local_quality_gate() -> None:
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    verify = pyproject["tool"]["poe"]["tasks"]["verify"]
+    check = pyproject["tool"]["poe"]["tasks"]["check"]
 
-    assert verify["sequence"] == [
+    assert check["sequence"] == [
+        "format-check",
         "lint",
         "typecheck",
         "coverage-gates",
         "build",
+        "twine-check",
         "repo-check",
         "notebook-validate",
     ]
@@ -308,9 +314,9 @@ def test_poe_task_surface_is_documented() -> None:
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
 
     for command in [
-        "uv run poe verify",
+        "uv run poe check",
         "uv run poe perf-check",
-        "uv run poe verify-runtime",
+        "uv run poe check-runtime",
         "uv run poe coverage",
         "uv run poe coverage-diff",
         "uv run poe coverage-gates",
@@ -349,7 +355,70 @@ lint = "ruff check ."
 
     issues = check_docs.collect_issues(tmp_path)
 
-    assert any("Missing required Poe task: verify" in issue for issue in issues)
+    assert any("Missing required Poe task: check" in issue for issue in issues)
+
+
+def test_repo_check_flags_forbidden_verify_aliases(tmp_path) -> None:
+    write_minimal_repo_docs(tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        """
+[project]
+name = "quantleet"
+version = "0.1.0"
+
+[dependency-groups]
+dev = ["poethepoet>=0.42.1"]
+
+[tool.poe]
+executor = "uv"
+
+[tool.poe.tasks]
+lint = "ruff check ."
+format = "ruff format ."
+format-check = "ruff format --check ."
+perf-check = "pytest tests/perf -q"
+check-runtime = ["check", "perf-check"]
+typecheck = "mypy src"
+test = "pytest -q"
+test-unit = "pytest tests/unit -q"
+test-integration = "pytest tests/integration -q"
+test-structure = "pytest tests/structure -q"
+test-smoke = "pytest tests/smoke -q"
+test-live = "pytest tests/live -q"
+coverage = "coverage run -m pytest -q"
+coverage-diff = "diff-cover coverage.xml --compare-branch HEAD --include-untracked --fail-under 80"
+coverage-gates = [
+    "coverage erase",
+    "coverage run -m pytest -q",
+    "coverage report -m",
+    "coverage xml -o coverage.xml --fail-under=0",
+    "diff-cover coverage.xml --compare-branch HEAD --include-untracked --fail-under 80",
+]
+build = "uv build"
+twine-check = "uvx twine check --strict dist/*.whl dist/*.tar.gz"
+repo-check = "uv run python scripts/repo_check.py"
+notebook-validate = "uv run python scripts/notebook_validate.py"
+live-smoke = "uv run python scripts/live_smoke.py"
+check = [
+    "format-check",
+    "lint",
+    "typecheck",
+    "coverage-gates",
+    "build",
+    "twine-check",
+    "repo-check",
+    "notebook-validate",
+]
+verify = ["check"]
+verify-runtime = ["check-runtime"]
+""".strip(),
+        encoding="utf-8",
+    )
+
+    issues = check_docs.collect_issues(tmp_path)
+
+    assert any("Forbidden Poe task alias: verify" in issue for issue in issues)
+    assert any("Forbidden Poe task alias: verify-runtime" in issue for issue in issues)
 
 
 def test_repo_check_accepts_table_form_poe_executor(tmp_path) -> None:
@@ -369,8 +438,9 @@ type = "uv"
 [tool.poe.tasks]
 lint = "ruff check ."
 format = "ruff format ."
+format-check = "ruff format --check ."
 perf-check = "pytest tests/perf -q"
-verify-runtime = ["verify", "perf-check"]
+check-runtime = ["check", "perf-check"]
 typecheck = "mypy src"
 test = "pytest -q"
 test-unit = "pytest tests/unit -q"
@@ -393,14 +463,17 @@ coverage-gates = [
     { cmd = "diff-cover coverage.xml --compare-branch HEAD --include-untracked --fail-under 80" },
 ]
 build = "uv build"
+twine-check = "uvx twine check --strict dist/*.whl dist/*.tar.gz"
 repo-check = "uv run python scripts/repo_check.py"
 notebook-validate = "uv run python scripts/notebook_validate.py"
 live-smoke = "uv run python scripts/live_smoke.py"
-verify = [
+check = [
+    "format-check",
     "lint",
     "typecheck",
     "coverage-gates",
     "build",
+    "twine-check",
     "repo-check",
     "notebook-validate",
 ]

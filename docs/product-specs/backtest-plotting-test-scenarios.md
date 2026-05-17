@@ -87,7 +87,7 @@ The implementation plan should map scenarios to these areas:
 If the 10,000-bar figure test is cheap enough under a non-interactive backend,
 it may live in the normal integration suite. If it materially slows the default
 lane, place it in `tests/perf/` and update the Poe task surface so the plotting
-scale test is actually included in `uv run poe verify-runtime`. The current
+scale test is actually included in `uv run poe check-runtime`. The current
 repository performance lane is intentionally explicit, so placing a file under
 `tests/perf/` is not sufficient by itself.
 
@@ -512,7 +512,7 @@ Required assertions:
 - close, equity, and drawdown artists each retain 10,000 x-points
 - no source reload, no `show()`, and no file write occur
 - if this scenario lives in `tests/perf/`, the implementation must update the
-  Poe task surface so it runs under `uv run poe verify-runtime`
+  Poe task surface so it runs under `uv run poe check-runtime`
 
 No render-time threshold is required for first beta. If a later implementation
 adds one, it must live in the explicit performance lane and document the
@@ -553,8 +553,8 @@ The implementation slice should run:
 - focused integration tests for `bars=...` and `source=...`
 - smoke tests for public imports and built artifact imports
 - structure tests for import and package-boundary rules
-- `uv run poe verify`
-- `uv run poe verify-runtime` if runtime code in `src/quantleet/backtest/runtime.py`
+- `uv run poe check`
+- `uv run poe check-runtime` if runtime code in `src/quantleet/backtest/runtime.py`
   changes to populate snapshots or `drawdown_curve`
 
 ## Out Of Scope

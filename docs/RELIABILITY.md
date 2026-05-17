@@ -5,9 +5,9 @@ This document defines repository-level reliability expectations.
 ## Core Rules
 
 - Changes should start from a written plan or spec.
-- Verification must be run from the current repository state.
+- Check must be run from the current repository state.
 - Backtest and paper-trading behavior must be reproducible from checked-in inputs and documented assumptions.
-- Notebook validation and smoke checks should remain part of the local verification surface.
+- Notebook validation and smoke checks should remain part of the local check surface.
 
 ## Evaluation Modes
 
@@ -35,12 +35,12 @@ In particular:
 
 Tier A work requires stronger human gate and must not be treated as agent-autonomous completion.
 
-## Local Verification
+## Local Check
 
-Current baseline verification commands:
+Current baseline check commands:
 
-- `uv run poe verify`
-- `uv run poe verify-runtime`
+- `uv run poe check`
+- `uv run poe check-runtime`
 - `uv run poe coverage`
 - `uv run poe coverage-diff`
 - `uv run poe coverage-gates`
@@ -50,6 +50,7 @@ Current baseline verification commands:
 - `uv run ruff check .`
 - `uv run mypy src`
 - `uv build`
+- `uvx twine check --strict dist/*.whl dist/*.tar.gz`
 
 Low-level repository commands remain available for direct use:
 
@@ -73,10 +74,11 @@ The default test and coverage commands intentionally serve different purposes:
 
 The performance gate is explicit:
 
-- `uv run poe verify` remains the correctness lane and uses `coverage-gates`
-  instead of running separate `test`, `coverage`, and `coverage-diff` tasks
+- `uv run poe check` remains the correctness lane and uses `coverage-gates`
+  instead of running separate `test`, `coverage`, and `coverage-diff` tasks;
+  it also validates built package artifacts with Twine after `uv build`
 - `uv run poe perf-check` is the canonical RSI performance-regression lane
-- `uv run poe verify-runtime` is the stronger explicit lane for runtime-sensitive backtest or research changes
+- `uv run poe check-runtime` is the stronger explicit lane for runtime-sensitive backtest or research changes
 - the default integration lane keeps a canonical strategy pair:
   - `RSI 30/70 mean reversion`
   - `EMA crossover`
@@ -88,7 +90,7 @@ The performance gate is explicit:
 - the gate fails unless first-run runtime is `< 1.0s`
 - the gate also fails unless steady-state median runtime is `< 1.0s`
 
-Run `uv run poe verify-runtime` when a change touches the runtime-sensitive
+Run `uv run poe check-runtime` when a change touches the runtime-sensitive
 backtest or research path, especially:
 
 - `src/quantleet/backtest/engine.py`
@@ -117,7 +119,7 @@ The repository treats coverage as a repo-local reliability floor for source code
   `80%`
 - `uv run poe coverage-diff` may pass with no changed source lines that have
   coverage information in the diff
-- `uv run poe coverage-gates` is the default `verify` coverage lane; it must
+- `uv run poe coverage-gates` is the default `check` coverage lane; it must
   reuse one fresh coverage run for the full-project `90%` gate and the
   changed-lines `80%` gate
 
