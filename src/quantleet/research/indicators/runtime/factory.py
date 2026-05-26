@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, fields, is_dataclass
-from typing import Any, Callable, TypeVar, cast
+from typing import Any, cast
 
 import numpy as np
 
@@ -10,10 +10,6 @@ from quantleet.research.indicators.runtime.base import IndicatorKernel, Indicato
 from quantleet.research.indicators.runtime.runtime import IndicatorRuntime
 from quantleet.research.indicators.runtime.views import IndicatorSeriesView
 from quantleet.strategy.series import SeriesView
-
-_KernelState = TypeVar("_KernelState", bound=IndicatorState)
-_ResultT = TypeVar("_ResultT")
-_PureResultT = TypeVar("_PureResultT")
 
 
 @dataclass(slots=True)
@@ -39,12 +35,12 @@ class _PureFunctionKernel:
         )
 
     def append(self, state: _PureFunctionState, values: tuple[float, ...]) -> None:
-        for source, value in zip(state.sources, values):
+        for source, value in zip(state.sources, values, strict=True):
             source.append(value)
         runtime_sources = tuple(tuple(source) for source in state.sources)
         outputs = self._compute_outputs(runtime_sources)
         latest_outputs = tuple(fresh_output[-1] for fresh_output in outputs)
-        for cached_output, latest_output in zip(state.outputs, latest_outputs):
+        for cached_output, latest_output in zip(state.outputs, latest_outputs, strict=True):
             cached_output.append(latest_output)
 
 
@@ -70,10 +66,10 @@ class _PrecomputedRuntime:
         return cast(Sequence[float], self._outputs[output_index][:visible_length])
 
 
-def bind_indicator(
+def bind_indicator[KernelState: IndicatorState](
     *,
     sources: tuple[SeriesLike, ...],
-    kernel: IndicatorKernel[_KernelState],
+    kernel: IndicatorKernel[KernelState],
 ) -> IndicatorSeriesView:
     return IndicatorRuntime(sources=sources, kernel=kernel).view()
 
@@ -94,13 +90,13 @@ def bind_indicator_from_pure(
     )
 
 
-def bind_multi_output_indicator(
+def bind_multi_output_indicator[KernelState: IndicatorState, ResultT](
     *,
     sources: tuple[SeriesLike, ...],
-    kernel: IndicatorKernel[_KernelState],
-    result_type: type[_ResultT],
+    kernel: IndicatorKernel[KernelState],
+    result_type: type[ResultT],
     field_indices: dict[str, int],
-) -> _ResultT:
+) -> ResultT:
     runtime = IndicatorRuntime(sources=sources, kernel=kernel)
     if not is_dataclass(result_type):
         raise TypeError("result_type must be a dataclass")
@@ -111,13 +107,13 @@ def bind_multi_output_indicator(
     return result_type(**kwargs)
 
 
-def bind_multi_output_indicator_from_pure(
+def bind_multi_output_indicator_from_pure[PureResultT, ResultT](
     *,
     sources: tuple[SeriesLike, ...],
-    compute: Callable[..., _PureResultT],
-    result_type: type[_ResultT],
+    compute: Callable[..., PureResultT],
+    result_type: type[ResultT],
     field_names: tuple[str, ...],
-) -> _ResultT:
+) -> ResultT:
     precomputed = _bind_precomputed_multi_output_if_possible(
         sources=sources,
         compute=compute,
@@ -152,13 +148,13 @@ def _bind_precomputed_indicator_if_possible(
     return runtime.view()
 
 
-def _bind_precomputed_multi_output_if_possible(
+def _bind_precomputed_multi_output_if_possible[PureResultT, ResultT](
     *,
     sources: tuple[SeriesLike, ...],
-    compute: Callable[..., _PureResultT],
-    result_type: type[_ResultT],
+    compute: Callable[..., PureResultT],
+    result_type: type[ResultT],
     field_names: tuple[str, ...],
-) -> _ResultT | None:
+) -> ResultT | None:
     if not _all_series_views(sources):
         return None
     runtime = _PrecomputedRuntime(

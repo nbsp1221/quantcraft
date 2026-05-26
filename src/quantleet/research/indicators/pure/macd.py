@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Final, Generic, TypeVar
+from typing import Final
 
 import numpy as np
 import talib
@@ -9,14 +9,13 @@ import talib
 _DEFAULT_FAST: Final[int] = 12
 _DEFAULT_SLOW: Final[int] = 26
 _DEFAULT_SIGNAL: Final[int] = 9
-_SeriesT = TypeVar("_SeriesT")
 
 
 @dataclass(frozen=True, slots=True)
-class PureMACDResult(Generic[_SeriesT]):
-    macd: _SeriesT
-    signal: _SeriesT
-    histogram: _SeriesT
+class PureMACDResult[SeriesT]:
+    macd: SeriesT
+    signal: SeriesT
+    histogram: SeriesT
 
 
 def macd(

@@ -30,9 +30,10 @@ class PendingOrderRequest:
         has_qty_percent = self.qty_percent is not None
         if has_quantity == has_qty_percent:
             raise ValueError("PendingOrderRequest requires exactly one sizing mode")
-        if self.quantity is not None:
-            if not _is_finite_number(self.quantity) or self.quantity <= 0.0:
-                raise ValueError("quantity must be a positive finite float")
+        if self.quantity is not None and (
+            not _is_finite_number(self.quantity) or self.quantity <= 0.0
+        ):
+            raise ValueError("quantity must be a positive finite float")
         if self.qty_percent is not None:
             if not _is_finite_number(self.qty_percent):
                 raise ValueError("qty_percent must be numeric")

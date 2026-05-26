@@ -5,10 +5,10 @@ import sys
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType, NoneType, UnionType
-from typing import TypeAlias, Union, cast, get_args, get_origin, get_type_hints
+from typing import Union, cast, get_args, get_origin, get_type_hints
 
-JSONConfigScalar: TypeAlias = str | int | float | bool | None
-_SupportedType: TypeAlias = type[str] | type[int] | type[float] | type[bool]
+type JSONConfigScalar = str | int | float | bool | None
+type _SupportedType = type[str] | type[int] | type[float] | type[bool]
 
 
 class StrategyConfigError(Exception):

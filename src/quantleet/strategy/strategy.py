@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Generic, TypeVar, get_args, get_origin
+from typing import Any, ClassVar, get_args, get_origin
 
 from quantleet.strategy.config import (
     StrategyConfig,
@@ -19,8 +19,6 @@ from quantleet.trading.domain.intents import (
 )
 from quantleet.trading.domain.state import TradingState
 from quantleet.trading.order_requests import PendingOrderRequest
-
-ConfigT = TypeVar("ConfigT", bound=StrategyConfig)
 
 
 class PositionView:
@@ -49,8 +47,9 @@ class PositionView:
         self._is_open = state.position_quantity > 0.0
 
 
-class Strategy(ABC, Generic[ConfigT]):
+class Strategy[ConfigT: StrategyConfig](ABC):
     config_type: ClassVar[type[StrategyConfig]] = StrategyConfig
+    config: ConfigT
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
@@ -115,7 +114,7 @@ class Strategy(ABC, Generic[ConfigT]):
         self.position = PositionView()
 
     def init(self) -> None:
-        pass
+        return None
 
     @property
     def display_name(self) -> str | None:

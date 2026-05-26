@@ -50,7 +50,7 @@ def test_strategy_public_import_surface_exposes_strategy_config_contract() -> No
     assert getattr(strategy_module, "StrategyConfigDeclarationError", None) is not None
     assert getattr(strategy_module, "StrategyConfigValidationError", None) is not None
     assert getattr(strategy_module, "StrategyConfigMutationError", None) is not None
-    assert getattr(research_module, "Strategy") is getattr(strategy_module, "Strategy")
+    assert research_module.Strategy is strategy_module.Strategy
 
 
 def test_capability_public_surfaces_import_cleanly() -> None:

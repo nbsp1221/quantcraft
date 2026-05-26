@@ -5,7 +5,7 @@ from tests.support import ROOT
 
 
 def test_tier_a_domains_are_defined() -> None:
-    assert check_architecture.TIER_A == {"trading", "execution"}
+    assert {"trading", "execution"} == check_architecture.TIER_A
 
 
 def test_forbidden_crossing_into_tier_a_is_rejected() -> None:

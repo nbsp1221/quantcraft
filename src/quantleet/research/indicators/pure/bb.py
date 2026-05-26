@@ -1,21 +1,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Final, Generic, TypeVar
+from typing import Final
 
 import numpy as np
 import talib
 
 _DEFAULT_LENGTH: Final[int] = 20
 _DEFAULT_STDDEV: Final[float] = 2.0
-_SeriesT = TypeVar("_SeriesT")
 
 
 @dataclass(frozen=True, slots=True)
-class PureBollingerBandsResult(Generic[_SeriesT]):
-    upper: _SeriesT
-    middle: _SeriesT
-    lower: _SeriesT
+class PureBollingerBandsResult[SeriesT]:
+    upper: SeriesT
+    middle: SeriesT
+    lower: SeriesT
 
 
 def bb(

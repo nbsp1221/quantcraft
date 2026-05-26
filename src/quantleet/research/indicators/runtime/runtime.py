@@ -2,12 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Generic, TypeVar
 
 from quantleet.research.indicators.runtime.base import IndicatorKernel, IndicatorState, SeriesLike
 from quantleet.research.indicators.runtime.views import IndicatorSeriesView
-
-_KernelState = TypeVar("_KernelState", bound=IndicatorState)
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,7 +44,7 @@ class SourceSynchronizer:
         appended = tuple(
             self._materialize_appended_values(source, append_delta) for source in self._sources
         )
-        return AppendPlan(lengths=current_lengths, rows=tuple(zip(*appended)))
+        return AppendPlan(lengths=current_lengths, rows=tuple(zip(*appended, strict=True)))
 
     def commit(self, lengths: tuple[int, ...]) -> None:
         self._lengths = lengths
@@ -59,7 +56,8 @@ class SourceSynchronizer:
         if self._lengths is None:
             return None
         deltas = tuple(
-            current - previous for previous, current in zip(self._lengths, current_lengths)
+            current - previous
+            for previous, current in zip(self._lengths, current_lengths, strict=True)
         )
         if any(delta < 0 for delta in deltas):
             return None
@@ -81,17 +79,17 @@ class SourceSynchronizer:
         return tuple(series[index] for index in range(delta - 1, -1, -1))
 
 
-class IndicatorRuntime(Generic[_KernelState]):
+class IndicatorRuntime[KernelState: IndicatorState]:
     __slots__ = ("_kernel", "_state", "_synchronizer")
 
     def __init__(
         self,
         *,
         sources: tuple[SeriesLike, ...],
-        kernel: IndicatorKernel[_KernelState],
+        kernel: IndicatorKernel[KernelState],
     ) -> None:
         self._kernel = kernel
-        self._state: _KernelState | None = None
+        self._state: KernelState | None = None
         self._synchronizer = SourceSynchronizer(sources)
 
     def view(self, output_index: int = 0) -> IndicatorSeriesView:

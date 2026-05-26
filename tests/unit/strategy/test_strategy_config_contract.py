@@ -34,7 +34,7 @@ def test_public_annotated_defaults_become_ordered_config_fields() -> None:
 def test_private_annotations_are_ignored_before_type_resolution() -> None:
     class PrivateAnnotationConfig(StrategyConfig):
         period: int = 14
-        _cache: "NotImported" = None  # noqa: F821
+        _cache: NotImported = None  # noqa: F821
 
     assert PrivateAnnotationConfig().to_mapping() == {"period": 14}
 

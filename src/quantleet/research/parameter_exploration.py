@@ -5,7 +5,7 @@ from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from itertools import product
 from types import MappingProxyType
-from typing import Literal, TypeAlias
+from typing import Literal
 
 from quantleet.backtest import BacktestResult, BacktestStrategyConstructionError
 from quantleet.data import BarSeries
@@ -23,14 +23,14 @@ from quantleet.research._study_metrics import (
 )
 from quantleet.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
 
-FailureStage: TypeAlias = Literal[
+type FailureStage = Literal[
     "constraint",
     "strategy_construction",
     "backtest",
     "metric_extraction",
 ]
-RejectionStage: TypeAlias = Literal["strategy_config", "constraint"]
-RowStatus: TypeAlias = Literal["success", "rejected", "failed"]
+type RejectionStage = Literal["strategy_config", "constraint"]
+type RowStatus = Literal["success", "rejected", "failed"]
 
 
 @dataclass(frozen=True, slots=True)

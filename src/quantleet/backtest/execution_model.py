@@ -69,7 +69,7 @@ class ConservativeOHLCVExecutionModel:
             and order.is_triggered_by_price(price=bar.open)
             and not self._is_marketable_at_price(order=order, price=bar.open)
         )
-        for start, end in zip(path, path[1:]):
+        for start, end in zip(path, path[1:], strict=False):
             segment_crossings = self._crossing_prices_for_segment(
                 symbol=symbol,
                 start=start,
@@ -91,7 +91,9 @@ class ConservativeOHLCVExecutionModel:
 
     def events_from_bars(self, *, bars: BarSeries) -> tuple[SyntheticEvent, ...]:
         rows = bars.rows
-        if any(current.timestamp >= nxt.timestamp for current, nxt in zip(rows, rows[1:])):
+        if any(
+            current.timestamp >= nxt.timestamp for current, nxt in zip(rows, rows[1:], strict=False)
+        ):
             raise ValueError("out-of-order time bars")
 
         events: list[SyntheticEvent] = []

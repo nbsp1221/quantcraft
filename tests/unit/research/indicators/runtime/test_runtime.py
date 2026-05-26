@@ -78,7 +78,7 @@ class MultiSourceKernel:
 
     def build(self, sources: tuple[tuple[float, ...], ...]) -> RecordingState:
         self.build_inputs.append(sources)
-        values = [left + right for left, right in zip(*sources)]
+        values = [left + right for left, right in zip(*sources, strict=False)]
         return RecordingState(outputs=(values,))
 
     def append(self, state: RecordingState, values: tuple[float, ...]) -> None:

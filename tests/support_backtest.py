@@ -990,7 +990,7 @@ def _rolling_mean(values: list[float], *, length: int) -> list[float | None]:
 def _rsi(values: list[float], *, length: int) -> list[float]:
     gains: list[float | None] = [None]
     losses: list[float | None] = [None]
-    for previous, current in zip(values, values[1:]):
+    for previous, current in zip(values, values[1:], strict=False):
         delta = current - previous
         gains.append(max(delta, 0.0))
         losses.append(max(-delta, 0.0))

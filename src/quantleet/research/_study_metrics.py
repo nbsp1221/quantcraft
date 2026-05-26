@@ -3,20 +3,20 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Mapping
 from types import MappingProxyType
-from typing import Literal, TypeAlias
+from typing import Literal
 
 from quantleet.backtest import BacktestResult
 
-JSONScalar: TypeAlias = str | int | float | bool | None
-Objective: TypeAlias = tuple[str, Literal["max", "min"]]
-MetricState: TypeAlias = Literal[
+type JSONScalar = str | int | float | bool | None
+type Objective = tuple[str, Literal["max", "min"]]
+type MetricState = Literal[
     "defined",
     "undefined",
     "positive_infinity",
     "negative_infinity",
 ]
-MetricValue: TypeAlias = int | float | None
-Constraint: TypeAlias = Callable[[Mapping[str, JSONScalar]], bool]
+type MetricValue = int | float | None
+type Constraint = Callable[[Mapping[str, JSONScalar]], bool]
 
 
 def _final_equity(result: BacktestResult) -> float:

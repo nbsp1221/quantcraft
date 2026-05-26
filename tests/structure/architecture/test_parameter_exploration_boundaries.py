@@ -19,9 +19,11 @@ def _imports_parameter_exploration(path: Path) -> bool:
                 alias.name == "quantleet.research.parameter_exploration" for alias in node.names
             ):
                 return True
-        elif isinstance(node, ast.ImportFrom):
-            if node.module == "quantleet.research.parameter_exploration":
-                return True
+        elif (
+            isinstance(node, ast.ImportFrom)
+            and node.module == "quantleet.research.parameter_exploration"
+        ):
+            return True
     return False
 
 

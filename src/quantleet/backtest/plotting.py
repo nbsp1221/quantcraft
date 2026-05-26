@@ -23,7 +23,7 @@ FILL_MARKER_SIZE = 56
 FILL_MARKER_LINEWIDTH = 0.8
 
 
-def plot_backtest_result(result: "BacktestResult") -> "Figure":
+def plot_backtest_result(result: BacktestResult) -> Figure:
     from matplotlib import dates as mdates
     from matplotlib import pyplot as plt
     from matplotlib import ticker
@@ -103,7 +103,7 @@ def _validate_plot_lengths(
     raise ValueError(f"plot series length mismatch: {joined}")
 
 
-def _plot_fill_markers(axis: "Axes", trade_log: tuple[FillEvent, ...]) -> None:
+def _plot_fill_markers(axis: Axes, trade_log: tuple[FillEvent, ...]) -> None:
     buys = tuple(fill for fill in trade_log if fill.side == "buy")
     sells = tuple(fill for fill in trade_log if fill.side == "sell")
     _plot_side_markers(axis, fills=buys, label="Buy", marker="^", color=BUY_COLOR)
@@ -111,7 +111,7 @@ def _plot_fill_markers(axis: "Axes", trade_log: tuple[FillEvent, ...]) -> None:
 
 
 def _plot_side_markers(
-    axis: "Axes",
+    axis: Axes,
     *,
     fills: tuple[FillEvent, ...],
     label: str,

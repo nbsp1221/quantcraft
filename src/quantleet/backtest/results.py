@@ -85,7 +85,7 @@ class BacktestResult:
             raise ValueError("report is only available for engine-produced BacktestResult values")
         return self._report
 
-    def plot(self) -> "Figure":
+    def plot(self) -> Figure:
         from quantleet.backtest.plotting import plot_backtest_result
 
         return plot_backtest_result(self)

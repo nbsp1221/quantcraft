@@ -508,7 +508,7 @@ def periods_per_year_for_timeframe(
         return None
     positive_deltas = tuple(
         (current - previous) / 1000
-        for previous, current in zip(timestamps, timestamps[1:])
+        for previous, current in zip(timestamps, timestamps[1:], strict=False)
         if current > previous
     )
     if not positive_deltas:
@@ -533,7 +533,7 @@ def _periodic_returns(
     returns: list[float] = []
     if equity_values:
         returns.append(round((equity_values[0] - initial_cash) / initial_cash, 12))
-    for previous, current in zip(equity_values, equity_values[1:]):
+    for previous, current in zip(equity_values, equity_values[1:], strict=False):
         if previous <= 0.0:
             continue
         returns.append(round((current - previous) / previous, 12))

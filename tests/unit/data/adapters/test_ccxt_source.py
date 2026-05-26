@@ -61,17 +61,17 @@ class FakeExchangeClient:
 
 def _ccxt_source_type() -> type:
     data_module = importlib.import_module("quantleet.data")
-    return getattr(data_module, "CCXTDataSource")
+    return data_module.CCXTDataSource
 
 
 def _time_bar_type() -> type:
     data_module = importlib.import_module("quantleet.data")
-    return getattr(data_module, "TimeBar")
+    return data_module.TimeBar
 
 
 def _bar_series_type() -> type:
     data_module = importlib.import_module("quantleet.data")
-    return getattr(data_module, "BarSeries")
+    return data_module.BarSeries
 
 
 def test_ccxt_source_loads_binance_usdm_bars(

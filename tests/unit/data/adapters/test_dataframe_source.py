@@ -18,17 +18,17 @@ class FakeDataFrame:
 
 def _dataframe_source_type() -> type:
     data_module = importlib.import_module("quantleet.data")
-    return getattr(data_module, "DataFrameDataSource")
+    return data_module.DataFrameDataSource
 
 
 def _time_bar_type() -> type:
     data_module = importlib.import_module("quantleet.data")
-    return getattr(data_module, "TimeBar")
+    return data_module.TimeBar
 
 
 def _bar_series_type() -> type:
     data_module = importlib.import_module("quantleet.data")
-    return getattr(data_module, "BarSeries")
+    return data_module.BarSeries
 
 
 def test_dataframe_source_requires_minimal_schema() -> None:

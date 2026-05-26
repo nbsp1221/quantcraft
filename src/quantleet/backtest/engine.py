@@ -44,7 +44,7 @@ class BacktestEngine:
         if (bars is None) == (source is None):
             raise ValueError("provide exactly one of bars or source")
         strategy_instance = _materialize_strategy(strategy=strategy, config=config)
-        strategy_config = cast(StrategyConfig, getattr(strategy_instance, "config")).to_mapping()
+        strategy_config = strategy_instance.config.to_mapping()
         runtime_strategy = cast(StrategyLike, strategy_instance)
         if bars is not None:
             raw_bars = bars

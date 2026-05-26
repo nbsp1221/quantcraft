@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import MISSING, Field, fields
-from typing import Callable, Literal, get_args, get_type_hints
+from typing import Literal, get_args, get_type_hints
 
 import pytest
 
