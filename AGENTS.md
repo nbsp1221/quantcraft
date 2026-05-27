@@ -85,6 +85,7 @@ package-level CLI shims.
 - baseline-relative coverage check: `uv run poe coverage-baseline`
 - bootstrap or explicitly raise coverage baseline: `uv run poe coverage-baseline-update`
 - combined coverage gates: `uv run poe coverage-gates`
+- dead-code check: `uv run poe dead-code`
 - targeted trading mutation check: `uv run poe mutation-trading`
 - runtime-sensitive backtest or research changes: `uv run poe check-runtime`
 - live checks: `uv run poe test-live`

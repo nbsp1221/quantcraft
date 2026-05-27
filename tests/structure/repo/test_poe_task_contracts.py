@@ -8,6 +8,7 @@ REQUIRED_POE_TASKS = [
     "lint",
     "format",
     "format-check",
+    "dead-code",
     "perf-check",
     "check-runtime",
     "typecheck",
@@ -298,6 +299,7 @@ def test_poe_check_sequence_matches_default_local_quality_gate() -> None:
     assert check["sequence"] == [
         "format-check",
         "lint",
+        "dead-code",
         "typecheck",
         "coverage-gates",
         "build",
@@ -338,6 +340,17 @@ def test_default_test_tasks_use_plain_pytest_commands() -> None:
     assert tasks["test-integration"]["cmd"] == "pytest tests/integration -q"
 
 
+def test_dead_code_task_uses_vulture_pyproject_configuration() -> None:
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    tasks = pyproject["tool"]["poe"]["tasks"]
+    vulture = pyproject["tool"]["vulture"]
+
+    assert tasks["dead-code"]["cmd"] == "vulture"
+    assert vulture["paths"] == ["src", "tests", "scripts"]
+    assert vulture["min_confidence"] == 80
+    assert vulture["sort_by_size"] is True
+
+
 def test_poe_task_surface_is_documented() -> None:
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
 
@@ -350,6 +363,7 @@ def test_poe_task_surface_is_documented() -> None:
         "uv run poe coverage-baseline",
         "uv run poe coverage-baseline-update",
         "uv run poe coverage-gates",
+        "uv run poe dead-code",
         "uv run poe format",
         "uv run poe test-live",
     ]:
@@ -406,6 +420,7 @@ executor = "uv"
 lint = "ruff check ."
 format = "ruff format ."
 format-check = "ruff format --check ."
+dead-code = "vulture"
 perf-check = "pytest tests/perf -q"
 check-runtime = ["check", "perf-check"]
 typecheck = "mypy src"
@@ -444,6 +459,7 @@ live-smoke = "uv run python scripts/live_smoke.py"
 check = [
     "format-check",
     "lint",
+    "dead-code",
     "typecheck",
     "coverage-gates",
     "build",
@@ -555,6 +571,7 @@ type = "uv"
 lint = "ruff check ."
 format = "ruff format ."
 format-check = "ruff format --check ."
+dead-code = "vulture"
 perf-check = "pytest tests/perf -q"
 check-runtime = ["check", "perf-check"]
 typecheck = "mypy src"
@@ -598,6 +615,7 @@ live-smoke = "uv run python scripts/live_smoke.py"
 check = [
     "format-check",
     "lint",
+    "dead-code",
     "typecheck",
     "coverage-gates",
     "build",

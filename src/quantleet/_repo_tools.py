@@ -103,6 +103,7 @@ REQUIRED_POE_TASKS = (
     "lint",
     "format",
     "format-check",
+    "dead-code",
     "perf-check",
     "check-runtime",
     "typecheck",

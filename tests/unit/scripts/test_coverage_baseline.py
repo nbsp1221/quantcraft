@@ -186,6 +186,9 @@ def test_generate_current_json_uses_coverage_json_without_rerunning_pytest(
         text: bool,
         check: bool,
     ) -> subprocess.CompletedProcess[str]:
+        assert capture_output is True
+        assert text is True
+        assert check is False
         calls.append(command)
         return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
 

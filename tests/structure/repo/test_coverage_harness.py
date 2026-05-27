@@ -25,6 +25,7 @@ def test_poe_check_includes_quality_and_coverage_gates() -> None:
     assert check["sequence"] == [
         "format-check",
         "lint",
+        "dead-code",
         "typecheck",
         "coverage-gates",
         "build",

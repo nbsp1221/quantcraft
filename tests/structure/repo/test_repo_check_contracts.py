@@ -53,6 +53,7 @@ executor = "uv"
 lint = "ruff check ."
 format = "ruff format ."
 format-check = "ruff format --check ."
+dead-code = "vulture"
 perf-check = "pytest tests/perf -q -x --run-perf"
 check-runtime = ["check", "perf-check"]
 typecheck = "mypy src"
@@ -96,6 +97,7 @@ live-smoke = "uv run python scripts/live_smoke.py"
 check = [
     "format-check",
     "lint",
+    "dead-code",
     "typecheck",
     "coverage-gates",
     "build",
@@ -177,6 +179,7 @@ executor = "uv"
 lint = "ruff check ."
 format = "ruff format ."
 format-check = "ruff format --check ."
+dead-code = "vulture"
 perf-check = "pytest tests/perf -q -x --run-perf"
 check-runtime = ["check", "perf-check"]
 typecheck = "mypy src"
@@ -220,6 +223,7 @@ live-smoke = "uv run python scripts/live_smoke.py"
 check = [
     "format-check",
     "lint",
+    "dead-code",
     "typecheck",
     "coverage-gates",
     "build",
@@ -275,6 +279,7 @@ executor = "uv"
 lint = "ruff check ."
 format = "ruff format ."
 format-check = "ruff format --check ."
+dead-code = "vulture"
 perf-check = "pytest tests/perf -q -x --run-perf"
 check-runtime = ["check", "perf-check"]
 typecheck = "mypy src"
@@ -318,6 +323,7 @@ live-smoke = "uv run python scripts/live_smoke.py"
 check = [
     "format-check",
     "lint",
+    "dead-code",
     "typecheck",
     "coverage-gates",
     "build",

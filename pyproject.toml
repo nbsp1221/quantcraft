@@ -42,6 +42,7 @@ dev = [
     "pytest>=9.0.2",
     "pytest-benchmark>=5.2.2",
     "ruff>=0.15.5",
+    "vulture>=2.16",
 ]
 
 [build-system]
@@ -55,6 +56,7 @@ executor = "uv"
 lint = { cmd = "ruff check .", help = "Run Ruff lint checks" }
 format = { cmd = "ruff format .", help = "Format the repository with Ruff" }
 "format-check" = { cmd = "ruff format --check .", help = "Check repository formatting with Ruff" }
+"dead-code" = { cmd = "vulture", help = "Run Vulture dead-code checks" }
 "perf-check" = { cmd = "pytest tests/perf -q -x --run-perf", help = "Run the canonical performance regression gate" }
 "check-runtime" = { sequence = ["check", "perf-check"], help = "Run the stronger explicit check lane for runtime-sensitive backtest or research changes" }
 typecheck = { cmd = "mypy src", help = "Run mypy against the package source" }
@@ -75,7 +77,7 @@ build = { cmd = "uv build", help = "Build the package artifacts" }
 "repo-check" = { cmd = "uv run python scripts/repo_check.py", help = "Run repository harness checks" }
 "notebook-validate" = { cmd = "uv run python scripts/notebook_validate.py", help = "Execute tracked notebooks" }
 "live-smoke" = { cmd = "uv run python scripts/live_smoke.py", help = "Run the live smoke harness script" }
-check = { sequence = ["format-check", "lint", "typecheck", "coverage-gates", "build", "twine-check", "repo-check", "notebook-validate"], help = "Run the default local quality gate" }
+check = { sequence = ["format-check", "lint", "dead-code", "typecheck", "coverage-gates", "build", "twine-check", "repo-check", "notebook-validate"], help = "Run the default local quality gate" }
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
@@ -108,6 +110,11 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RET", "RUF100", "PT", "DTZ", "C90"]
+
+[tool.vulture]
+paths = ["src", "tests", "scripts"]
+min_confidence = 80
+sort_by_size = true
 
 [tool.coverage.report]
 fail_under = 90
