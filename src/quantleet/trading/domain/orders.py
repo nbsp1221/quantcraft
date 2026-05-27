@@ -11,6 +11,10 @@ from quantleet.trading.domain.intents import (
     TriggerCondition,
     TriggerType,
     _is_stop_order_type,
+    _validate_limit_shape,
+    _validate_non_stop_shape,
+    _validate_positive_quantity,
+    _validate_stop_family_shape,
 )
 
 
@@ -30,34 +34,26 @@ class Order:
     filled_quantity: float = 0.0
 
     def __post_init__(self) -> None:
-        if not math.isfinite(self.quantity) or self.quantity <= 0.0:
-            raise ValueError("Order requires a positive finite quantity")
-        if not math.isfinite(self.filled_quantity) or self.filled_quantity < 0.0:
-            raise ValueError("Order filled_quantity must be a non-negative finite quantity")
-        if self.filled_quantity > self.quantity:
-            raise ValueError("Order filled_quantity cannot exceed quantity")
-        if self.order_type == "limit" and self.limit_price is None:
-            raise ValueError("limit orders require a limit_price")
-        if _is_stop_order_type(self.order_type):
-            if self.trigger_price is None:
-                raise ValueError(f"{self.order_type} orders require a trigger_price")
-            if self.trigger_condition is None:
-                raise ValueError(f"{self.order_type} orders require a trigger_condition")
-            if self.trigger_type is None:
-                raise ValueError(f"{self.order_type} orders require a trigger_type")
-            if self.order_type == "stop_market" and self.limit_price is not None:
-                raise ValueError("stop_market orders cannot specify a limit_price")
-            if self.order_type == "stop_limit" and self.limit_price is None:
-                raise ValueError("stop_limit orders require a limit_price")
-        else:
-            if self.trigger_price is not None:
-                raise ValueError("trigger_price is only valid for stop-family orders")
-            if self.trigger_condition is not None:
-                raise ValueError("trigger_condition is only valid for stop-family orders")
-            if self.trigger_type is not None:
-                raise ValueError("trigger_type is only valid for stop-family orders")
-            if self.triggered_at is not None:
-                raise ValueError("triggered_at is only valid for stop-family orders")
+        _validate_positive_quantity(
+            "Order requires a positive finite quantity",
+            self.quantity,
+        )
+        _validate_filled_quantity(self.quantity, self.filled_quantity)
+        _validate_limit_shape(self.order_type, self.limit_price)
+        _validate_stop_family_shape(
+            self.order_type,
+            self.trigger_price,
+            self.trigger_condition,
+            self.trigger_type,
+            self.limit_price,
+        )
+        _validate_non_stop_shape(
+            self.order_type,
+            self.trigger_price,
+            self.trigger_condition,
+            self.trigger_type,
+            self.triggered_at,
+        )
 
     @classmethod
     def from_intent(cls, *, order_id: int, intent: OrderIntent) -> Order:
@@ -162,6 +158,13 @@ class Order:
             tag=self.tag,
             filled_quantity=next_filled,
         )
+
+
+def _validate_filled_quantity(quantity: float, filled_quantity: float) -> None:
+    if not math.isfinite(filled_quantity) or filled_quantity < 0.0:
+        raise ValueError("Order filled_quantity must be a non-negative finite quantity")
+    if filled_quantity > quantity:
+        raise ValueError("Order filled_quantity cannot exceed quantity")
 
 
 __all__ = ["Order"]

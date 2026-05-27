@@ -161,14 +161,46 @@ def test_pending_order_request_accepts_qty_percent_stop_limit_shape() -> None:
     )
 
 
+def test_pending_order_request_accepts_fractional_qty_percent() -> None:
+    request = PendingOrderRequest(
+        symbol="BTC/USDT",
+        side="buy",
+        qty_percent=0.5,
+        order_type="market",
+    )
+
+    assert request.qty_percent == 0.5
+
+
+def test_pending_order_request_accepts_subunit_positive_prices() -> None:
+    request = PendingOrderRequest(
+        symbol="BTC/USDT",
+        side="buy",
+        quantity=1.0,
+        order_type="stop_limit",
+        stop_price=0.5,
+        trigger_condition="crosses_above",
+        limit_price=0.5,
+    )
+
+    assert request.stop_price == 0.5
+    assert request.limit_price == 0.5
+
+
 def test_pending_order_request_rejects_ambiguous_or_missing_sizing_mode() -> None:
-    with pytest.raises(ValueError, match="exactly one sizing mode"):
+    with pytest.raises(
+        ValueError,
+        match="^PendingOrderRequest requires exactly one sizing mode$",
+    ):
         PendingOrderRequest(
             symbol="BTC/USDT",
             side="buy",
             order_type="market",
         )
-    with pytest.raises(ValueError, match="exactly one sizing mode"):
+    with pytest.raises(
+        ValueError,
+        match="^PendingOrderRequest requires exactly one sizing mode$",
+    ):
         PendingOrderRequest(
             symbol="BTC/USDT",
             side="buy",
@@ -180,7 +212,10 @@ def test_pending_order_request_rejects_ambiguous_or_missing_sizing_mode() -> Non
 
 @pytest.mark.parametrize("quantity", [0.0, -1.0, math.inf, math.nan, True])
 def test_pending_order_request_rejects_invalid_fixed_quantities(quantity: float) -> None:
-    with pytest.raises(ValueError, match="quantity must be a positive finite float"):
+    with pytest.raises(
+        ValueError,
+        match="^quantity must be a positive finite float$",
+    ):
         PendingOrderRequest(
             symbol="BTC/USDT",
             side="buy",
@@ -189,14 +224,93 @@ def test_pending_order_request_rejects_invalid_fixed_quantities(quantity: float)
         )
 
 
-@pytest.mark.parametrize("qty_percent", [0.0, -1.0, 100.1, math.inf, math.nan, True])
-def test_pending_order_request_rejects_invalid_qty_percent_values(qty_percent: float) -> None:
-    with pytest.raises(ValueError, match="qty_percent"):
+@pytest.mark.parametrize(
+    ("qty_percent", "message"),
+    [
+        (0.0, "qty_percent must satisfy 0 < qty_percent <= 100"),
+        (-1.0, "qty_percent must satisfy 0 < qty_percent <= 100"),
+        (100.1, "qty_percent must satisfy 0 < qty_percent <= 100"),
+        (math.inf, "qty_percent must be numeric"),
+        (math.nan, "qty_percent must be numeric"),
+        (True, "qty_percent must be numeric"),
+    ],
+)
+def test_pending_order_request_rejects_invalid_qty_percent_values(
+    qty_percent: float,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=f"^{message}$"):
         PendingOrderRequest(
             symbol="BTC/USDT",
             side="buy",
             qty_percent=qty_percent,
             order_type="market",
+        )
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "message"),
+    [
+        (
+            {"order_type": "limit", "limit_price": 0.0},
+            "limit_price must be a positive finite float",
+        ),
+        (
+            {"order_type": "limit", "limit_price": math.inf},
+            "limit_price must be a positive finite float",
+        ),
+        (
+            {"order_type": "limit", "limit_price": math.nan},
+            "limit_price must be a positive finite float",
+        ),
+        (
+            {"order_type": "limit", "limit_price": True},
+            "limit_price must be a positive finite float",
+        ),
+        (
+            {
+                "order_type": "stop_market",
+                "stop_price": 0.0,
+                "trigger_condition": "crosses_above",
+            },
+            "stop_price must be a positive finite float",
+        ),
+        (
+            {
+                "order_type": "stop_market",
+                "stop_price": math.inf,
+                "trigger_condition": "crosses_above",
+            },
+            "stop_price must be a positive finite float",
+        ),
+        (
+            {
+                "order_type": "stop_market",
+                "stop_price": math.nan,
+                "trigger_condition": "crosses_above",
+            },
+            "stop_price must be a positive finite float",
+        ),
+        (
+            {
+                "order_type": "stop_market",
+                "stop_price": True,
+                "trigger_condition": "crosses_above",
+            },
+            "stop_price must be a positive finite float",
+        ),
+    ],
+)
+def test_pending_order_request_rejects_invalid_positive_price_values(
+    kwargs: dict[str, object],
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=f"^{message}$"):
+        PendingOrderRequest(
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=1.0,
+            **kwargs,
         )
 
 
@@ -240,7 +354,7 @@ def test_pending_order_request_rejects_invalid_price_shape(
     kwargs: dict[str, object],
     message: str,
 ) -> None:
-    with pytest.raises(ValueError, match=message):
+    with pytest.raises(ValueError, match=f"^{message}$"):
         PendingOrderRequest(
             symbol="BTC/USDT",
             side="buy",

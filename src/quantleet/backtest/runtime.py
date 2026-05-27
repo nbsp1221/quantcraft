@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from quantleet.backtest.analytics import drawdown_curve_for_equity, max_drawdown_from_curve
 from quantleet.backtest.execution_model import (
     BacktestExecutionModel,
@@ -16,10 +18,25 @@ from quantleet.backtest.strategy_runtime import StrategyLike, _StrategyDriver
 from quantleet.data import BarSeries
 from quantleet.strategy.config import JSONConfigScalar
 from quantleet.trading.domain.costs import CostConfig
-from quantleet.trading.domain.events import BarEvent, FillEvent, OrderRejectedEvent
+from quantleet.trading.domain.events import BarEvent, FillEvent, OrderRejectedEvent, TickEvent
 from quantleet.trading.domain.matching import is_order_triggered, match_order
 from quantleet.trading.domain.orders import Order
 from quantleet.trading.domain.state import TradingState, apply_fill
+
+
+@dataclass(slots=True)
+class _RuntimeAccounting:
+    state: TradingState
+    trade_log: list[FillEvent]
+    order_events: list[OrderRejectedEvent]
+    buy_reservations: dict[int, float]
+    equity_curve: list[float]
+    closing_trade_pnls: list[float]
+    open_entry_fee_pool: float = 0.0
+    bars_in_position: int = 0
+    report_bars_in_position: int = 0
+    total_bars: int = 0
+    latest_mark_price: float | None = None
 
 
 def _run_backtest(
@@ -35,17 +52,14 @@ def _run_backtest(
     runtime.initialize(bars=bars)
     execution_model: BacktestExecutionModel = ConservativeOHLCVExecutionModel()
     report_builder = _ReportBuilder()
-    state = TradingState(cash=initial_cash, equity=initial_cash)
-    trade_log: list[FillEvent] = []
-    order_events: list[OrderRejectedEvent] = []
-    buy_reservations: dict[int, float] = {}
-    equity_curve: list[float] = []
-    closing_trade_pnls: list[float] = []
-    open_entry_fee_pool = 0.0
-    bars_in_position = 0
-    report_bars_in_position = 0
-    total_bars = 0
-    latest_mark_price: float | None = None
+    accounting = _RuntimeAccounting(
+        state=TradingState(cash=initial_cash, equity=initial_cash),
+        trade_log=[],
+        order_events=[],
+        buy_reservations={},
+        equity_curve=[],
+        closing_trade_pnls=[],
+    )
 
     previous_close: float | None = None
     previous_timestamp: int | None = None
@@ -53,17 +67,17 @@ def _run_backtest(
     for bar_index, bar in enumerate(bars.rows):
         if previous_timestamp is not None and previous_timestamp >= bar.timestamp:
             raise ValueError("out-of-order time bars")
-        bar_had_position = state.position_quantity > 0.0
+        bar_had_position = accounting.state.position_quantity > 0.0
 
         runtime.activate_pending_order_requests(
             bar=bar,
-            state=state,
+            state=accounting.state,
             costs=costs,
         )
-        order_events.extend(runtime.drain_order_events())
-        buy_reservations = _sync_buy_reservations(
+        accounting.order_events.extend(runtime.drain_order_events())
+        accounting.buy_reservations = _sync_buy_reservations(
             orders=runtime.order_state().active,
-            existing=buy_reservations,
+            existing=accounting.buy_reservations,
             costs=costs,
         )
         tick_events = execution_model.tick_events_for_bar(
@@ -74,190 +88,252 @@ def _run_backtest(
         )
 
         for event in tick_events:
-            latest_mark_price = event.last
-            active_orders = runtime.order_state().active
-            remaining_orders: list[Order] = []
-            newly_triggered_orders: list[Order] = []
+            bar_had_position = _process_tick_event(
+                runtime=runtime,
+                accounting=accounting,
+                event=event,
+                costs=costs,
+                report_builder=report_builder,
+                bar_index=bar_index,
+                bar_had_position=bar_had_position,
+            )
 
-            for order in active_orders:
-                if _is_flat_exit_order(order=order, state=state):
-                    continue
-                if not order.is_executable:
-                    if is_order_triggered(order, event):
-                        newly_triggered_orders.append(order.trigger(timestamp=event.timestamp))
-                    else:
-                        remaining_orders.append(order)
-                    continue
-
-                fill = match_order(order, event, costs)
-                if fill is None:
-                    remaining_orders.append(order)
-                    continue
-                rejection = _runtime_fill_rejection(
-                    state=state,
-                    order=order,
-                    fill=fill,
-                    buy_reservations=buy_reservations,
-                    timestamp=event.timestamp,
-                )
-                if rejection is not None:
-                    order_events.append(rejection)
-                    buy_reservations.pop(order.id, None)
-                    continue
-
-                state_before = state
-                original_order = order
-                state, open_entry_fee_pool, order = _apply_runtime_fill(
-                    state=state,
-                    order=order,
-                    fill=fill,
-                    mark_price=event.last,
-                    open_entry_fee_pool=open_entry_fee_pool,
-                    closing_trade_pnls=closing_trade_pnls,
-                    trade_log=trade_log,
-                )
-                bar_had_position = (
-                    bar_had_position
-                    or state_before.position_quantity > 0.0
-                    or state.position_quantity > 0.0
-                )
-                report_builder.record_fill(
-                    order=original_order,
-                    fill=fill,
-                    state_before=state_before,
-                    state_after=state,
-                    bar_index=bar_index,
-                )
-                _update_buy_reservation_after_fill(
-                    reservations=buy_reservations,
-                    order=order,
-                    fill=fill,
-                    costs=costs,
-                )
-                if order.is_open:
-                    remaining_orders.append(order)
-                else:
-                    buy_reservations.pop(order.id, None)
-
-            for order in newly_triggered_orders:
-                if _is_flat_exit_order(order=order, state=state):
-                    continue
-
-                fill = match_order(order, event, costs)
-                if fill is None:
-                    remaining_orders.append(order)
-                    continue
-                rejection = _runtime_fill_rejection(
-                    state=state,
-                    order=order,
-                    fill=fill,
-                    buy_reservations=buy_reservations,
-                    timestamp=event.timestamp,
-                )
-                if rejection is not None:
-                    order_events.append(rejection)
-                    buy_reservations.pop(order.id, None)
-                    continue
-
-                state_before = state
-                original_order = order
-                state, open_entry_fee_pool, order = _apply_runtime_fill(
-                    state=state,
-                    order=order,
-                    fill=fill,
-                    mark_price=event.last,
-                    open_entry_fee_pool=open_entry_fee_pool,
-                    closing_trade_pnls=closing_trade_pnls,
-                    trade_log=trade_log,
-                )
-                bar_had_position = (
-                    bar_had_position
-                    or state_before.position_quantity > 0.0
-                    or state.position_quantity > 0.0
-                )
-                report_builder.record_fill(
-                    order=original_order,
-                    fill=fill,
-                    state_before=state_before,
-                    state_after=state,
-                    bar_index=bar_index,
-                )
-                _update_buy_reservation_after_fill(
-                    reservations=buy_reservations,
-                    order=order,
-                    fill=fill,
-                    costs=costs,
-                )
-                if order.is_open:
-                    remaining_orders.append(order)
-                else:
-                    buy_reservations.pop(order.id, None)
-
-            runtime.replace_active_orders(tuple(remaining_orders))
-
-        bar_event = BarEvent(
-            bar_type=bars.bar_type,
-            bar_spec=bars.timeframe,
-            symbol=bars.symbol,
-            timestamp=bar.timestamp,
-            open=bar.open,
-            high=bar.high,
-            low=bar.low,
-            close=bar.close,
-            volume=bar.volume,
-            is_closed=True,
-        )
-        runtime.handle_bar(bar_event, state=state)
-        total_bars += 1
-        if latest_mark_price is not None:
-            marked_state = _mark_state_to_market(state, mark_price=latest_mark_price)
-        else:
-            marked_state = state
-        equity_curve.append(marked_state.equity)
-        report_builder.record_equity(
+        _record_bar_close(
+            runtime=runtime,
+            accounting=accounting,
+            report_builder=report_builder,
+            bars=bars,
             bar_index=bar_index,
-            timestamp=bar.timestamp,
-            mark_price=latest_mark_price if latest_mark_price is not None else bar.close,
-            state=marked_state,
+            bar_had_position=bar_had_position,
         )
-        if marked_state.position_quantity > 0.0:
-            bars_in_position += 1
-        if bar_had_position:
-            report_bars_in_position += 1
         previous_close = bar.close
         previous_timestamp = bar.timestamp
 
-    if latest_mark_price is not None:
-        state = _mark_state_to_market(state, mark_price=latest_mark_price)
+    if accounting.latest_mark_price is not None:
+        accounting.state = _mark_state_to_market(
+            accounting.state,
+            mark_price=accounting.latest_mark_price,
+        )
 
-    equity_curve_tuple = tuple(equity_curve)
+    return _build_backtest_result(
+        bars=bars,
+        strategy=strategy,
+        strategy_config=strategy_config,
+        initial_cash=initial_cash,
+        costs=costs,
+        label=label,
+        execution_model=execution_model,
+        report_builder=report_builder,
+        accounting=accounting,
+    )
+
+
+def _process_tick_event(
+    *,
+    runtime: _StrategyDriver,
+    accounting: _RuntimeAccounting,
+    event: TickEvent,
+    costs: CostConfig,
+    report_builder: _ReportBuilder,
+    bar_index: int,
+    bar_had_position: bool,
+) -> bool:
+    accounting.latest_mark_price = event.last
+    remaining_orders: list[Order] = []
+    newly_triggered_orders: list[Order] = []
+
+    for order in runtime.order_state().active:
+        if _is_flat_exit_order(order=order, state=accounting.state):
+            continue
+        if not order.is_executable:
+            if is_order_triggered(order, event):
+                newly_triggered_orders.append(order.trigger(timestamp=event.timestamp))
+            else:
+                remaining_orders.append(order)
+            continue
+        bar_had_position = _process_executable_order(
+            accounting=accounting,
+            order=order,
+            event=event,
+            costs=costs,
+            report_builder=report_builder,
+            bar_index=bar_index,
+            remaining_orders=remaining_orders,
+            bar_had_position=bar_had_position,
+        )
+
+    for order in newly_triggered_orders:
+        bar_had_position = _process_executable_order(
+            accounting=accounting,
+            order=order,
+            event=event,
+            costs=costs,
+            report_builder=report_builder,
+            bar_index=bar_index,
+            remaining_orders=remaining_orders,
+            bar_had_position=bar_had_position,
+        )
+
+    runtime.replace_active_orders(tuple(remaining_orders))
+    return bar_had_position
+
+
+def _process_executable_order(
+    *,
+    accounting: _RuntimeAccounting,
+    order: Order,
+    event: TickEvent,
+    costs: CostConfig,
+    report_builder: _ReportBuilder,
+    bar_index: int,
+    remaining_orders: list[Order],
+    bar_had_position: bool,
+) -> bool:
+    if _is_flat_exit_order(order=order, state=accounting.state):
+        return bar_had_position
+
+    fill = match_order(order, event, costs)
+    if fill is None:
+        remaining_orders.append(order)
+        return bar_had_position
+
+    rejection = _runtime_fill_rejection(
+        state=accounting.state,
+        order=order,
+        fill=fill,
+        buy_reservations=accounting.buy_reservations,
+        timestamp=event.timestamp,
+    )
+    if rejection is not None:
+        accounting.order_events.append(rejection)
+        accounting.buy_reservations.pop(order.id, None)
+        return bar_had_position
+
+    state_before = accounting.state
+    original_order = order
+    accounting.state, accounting.open_entry_fee_pool, order = _apply_runtime_fill(
+        state=accounting.state,
+        order=order,
+        fill=fill,
+        mark_price=event.last,
+        open_entry_fee_pool=accounting.open_entry_fee_pool,
+        closing_trade_pnls=accounting.closing_trade_pnls,
+        trade_log=accounting.trade_log,
+    )
+    report_builder.record_fill(
+        order=original_order,
+        fill=fill,
+        state_before=state_before,
+        state_after=accounting.state,
+        bar_index=bar_index,
+    )
+    _update_buy_reservation_after_fill(
+        reservations=accounting.buy_reservations,
+        order=order,
+        fill=fill,
+        costs=costs,
+    )
+    if order.is_open:
+        remaining_orders.append(order)
+    else:
+        accounting.buy_reservations.pop(order.id, None)
+    return (
+        bar_had_position
+        or state_before.position_quantity > 0.0
+        or accounting.state.position_quantity > 0.0
+    )
+
+
+def _record_bar_close(
+    *,
+    runtime: _StrategyDriver,
+    accounting: _RuntimeAccounting,
+    report_builder: _ReportBuilder,
+    bars: BarSeries,
+    bar_index: int,
+    bar_had_position: bool,
+) -> None:
+    bar = bars.rows[bar_index]
+    bar_event = BarEvent(
+        bar_type=bars.bar_type,
+        bar_spec=bars.timeframe,
+        symbol=bars.symbol,
+        timestamp=bar.timestamp,
+        open=bar.open,
+        high=bar.high,
+        low=bar.low,
+        close=bar.close,
+        volume=bar.volume,
+        is_closed=True,
+    )
+    runtime.handle_bar(bar_event, state=accounting.state)
+    accounting.total_bars += 1
+    if accounting.latest_mark_price is not None:
+        marked_state = _mark_state_to_market(
+            accounting.state,
+            mark_price=accounting.latest_mark_price,
+        )
+    else:
+        marked_state = accounting.state
+    accounting.equity_curve.append(marked_state.equity)
+    report_builder.record_equity(
+        bar_index=bar_index,
+        timestamp=bar.timestamp,
+        mark_price=(
+            accounting.latest_mark_price if accounting.latest_mark_price is not None else bar.close
+        ),
+        state=marked_state,
+    )
+    if marked_state.position_quantity > 0.0:
+        accounting.bars_in_position += 1
+    if bar_had_position:
+        accounting.report_bars_in_position += 1
+
+
+def _build_backtest_result(
+    *,
+    bars: BarSeries,
+    strategy: StrategyLike,
+    strategy_config: dict[str, JSONConfigScalar],
+    initial_cash: float,
+    costs: CostConfig,
+    label: str | None,
+    execution_model: BacktestExecutionModel,
+    report_builder: _ReportBuilder,
+    accounting: _RuntimeAccounting,
+) -> BacktestResult:
+    equity_curve_tuple = tuple(accounting.equity_curve)
     drawdown_curve = drawdown_curve_for_equity(equity_curve_tuple)
-    total_fees = round(sum(fill.fee for fill in trade_log), 12)
-    total_return = round((state.equity - initial_cash) / initial_cash, 12)
+    total_fees = round(sum(fill.fee for fill in accounting.trade_log), 12)
+    total_return = round((accounting.state.equity - initial_cash) / initial_cash, 12)
     average_win, average_loss, win_rate, profit_factor = _trade_statistics(
-        tuple(closing_trade_pnls)
+        tuple(accounting.closing_trade_pnls)
     )
     summary = BacktestSummary(
-        total_trades=len(closing_trade_pnls),
-        total_fills=len(trade_log),
+        total_trades=len(accounting.closing_trade_pnls),
+        total_fills=len(accounting.trade_log),
         total_fees=total_fees,
-        final_balance=state.cash,
-        final_equity=state.equity,
+        final_balance=accounting.state.cash,
+        final_equity=accounting.state.equity,
         total_return=total_return,
         max_drawdown=max_drawdown_from_curve(drawdown_curve),
-        realized_pnl=state.realized_pnl,
-        unrealized_pnl=state.unrealized_pnl,
+        realized_pnl=accounting.state.realized_pnl,
+        unrealized_pnl=accounting.state.unrealized_pnl,
         win_rate=win_rate,
         average_win=average_win,
         average_loss=average_loss,
         profit_factor=profit_factor,
         exposure=ExposureSummary(
-            bars_in_position=bars_in_position,
-            total_bars=total_bars,
-            exposure_ratio=(bars_in_position / total_bars) if total_bars else 0.0,
+            bars_in_position=accounting.bars_in_position,
+            total_bars=accounting.total_bars,
+            exposure_ratio=(
+                accounting.bars_in_position / accounting.total_bars
+                if accounting.total_bars
+                else 0.0
+            ),
         ),
     )
-    order_events_tuple = tuple(order_events)
+    order_events_tuple = tuple(accounting.order_events)
     report = report_builder.build(
         bars=bars,
         initial_cash=initial_cash,
@@ -266,14 +342,14 @@ def _run_backtest(
         strategy=strategy,
         strategy_config=strategy_config,
         run_label=label,
-        final_state=state,
+        final_state=accounting.state,
         order_rejections=order_events_tuple,
-        bars_in_position=report_bars_in_position,
+        bars_in_position=accounting.report_bars_in_position,
     )
     return BacktestResult(
-        trade_log=tuple(trade_log),
+        trade_log=tuple(accounting.trade_log),
         equity_curve=equity_curve_tuple,
-        final_state=state,
+        final_state=accounting.state,
         summary=summary,
         order_events=order_events_tuple,
         execution_model_name=execution_model.name,

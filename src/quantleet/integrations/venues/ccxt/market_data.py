@@ -143,17 +143,12 @@ def _fetch_ohlcv_range(
     rows: list[TimeBar] = []
 
     while True:
-        request_limit = (
-            min(remaining, _DEFAULT_PAGINATION_LIMIT)
-            if remaining is not None
-            else _DEFAULT_PAGINATION_LIMIT
-        )
         page = backend.fetch_ohlcv(
             symbol=symbol,
             timeframe=timeframe,
             start=cursor,
             end=end,
-            limit=request_limit,
+            limit=_ohlcv_request_limit(remaining),
         )
         if not page:
             break
@@ -162,36 +157,17 @@ def _fetch_ohlcv_range(
         if page_last_timestamp < cursor:
             raise ValueError("provider returned a non-advancing OHLCV page")
 
-        added = 0
-        for raw_row in page:
-            timestamp = int(raw_row[0])
-            if timestamp < cursor:
-                continue
-            if end is not None and timestamp >= end:
-                continue
-            if rows and timestamp <= rows[-1].timestamp:
-                continue
+        added, remaining, exhausted = _append_page_rows(
+            rows=rows,
+            page=page,
+            cursor=cursor,
+            end=end,
+            remaining=remaining,
+        )
+        if exhausted:
+            return rows
 
-            rows.append(
-                TimeBar(
-                    timestamp=timestamp,
-                    open=float(raw_row[1]),
-                    high=float(raw_row[2]),
-                    low=float(raw_row[3]),
-                    close=float(raw_row[4]),
-                    volume=float(raw_row[5]),
-                )
-            )
-            added += 1
-
-            if remaining is not None:
-                remaining -= 1
-                if remaining == 0:
-                    return rows
-
-        next_cursor = page_last_timestamp + 1
-        if next_cursor <= cursor:
-            raise ValueError("provider returned a non-advancing OHLCV page")
+        next_cursor = _next_ohlcv_cursor(page_last_timestamp, cursor)
         if end is not None and next_cursor >= end:
             break
         if added == 0:
@@ -200,6 +176,59 @@ def _fetch_ohlcv_range(
         cursor = next_cursor
 
     return rows
+
+
+def _ohlcv_request_limit(remaining: int | None) -> int:
+    if remaining is None:
+        return _DEFAULT_PAGINATION_LIMIT
+    return min(remaining, _DEFAULT_PAGINATION_LIMIT)
+
+
+def _time_bar_from_ohlcv_row(raw_row: list[float]) -> TimeBar:
+    return TimeBar(
+        timestamp=int(raw_row[0]),
+        open=float(raw_row[1]),
+        high=float(raw_row[2]),
+        low=float(raw_row[3]),
+        close=float(raw_row[4]),
+        volume=float(raw_row[5]),
+    )
+
+
+def _append_page_rows(
+    *,
+    rows: list[TimeBar],
+    page: list[list[float]],
+    cursor: int,
+    end: int | None,
+    remaining: int | None,
+) -> tuple[int, int | None, bool]:
+    added = 0
+    for raw_row in page:
+        timestamp = int(raw_row[0])
+        if timestamp < cursor:
+            continue
+        if end is not None and timestamp >= end:
+            continue
+        if rows and timestamp <= rows[-1].timestamp:
+            continue
+
+        rows.append(_time_bar_from_ohlcv_row(raw_row))
+        added += 1
+
+        if remaining is not None:
+            remaining -= 1
+            if remaining == 0:
+                return added, remaining, True
+
+    return added, remaining, False
+
+
+def _next_ohlcv_cursor(page_last_timestamp: int, cursor: int) -> int:
+    next_cursor = page_last_timestamp + 1
+    if next_cursor <= cursor:
+        raise ValueError("provider returned a non-advancing OHLCV page")
+    return next_cursor
 
 
 def _make_ccxt_exchange(*, name: str, market_type: MarketType) -> Any:

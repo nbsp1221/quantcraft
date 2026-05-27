@@ -5,7 +5,7 @@ from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from itertools import product
 from types import MappingProxyType
-from typing import Literal
+from typing import Literal, Protocol, cast
 
 from quantleet.backtest import BacktestResult, BacktestStrategyConstructionError
 from quantleet.data import BarSeries
@@ -39,6 +39,17 @@ class _RunnableCandidate:
     candidate_parameters: Mapping[str, JSONScalar]
     config: StrategyConfig
     strategy_config: Mapping[str, JSONScalar]
+
+
+class _GridSearchEngine(Protocol):
+    def run(
+        self,
+        *,
+        bars: BarSeries,
+        strategy: type[Strategy[StrategyConfig]],
+        config: StrategyConfig,
+        label: str,
+    ) -> BacktestResult: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -259,103 +270,148 @@ class ParameterStudy:
             )
         _validate_parameter_keys(grid, self.strategy.config_type)
 
-        prepared_candidates: list[_RunnableCandidate | GridSearchRow] = []
-        for run_index, candidate in _iter_candidates(grid):
-            prepared_candidates.append(
-                _prepare_candidate(
-                    run_index=run_index,
-                    candidate=candidate,
-                    config_type=self.strategy.config_type,
-                )
-            )
+        prepared_candidates = _prepare_grid_candidates(grid, self.strategy.config_type)
 
         rows: list[GridSearchRow] = []
         for prepared in prepared_candidates:
             if isinstance(prepared, GridSearchRow):
                 rows.append(prepared)
                 continue
-            try:
-                if constraint is not None:
-                    outcome = constraint(prepared.strategy_config)
-                    if not isinstance(outcome, bool):
-                        raise TypeError("constraint must return bool")
-                    if not outcome:
-                        rows.append(
-                            GridSearchRow.rejected(
-                                run_index=prepared.run_index,
-                                candidate_parameters=prepared.candidate_parameters,
-                                strategy_config=prepared.strategy_config,
-                                rejection_stage="constraint",
-                            )
-                        )
-                        continue
-            except Exception as error:
-                _raise_or_record(
-                    rows=rows,
-                    fail_fast=fail_fast,
-                    error=error,
-                    stage="constraint",
-                    run_index=prepared.run_index,
-                    candidate_parameters=prepared.candidate_parameters,
-                    strategy_config=prepared.strategy_config,
-                )
+
+            if not _evaluate_constraint(prepared, constraint, rows, fail_fast):
                 continue
 
-            try:
-                backtest = self.engine.run(
-                    bars=self.bars,
-                    strategy=self.strategy,
-                    config=prepared.config,
-                    label=f"grid-search-{prepared.run_index}",
-                )
-            except BacktestStrategyConstructionError as error:
-                _raise_or_record(
-                    rows=rows,
-                    fail_fast=fail_fast,
-                    error=error.original,
-                    stage="strategy_construction",
-                    run_index=prepared.run_index,
-                    candidate_parameters=prepared.candidate_parameters,
-                    strategy_config=prepared.strategy_config,
-                )
-                continue
-            except Exception as error:
-                _raise_or_record(
-                    rows=rows,
-                    fail_fast=fail_fast,
-                    error=error,
-                    stage="backtest",
-                    run_index=prepared.run_index,
-                    candidate_parameters=prepared.candidate_parameters,
-                    strategy_config=prepared.strategy_config,
-                )
-                continue
-
-            try:
-                metrics = extract_metrics(backtest)
-            except Exception as error:
-                _raise_or_record(
-                    rows=rows,
-                    fail_fast=fail_fast,
-                    error=error,
-                    stage="metric_extraction",
-                    run_index=prepared.run_index,
-                    candidate_parameters=prepared.candidate_parameters,
-                    strategy_config=prepared.strategy_config,
-                )
-                continue
-
-            rows.append(
-                GridSearchRow.success(
-                    run_index=prepared.run_index,
-                    candidate_parameters=prepared.candidate_parameters,
-                    strategy_config=prepared.strategy_config,
-                    backtest=backtest,
-                    metrics=metrics,
-                )
+            backtest = _run_grid_candidate(
+                prepared=prepared,
+                engine=cast(_GridSearchEngine, self.engine),
+                bars=self.bars,
+                strategy=self.strategy,
+                rows=rows,
+                fail_fast=fail_fast,
             )
+            if backtest is None:
+                continue
+
+            if not _extract_candidate_metrics(prepared, backtest, rows, fail_fast):
+                continue
 
         return GridSearchResult(rows=tuple(rows), objective=resolved_objective)
+
+
+def _prepare_grid_candidates(
+    grid: Mapping[str, Sequence[JSONScalar]],
+    config_type: type[StrategyConfig],
+) -> list[_RunnableCandidate | GridSearchRow]:
+    return [
+        _prepare_candidate(
+            run_index=run_index,
+            candidate=candidate,
+            config_type=config_type,
+        )
+        for run_index, candidate in _iter_candidates(grid)
+    ]
+
+
+def _evaluate_constraint(
+    prepared: _RunnableCandidate,
+    constraint: Constraint | None,
+    rows: list[GridSearchRow],
+    fail_fast: bool,
+) -> bool:
+    if constraint is None:
+        return True
+
+    try:
+        outcome = constraint(prepared.strategy_config)
+        if not isinstance(outcome, bool):
+            raise TypeError("constraint must return bool")
+    except Exception as error:
+        _raise_or_record_prepared(
+            rows=rows,
+            fail_fast=fail_fast,
+            error=error,
+            stage="constraint",
+            prepared=prepared,
+        )
+        return False
+
+    if outcome:
+        return True
+
+    rows.append(
+        GridSearchRow.rejected(
+            run_index=prepared.run_index,
+            candidate_parameters=prepared.candidate_parameters,
+            strategy_config=prepared.strategy_config,
+            rejection_stage="constraint",
+        )
+    )
+    return False
+
+
+def _run_grid_candidate(
+    *,
+    prepared: _RunnableCandidate,
+    engine: _GridSearchEngine,
+    bars: BarSeries,
+    strategy: type[Strategy[StrategyConfig]],
+    rows: list[GridSearchRow],
+    fail_fast: bool,
+) -> BacktestResult | None:
+    try:
+        return engine.run(
+            bars=bars,
+            strategy=strategy,
+            config=prepared.config,
+            label=f"grid-search-{prepared.run_index}",
+        )
+    except BacktestStrategyConstructionError as error:
+        _raise_or_record_prepared(
+            rows=rows,
+            fail_fast=fail_fast,
+            error=error.original,
+            stage="strategy_construction",
+            prepared=prepared,
+        )
+    except Exception as error:
+        _raise_or_record_prepared(
+            rows=rows,
+            fail_fast=fail_fast,
+            error=error,
+            stage="backtest",
+            prepared=prepared,
+        )
+    return None
+
+
+def _extract_candidate_metrics(
+    prepared: _RunnableCandidate,
+    backtest: BacktestResult,
+    rows: list[GridSearchRow],
+    fail_fast: bool,
+) -> bool:
+    try:
+        metrics = extract_metrics(backtest)
+    except Exception as error:
+        _raise_or_record_prepared(
+            rows=rows,
+            fail_fast=fail_fast,
+            error=error,
+            stage="metric_extraction",
+            prepared=prepared,
+        )
+        return False
+
+    rows.append(
+        GridSearchRow.success(
+            run_index=prepared.run_index,
+            candidate_parameters=prepared.candidate_parameters,
+            strategy_config=prepared.strategy_config,
+            backtest=backtest,
+            metrics=metrics,
+        )
+    )
+    return True
 
 
 def _validate_parameter_grid(
@@ -526,6 +582,25 @@ def _raise_or_record(
             failure_stage=stage,
             error=error,
         )
+    )
+
+
+def _raise_or_record_prepared(
+    *,
+    rows: list[GridSearchRow],
+    fail_fast: bool,
+    error: BaseException,
+    stage: FailureStage,
+    prepared: _RunnableCandidate,
+) -> None:
+    _raise_or_record(
+        rows=rows,
+        fail_fast=fail_fast,
+        error=error,
+        stage=stage,
+        run_index=prepared.run_index,
+        candidate_parameters=prepared.candidate_parameters,
+        strategy_config=prepared.strategy_config,
     )
 
 

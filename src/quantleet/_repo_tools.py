@@ -4,6 +4,7 @@ import ast
 import re
 import subprocess
 import tomllib
+from collections.abc import Mapping
 from pathlib import Path
 from typing import cast
 
@@ -97,6 +98,7 @@ ROUTING_INDEX_CONFIG = {
         "allowed_roles": {"Governing", "Pointer", "Future-only"},
     },
 }
+RoutingIndexConfig = Mapping[str, object]
 REQUIRED_POE_TASKS = (
     "lint",
     "format",
@@ -366,7 +368,11 @@ def resolve_routing_index_target(root: Path, *, index_path: Path, target: str) -
     return relative_path
 
 
-def collect_doc_issues(root: Path) -> list[str]:
+def _read_text_or_empty(path: Path) -> str:
+    return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
+def _collect_required_doc_issues(root: Path) -> list[str]:
     issues: list[str] = []
 
     for relative_path in REQUIRED_DOCS:
@@ -384,8 +390,13 @@ def collect_doc_issues(root: Path) -> list[str]:
             if token in content:
                 issues.append(f"Found placeholder content in {relative_path}: {token}")
 
+    return issues
+
+
+def _collect_readme_doc_issues(root: Path) -> list[str]:
+    issues: list[str] = []
     readme_path = root / "README.md"
-    readme = readme_path.read_text(encoding="utf-8") if readme_path.exists() else ""
+    readme = _read_text_or_empty(readme_path)
     if "## Setup" not in readme and "## Installation" not in readme:
         issues.append("README.md is missing the setup or installation section")
     if "uv run poe" not in readme:
@@ -393,6 +404,12 @@ def collect_doc_issues(root: Path) -> list[str]:
     for marker in FINANCIAL_DISCLAIMER_MARKERS:
         if marker not in readme.lower():
             issues.append(f"README.md is missing financial disclaimer marker: {marker}")
+
+    return issues
+
+
+def _collect_public_doc_issues(root: Path) -> list[str]:
+    issues: list[str] = []
 
     for relative_path in REQUIRED_PUBLIC_DOCS:
         path = root / relative_path
@@ -411,15 +428,26 @@ def collect_doc_issues(root: Path) -> list[str]:
                     f"{relative_path} exposes internal workflow document reference: {forbidden}"
                 )
 
+    return issues
+
+
+def _collect_financial_disclaimer_doc_issues(root: Path) -> list[str]:
+    issues: list[str] = []
+
     for relative_path in ("docs/site/index.md", "docs/site/quickstart.md"):
         path = root / relative_path
-        content = path.read_text(encoding="utf-8").lower() if path.exists() else ""
+        content = _read_text_or_empty(path).lower()
         for marker in FINANCIAL_DISCLAIMER_MARKERS:
             if marker not in content:
                 issues.append(f"{relative_path} is missing financial disclaimer marker: {marker}")
 
+    return issues
+
+
+def _collect_plans_doc_issues(root: Path) -> list[str]:
+    issues: list[str] = []
     plans_doc_path = root / "docs/PLANS.md"
-    plans_doc = plans_doc_path.read_text(encoding="utf-8") if plans_doc_path.exists() else ""
+    plans_doc = _read_text_or_empty(plans_doc_path)
     required_plan_references = ("plans/", "plans/trials/")
     for required_reference in required_plan_references:
         if required_reference not in plans_doc:
@@ -427,127 +455,189 @@ def collect_doc_issues(root: Path) -> list[str]:
     if "Durable architecture or contract drafts do not belong in `docs/plans/`" not in plans_doc:
         issues.append("docs/PLANS.md is missing design-docs versus plans guidance")
 
+    return issues
+
+
+def _collect_agents_doc_issues(root: Path) -> list[str]:
+    issues: list[str] = []
     agents_path = root / "AGENTS.md"
-    agents = agents_path.read_text(encoding="utf-8") if agents_path.exists() else ""
+    agents = _read_text_or_empty(agents_path)
     if "uv run poe" not in agents:
         issues.append("AGENTS.md is missing uv run poe guidance")
     if "repo-local harness commands" not in agents:
         issues.append("AGENTS.md is missing repo-local harness command guidance")
 
+    return issues
+
+
+def _collect_pyproject_poe_issues(root: Path) -> list[str]:
+    issues: list[str] = []
     pyproject_path = root / "pyproject.toml"
     if not pyproject_path.exists():
-        issues.append("Missing pyproject.toml for Poe task checks")
-    else:
-        pyproject = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
-        dev_dependencies = pyproject.get("dependency-groups", {}).get("dev", [])
-        if not any(dependency.startswith("poethepoet") for dependency in dev_dependencies):
-            issues.append("pyproject.toml is missing poethepoet in dependency-groups.dev")
+        return ["Missing pyproject.toml for Poe task checks"]
 
-        executor_type = poe_executor_type(pyproject)
-        if executor_type != "uv":
-            issues.append('pyproject.toml is missing Poe executor = "uv" configuration')
+    pyproject = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+    dev_dependencies = pyproject.get("dependency-groups", {}).get("dev", [])
+    if not any(dependency.startswith("poethepoet") for dependency in dev_dependencies):
+        issues.append("pyproject.toml is missing poethepoet in dependency-groups.dev")
 
-        poe_tasks = pyproject.get("tool", {}).get("poe", {}).get("tasks", {})
-        for task_name in REQUIRED_POE_TASKS:
-            if task_name not in poe_tasks:
-                issues.append(f"Missing required Poe task: {task_name}")
-        for task_name in FORBIDDEN_POE_TASKS:
-            if task_name in poe_tasks:
-                issues.append(f"Forbidden Poe task alias: {task_name}")
-        issues.extend(collect_poe_task_contract_issues(poe_tasks))
+    executor_type = poe_executor_type(pyproject)
+    if executor_type != "uv":
+        issues.append('pyproject.toml is missing Poe executor = "uv" configuration')
 
-    indexed_doc_dirs = (
+    poe_tasks = pyproject.get("tool", {}).get("poe", {}).get("tasks", {})
+    for task_name in REQUIRED_POE_TASKS:
+        if task_name not in poe_tasks:
+            issues.append(f"Missing required Poe task: {task_name}")
+    for task_name in FORBIDDEN_POE_TASKS:
+        if task_name in poe_tasks:
+            issues.append(f"Forbidden Poe task alias: {task_name}")
+    issues.extend(collect_poe_task_contract_issues(poe_tasks))
+
+    return issues
+
+
+def _collect_routing_entry_issues(
+    root: Path,
+    *,
+    index_path: Path,
+    index_relative_path: str,
+    config: RoutingIndexConfig,
+    entry: dict[str, str],
+) -> tuple[list[str], str | None]:
+    target = entry["target"]
+    resolved_target = resolve_routing_index_target(root, index_path=index_path, target=target)
+    if resolved_target is None:
+        return [f"{index_relative_path} references document outside its directory: {target}"], None
+    if not (root / resolved_target).exists():
+        return [f"{index_relative_path} references missing document: {resolved_target}"], None
+
+    issues: list[str] = []
+    allowed_roles = cast(set[str], config["allowed_roles"])
+    if entry["role"] not in allowed_roles:
+        issues.append(
+            f"{index_relative_path} has invalid Role field for document "
+            f"{Path(target).name}: {entry['role']}"
+        )
+    for field in ROUTING_INDEX_REQUIRED_FIELDS:
+        if entry[field]:
+            continue
+        label = field.replace("_", " ").title()
+        issues.append(
+            f"{index_relative_path} has blank {label} field for document: {Path(target).name}"
+        )
+    return issues, Path(resolved_target).name
+
+
+def _collect_missing_routing_index_docs(
+    root: Path,
+    *,
+    index_relative_path: str,
+    config: RoutingIndexConfig,
+    indexed_targets: set[str],
+) -> list[str]:
+    directory = root / cast(str, config["directory"])
+    if not directory.exists():
+        return []
+
+    issues: list[str] = []
+    for path in sorted(directory.glob("*.md")):
+        if path.name == "index.md":
+            continue
+        if path.name not in indexed_targets:
+            issues.append(
+                f"{index_relative_path} is missing {cast(str, config['label'])}: {path.name}"
+            )
+    return issues
+
+
+def _collect_single_routing_index_issues(
+    root: Path,
+    *,
+    index_relative_path: str,
+    config: RoutingIndexConfig,
+) -> list[str]:
+    index_path = root / index_relative_path
+    if not index_path.exists():
+        return []
+
+    issues: list[str] = []
+    entries, duplicates = parse_routing_index_entries(
+        index_path.read_text(encoding="utf-8"),
+        allowed_roles=cast(set[str], config["allowed_roles"]),
+    )
+    if not entries:
+        issues.append(f"{index_relative_path} is missing routing index table")
+
+    issues.extend(
+        f"{index_relative_path} has duplicate document row: {duplicate}" for duplicate in duplicates
+    )
+
+    indexed_targets: set[str] = set()
+    for entry in entries:
+        entry_issues, indexed_target = _collect_routing_entry_issues(
+            root,
+            index_path=index_path,
+            index_relative_path=index_relative_path,
+            config=config,
+            entry=entry,
+        )
+        issues.extend(entry_issues)
+        if indexed_target is not None:
+            indexed_targets.add(indexed_target)
+
+    issues.extend(
+        _collect_missing_routing_index_docs(
+            root,
+            index_relative_path=index_relative_path,
+            config=config,
+            indexed_targets=indexed_targets,
+        )
+    )
+    return issues
+
+
+def _collect_routing_index_issues(root: Path) -> list[str]:
+    issues: list[str] = []
+    for index_relative_path, config in ROUTING_INDEX_CONFIG.items():
+        issues.extend(
+            _collect_single_routing_index_issues(
+                root,
+                index_relative_path=index_relative_path,
+                config=config,
+            )
+        )
+    return issues
+
+
+def _indexed_doc_dirs(root: Path) -> tuple[tuple[str, str, str], ...]:
+    return (
         (
             "design-docs",
-            (root / "docs" / "design-docs" / "index.md").read_text(encoding="utf-8")
-            if (root / "docs" / "design-docs" / "index.md").exists()
-            else "",
+            _read_text_or_empty(root / "docs" / "design-docs" / "index.md"),
             "design doc",
         ),
         (
             "references",
-            (root / "docs" / "references" / "index.md").read_text(encoding="utf-8")
-            if (root / "docs" / "references" / "index.md").exists()
-            else "",
+            _read_text_or_empty(root / "docs" / "references" / "index.md"),
             "reference doc",
         ),
         (
             "product-specs",
-            (root / "docs" / "product-specs" / "index.md").read_text(encoding="utf-8")
-            if (root / "docs" / "product-specs" / "index.md").exists()
-            else "",
+            _read_text_or_empty(root / "docs" / "product-specs" / "index.md"),
             "product spec",
         ),
         (
             "generated",
-            (root / "docs" / "generated" / "index.md").read_text(encoding="utf-8")
-            if (root / "docs" / "generated" / "index.md").exists()
-            else "",
+            _read_text_or_empty(root / "docs" / "generated" / "index.md"),
             "generated artifact",
         ),
     )
-    for index_relative_path, config in ROUTING_INDEX_CONFIG.items():
-        index_path = root / index_relative_path
-        if not index_path.exists():
-            continue
 
-        content = index_path.read_text(encoding="utf-8")
-        entries, duplicates = parse_routing_index_entries(
-            content,
-            allowed_roles=cast(set[str], config["allowed_roles"]),
-        )
-        if not entries:
-            issues.append(f"{index_relative_path} is missing routing index table")
 
-        for duplicate in duplicates:
-            issues.append(f"{index_relative_path} has duplicate document row: {duplicate}")
-
-        indexed_targets: set[str] = set()
-        for entry in entries:
-            target = entry["target"]
-            resolved_target = resolve_routing_index_target(
-                root,
-                index_path=index_path,
-                target=target,
-            )
-            if resolved_target is None:
-                issues.append(
-                    f"{index_relative_path} references document outside its directory: {target}"
-                )
-                continue
-            if not (root / resolved_target).exists():
-                issues.append(
-                    f"{index_relative_path} references missing document: {resolved_target}"
-                )
-                continue
-
-            indexed_targets.add(Path(resolved_target).name)
-            if entry["role"] not in config["allowed_roles"]:
-                issues.append(
-                    f"{index_relative_path} has invalid Role field for document "
-                    f"{Path(target).name}: {entry['role']}"
-                )
-            for field in ROUTING_INDEX_REQUIRED_FIELDS:
-                if entry[field]:
-                    continue
-                label = field.replace("_", " ").title()
-                issues.append(
-                    f"{index_relative_path} has blank {label} field for document: "
-                    f"{Path(target).name}"
-                )
-
-        directory = root / cast(str, config["directory"])
-        if directory.exists():
-            for path in sorted(directory.glob("*.md")):
-                if path.name == "index.md":
-                    continue
-                if path.name not in indexed_targets:
-                    issues.append(
-                        f"{index_relative_path} is missing {cast(str, config['label'])}: "
-                        f"{path.name}"
-                    )
-
-    for directory_name, index_content, label in indexed_doc_dirs:
+def _collect_legacy_index_membership_issues(root: Path) -> list[str]:
+    issues: list[str] = []
+    for directory_name, index_content, label in _indexed_doc_dirs(root):
         directory = root / "docs" / directory_name
         if not directory.exists():
             continue
@@ -558,11 +648,13 @@ def collect_doc_issues(root: Path) -> list[str]:
                 continue
             if path.name not in index_content:
                 issues.append(f"docs/{directory_name}/index.md is missing {label}: {path.name}")
+    return issues
 
+
+def _collect_architecture_doc_issues(root: Path) -> list[str]:
+    issues: list[str] = []
     architecture_doc_path = root / "ARCHITECTURE.md"
-    architecture_doc = (
-        architecture_doc_path.read_text(encoding="utf-8") if architecture_doc_path.exists() else ""
-    )
+    architecture_doc = _read_text_or_empty(architecture_doc_path)
     if "docs/design-docs/" not in architecture_doc:
         issues.append("ARCHITECTURE.md is missing a design-docs architecture reference")
     if "docs/plans/2026-03-18-quantleet-architecture-draft-ko.md" in architecture_doc:
@@ -574,6 +666,11 @@ def collect_doc_issues(root: Path) -> list[str]:
     if old_architecture_draft.exists():
         issues.append("Old plan-path Korean architecture draft should not exist")
 
+    return issues
+
+
+def _collect_missing_link_target_issues(root: Path) -> list[str]:
+    issues: list[str] = []
     linked_index_docs = (
         root / "ARCHITECTURE.md",
         root / "docs" / "DESIGN.md",
@@ -588,18 +685,41 @@ def collect_doc_issues(root: Path) -> list[str]:
             continue
         for target in missing_markdown_link_targets(doc_path):
             issues.append(f"{doc_path.relative_to(root)} points to missing target: {target}")
+    return issues
 
+
+def _collect_test_taxonomy_issues(root: Path) -> list[str]:
     tests_dir = root / "tests"
-    if tests_dir.exists():
-        for supported_dir in SUPPORTED_TEST_DIRS:
-            if not (tests_dir / supported_dir).exists():
-                issues.append(f"Missing test taxonomy directory: tests/{supported_dir}")
+    if not tests_dir.exists():
+        return []
 
-        for path in sorted(tests_dir.glob("test_*.py")):
-            issues.append(
-                f"Found flat root-level test file outside taxonomy: tests/{path.name}",
-            )
+    issues: list[str] = []
+    for supported_dir in SUPPORTED_TEST_DIRS:
+        if not (tests_dir / supported_dir).exists():
+            issues.append(f"Missing test taxonomy directory: tests/{supported_dir}")
 
+    for path in sorted(tests_dir.glob("test_*.py")):
+        issues.append(
+            f"Found flat root-level test file outside taxonomy: tests/{path.name}",
+        )
+
+    return issues
+
+
+def collect_doc_issues(root: Path) -> list[str]:
+    issues: list[str] = []
+    issues.extend(_collect_required_doc_issues(root))
+    issues.extend(_collect_readme_doc_issues(root))
+    issues.extend(_collect_public_doc_issues(root))
+    issues.extend(_collect_financial_disclaimer_doc_issues(root))
+    issues.extend(_collect_plans_doc_issues(root))
+    issues.extend(_collect_agents_doc_issues(root))
+    issues.extend(_collect_pyproject_poe_issues(root))
+    issues.extend(_collect_routing_index_issues(root))
+    issues.extend(_collect_legacy_index_membership_issues(root))
+    issues.extend(_collect_architecture_doc_issues(root))
+    issues.extend(_collect_missing_link_target_issues(root))
+    issues.extend(_collect_test_taxonomy_issues(root))
     return issues
 
 
@@ -743,6 +863,62 @@ def import_targets_for_node(
     return tuple(targets)
 
 
+def _collect_target_dependency_issues(
+    path: Path,
+    module_parts: tuple[str, ...],
+    source_domain: str | None,
+    target_parts: tuple[str, ...],
+) -> list[str]:
+    issues: list[str] = []
+    issue = validate_domain_dependency(source_domain, domain_for_module_parts(target_parts))
+    if issue is not None:
+        issues.append(f"{path}: {issue}")
+
+    issue = validate_root_module_dependency(module_parts, source_domain, target_parts)
+    if issue is not None:
+        issues.append(f"{path}: {issue}")
+
+    return issues
+
+
+def _collect_import_node_issues(
+    path: Path,
+    module_parts: tuple[str, ...],
+    source_domain: str | None,
+    node: ast.Import,
+) -> list[str]:
+    issues: list[str] = []
+    for alias in node.names:
+        issues.extend(
+            _collect_target_dependency_issues(
+                path,
+                module_parts,
+                source_domain,
+                tuple(alias.name.split(".")),
+            )
+        )
+    return issues
+
+
+def _collect_import_from_node_issues(
+    path: Path,
+    module_parts: tuple[str, ...],
+    source_domain: str | None,
+    node: ast.ImportFrom,
+) -> list[str]:
+    issues: list[str] = []
+    for target_parts in import_targets_for_node(module_parts, node):
+        issues.extend(
+            _collect_target_dependency_issues(
+                path,
+                module_parts,
+                source_domain,
+                target_parts,
+            )
+        )
+    return issues
+
+
 def collect_architecture_issues(root: Path) -> list[str]:
     src_root = root / "src" / "quantleet"
     if not src_root.exists():
@@ -756,38 +932,12 @@ def collect_architecture_issues(root: Path) -> list[str]:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 
         for node in ast.walk(tree):
-            target_parts: tuple[str, ...] | None = None
             if isinstance(node, ast.Import):
-                for alias in node.names:
-                    target_parts = tuple(alias.name.split("."))
-                    issue = validate_domain_dependency(
-                        source_domain,
-                        domain_for_module_parts(target_parts),
-                    )
-                    if issue is not None:
-                        issues.append(f"{path}: {issue}")
-                    issue = validate_root_module_dependency(
-                        module_parts,
-                        source_domain,
-                        target_parts,
-                    )
-                    if issue is not None:
-                        issues.append(f"{path}: {issue}")
+                issues.extend(_collect_import_node_issues(path, module_parts, source_domain, node))
             elif isinstance(node, ast.ImportFrom):
-                for target_parts in import_targets_for_node(module_parts, node):
-                    issue = validate_domain_dependency(
-                        source_domain,
-                        domain_for_module_parts(target_parts),
-                    )
-                    if issue is not None:
-                        issues.append(f"{path}: {issue}")
-                    issue = validate_root_module_dependency(
-                        module_parts,
-                        source_domain,
-                        target_parts,
-                    )
-                    if issue is not None:
-                        issues.append(f"{path}: {issue}")
+                issues.extend(
+                    _collect_import_from_node_issues(path, module_parts, source_domain, node)
+                )
 
     return sorted(set(issues))
 

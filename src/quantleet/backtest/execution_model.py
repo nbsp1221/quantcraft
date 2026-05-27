@@ -21,6 +21,12 @@ class _SegmentCrossingResult:
     newly_triggered_unfilled_stop_limit_ids: frozenset[int]
 
 
+@dataclass(frozen=True, slots=True)
+class _StopCrossingResult:
+    prices: tuple[float, ...]
+    newly_triggered_unfilled_stop_limit_id: int | None = None
+
+
 class BacktestExecutionModel(Protocol):
     @property
     def name(self) -> str: ...
@@ -139,34 +145,28 @@ class ConservativeOHLCVExecutionModel:
         for order in active_orders:
             if order.symbol != symbol or not order.is_open:
                 continue
-            if self._is_executable_limit(order) or order.id in triggered_unfilled_stop_limit_ids:
-                if order.limit_price is None:
-                    continue
-                if self._is_marketable_at_price(order=order, price=start):
-                    continue
-                if not low <= order.limit_price <= high:
-                    continue
-                candidates.append(order.limit_price)
-                continue
-            if _is_stop_order_type(order.order_type):
-                if order.is_triggered or order.trigger_price is None:
-                    continue
-                if order.is_triggered_by_price(price=start):
-                    continue
-                if not low <= order.trigger_price <= high:
-                    continue
-                candidates.append(order.trigger_price)
-                if order.order_type == "stop_limit" and not self._is_marketable_at_price(
+            if self._has_working_limit(order, triggered_unfilled_stop_limit_ids):
+                limit_candidate = self._limit_crossing_candidate(
                     order=order,
-                    price=order.trigger_price,
-                ):
-                    if order.limit_price is not None and self._crosses_between(
-                        price=order.limit_price,
-                        start=order.trigger_price,
-                        end=end,
-                    ):
-                        candidates.append(order.limit_price)
-                    newly_triggered_unfilled_stop_limit_ids.add(order.id)
+                    start=start,
+                    low=low,
+                    high=high,
+                )
+                if limit_candidate is not None:
+                    candidates.append(limit_candidate)
+                continue
+            stop_crossing = self._stop_crossing_candidates(
+                order=order,
+                start=start,
+                end=end,
+                low=low,
+                high=high,
+            )
+            candidates.extend(stop_crossing.prices)
+            if stop_crossing.newly_triggered_unfilled_stop_limit_id is not None:
+                newly_triggered_unfilled_stop_limit_ids.add(
+                    stop_crossing.newly_triggered_unfilled_stop_limit_id
+                )
 
         reverse = start > end
         ordered_prices = sorted(
@@ -179,6 +179,86 @@ class ConservativeOHLCVExecutionModel:
                 newly_triggered_unfilled_stop_limit_ids
             ),
         )
+
+    def _limit_crossing_candidate(
+        self,
+        *,
+        order: Order,
+        start: float,
+        low: float,
+        high: float,
+    ) -> float | None:
+        if order.limit_price is None:
+            return None
+        if self._is_marketable_at_price(order=order, price=start):
+            return None
+        if not low <= order.limit_price <= high:
+            return None
+        return order.limit_price
+
+    def _stop_crossing_candidates(
+        self,
+        *,
+        order: Order,
+        start: float,
+        end: float,
+        low: float,
+        high: float,
+    ) -> _StopCrossingResult:
+        if not self._has_dormant_stop_crossing(order=order, start=start, low=low, high=high):
+            return _StopCrossingResult(())
+        prices = [order.trigger_price]
+        newly_triggered_id = self._newly_triggered_unfilled_stop_limit_id(order)
+        if newly_triggered_id is not None:
+            prices.extend(self._post_trigger_limit_crossing(order=order, end=end))
+        return _StopCrossingResult(
+            prices=tuple(price for price in prices if price is not None),
+            newly_triggered_unfilled_stop_limit_id=newly_triggered_id,
+        )
+
+    def _post_trigger_limit_crossing(self, *, order: Order, end: float) -> tuple[float, ...]:
+        if order.limit_price is None or order.trigger_price is None:
+            return ()
+        if not self._crosses_between(
+            price=order.limit_price,
+            start=order.trigger_price,
+            end=end,
+        ):
+            return ()
+        return (order.limit_price,)
+
+    @staticmethod
+    def _has_working_limit(
+        order: Order,
+        triggered_unfilled_stop_limit_ids: frozenset[int],
+    ) -> bool:
+        return (
+            ConservativeOHLCVExecutionModel._is_executable_limit(order)
+            or order.id in triggered_unfilled_stop_limit_ids
+        )
+
+    def _has_dormant_stop_crossing(
+        self,
+        *,
+        order: Order,
+        start: float,
+        low: float,
+        high: float,
+    ) -> bool:
+        return (
+            _is_stop_order_type(order.order_type)
+            and not order.is_triggered
+            and order.trigger_price is not None
+            and not order.is_triggered_by_price(price=start)
+            and low <= order.trigger_price <= high
+        )
+
+    def _newly_triggered_unfilled_stop_limit_id(self, order: Order) -> int | None:
+        if order.order_type != "stop_limit" or order.trigger_price is None:
+            return None
+        if self._is_marketable_at_price(order=order, price=order.trigger_price):
+            return None
+        return order.id
 
     @staticmethod
     def _is_executable_limit(order: Order) -> bool:

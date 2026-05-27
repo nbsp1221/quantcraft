@@ -107,7 +107,7 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RET", "RUF100", "PT", "DTZ"]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RET", "RUF100", "PT", "DTZ", "C90"]
 
 [tool.coverage.report]
 fail_under = 90

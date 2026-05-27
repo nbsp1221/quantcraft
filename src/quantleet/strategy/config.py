@@ -203,7 +203,7 @@ def _public_type_hints(cls: type[StrategyConfig], names: tuple[str, ...]) -> dic
     return get_type_hints(public_only_cls, globalns=module_globals, localns=namespace)
 
 
-def _validate_config_value(
+def _validate_config_value(  # noqa: C901
     *,
     field_name: str,
     value: object,
@@ -211,6 +211,8 @@ def _validate_config_value(
     optional: bool,
     error_type: type[StrategyConfigDeclarationError] | type[StrategyConfigValidationError],
 ) -> None:
+    # Flat type-dispatch validator: McCabe counts each supported type branch,
+    # but splitting this table would make the contract harder to audit.
     if value is None:
         if optional:
             return
