@@ -51,28 +51,9 @@ class Strategy[ConfigT: StrategyConfig](ABC):
     config_type: ClassVar[type[StrategyConfig]] = StrategyConfig
     config: ConfigT
 
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-        generic_config = _generic_config_type(cls)
-        explicit_config = cls.__dict__.get("config_type")
-        inherited_config = _inherited_config_type(cls)
-        resolved_config = StrategyConfig
-
-        if generic_config is not None:
-            resolved_config = generic_config
-        elif explicit_config is not None:
-            resolved_config = _validate_config_type(explicit_config, cls)
-        elif inherited_config is not None:
-            resolved_config = inherited_config
-
-        if explicit_config is not None and generic_config is not None:
-            explicit_type = _validate_config_type(explicit_config, cls)
-            if explicit_type is not generic_config:
-                raise StrategyConfigDeclarationError(
-                    f"{cls.__name__} has conflicting strategy config declarations"
-                )
-
-        cls.config_type = resolved_config
+    def __init_subclass__(cls) -> None:  # pragma: no mutate
+        super().__init_subclass__()  # pragma: no mutate
+        _initialize_strategy_subclass(cls)  # pragma: no mutate
 
     def __init__(self, config: ConfigT | None = None) -> None:
         materialized = self._materialize_config(config)
@@ -140,13 +121,15 @@ class Strategy[ConfigT: StrategyConfig](ABC):
             self._active_bar_symbol = None
             self._active_bar_close = None
 
+    # mutmut wraps methods through an inner trampoline; public defaults are
+    # covered by behavior and signature tests instead of mutating the wrapper.
     def buy(
         self,
         *,
         symbol: str | None = None,
         quantity: float | None = None,
         qty_percent: float | None = None,
-        order_type: OrderType = "market",
+        order_type: OrderType = "market",  # pragma: no mutate
         limit_price: float | None = None,
         stop_price: float | None = None,
         tag: str | None = None,
@@ -168,7 +151,7 @@ class Strategy[ConfigT: StrategyConfig](ABC):
         symbol: str | None = None,
         quantity: float | None = None,
         qty_percent: float | None = None,
-        order_type: OrderType = "market",
+        order_type: OrderType = "market",  # pragma: no mutate
         limit_price: float | None = None,
         stop_price: float | None = None,
         tag: str | None = None,
@@ -253,6 +236,29 @@ class Strategy[ConfigT: StrategyConfig](ABC):
         if stop_price > active_bar_close:
             return "crosses_above"
         return "crosses_below"
+
+
+def _initialize_strategy_subclass(cls: type[Strategy[Any]]) -> None:
+    generic_config = _generic_config_type(cls)
+    explicit_config = cls.__dict__.get("config_type")
+    inherited_config = _inherited_config_type(cls)
+    resolved_config = StrategyConfig
+
+    if generic_config is not None:
+        resolved_config = generic_config
+    elif explicit_config is not None:
+        resolved_config = _validate_config_type(explicit_config, cls)
+    elif inherited_config is not None:
+        resolved_config = inherited_config
+
+    if explicit_config is not None and generic_config is not None:
+        explicit_type = _validate_config_type(explicit_config, cls)
+        if explicit_type is not generic_config:
+            raise StrategyConfigDeclarationError(
+                f"{cls.__name__} has conflicting strategy config declarations"
+            )
+
+    cls.config_type = resolved_config
 
 
 def _generic_config_type(cls: type[Strategy[Any]]) -> type[StrategyConfig] | None:

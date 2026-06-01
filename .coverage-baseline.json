@@ -1,8 +1,8 @@
 {
   "allowed_drop": 0.25,
-  "baseline_commit": "5b835d8c2c7cdd71220cde63294a5fdc44a2630e",
+  "baseline_commit": "f9a030f2c1f2965b85d4a1bfa430bb46dfe42544",
   "coverage_command": "coverage run -m pytest -q",
-  "coverage_percent": 92.53518254130124,
+  "coverage_percent": 92.57597389353457,
   "coverage_run_branch": true,
   "coverage_run_source": [
     "quantleet"

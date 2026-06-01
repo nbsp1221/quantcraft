@@ -142,11 +142,13 @@ branch = true
 source = ["quantleet"]
 
 [tool.mutmut]
-paths_to_mutate = ["src/quantleet/trading", "src/quantleet/backtest"]
+paths_to_mutate = ["src/quantleet/trading", "src/quantleet/backtest", "src/quantleet/strategy"]
 also_copy = ["src/quantleet"]
 pytest_add_cli_args_test_selection = [
     "tests/unit/trading",
     "tests/unit/backtest",
+    "tests/unit/strategy",
+    "tests/integration/strategy",
     "tests/integration/research/test_backtest_result_contract.py",
     "tests/integration/research/test_backtest_result_reporting_contract.py",
     "tests/integration/research/test_backtest_result_reporting_edge_cases.py",

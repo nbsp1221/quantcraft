@@ -69,6 +69,8 @@ def test_missing_default_raises_declaration_error() -> None:
         (dict[str, int], {"x": 1}),
         (tuple[int, ...], (1,)),
         (object, object()),
+        (int | str, 1),
+        (int | str | None, None),
     ],
 )
 def test_unsupported_annotations_raise_declaration_error(

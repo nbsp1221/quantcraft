@@ -83,7 +83,9 @@ The performance gate is explicit:
   it also runs the duplicate-code gate, the default mutation score gates, and
   validates built package artifacts with Twine after `uv build`
 - `uv run poe mutation-gates` runs one aggregate mutation score gate across
-  `trading` and `backtest` with an `80%` threshold
+  `trading`, `backtest`, and `strategy` with an `80%` threshold
+- `uv run poe mutation-gates` must own the generated `mutants/` tree
+  exclusively; do not run concurrent mutmut commands against the same worktree
 - `uv run poe perf-check` is the canonical RSI performance-regression lane
 - `uv run poe check-runtime` is the stronger explicit lane for runtime-sensitive backtest or research changes
 - the default integration lane keeps a canonical strategy pair:

@@ -40,48 +40,9 @@ class StrategyConfig:
     __config_fields__: tuple[_ConfigField, ...] = ()
     __config_field_names__: frozenset[str] = frozenset()
 
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-        inherited_fields: dict[str, _ConfigField] = {}
-        inherited_order: list[str] = []
-        for base in reversed(cls.__mro__[1:]):
-            for field in getattr(base, "__config_fields__", ()):
-                if field.name not in inherited_fields:
-                    inherited_order.append(field.name)
-                inherited_fields[field.name] = field
-
-        annotations = cls.__dict__.get("__annotations__", {})
-        public_annotation_names = tuple(name for name in annotations if not name.startswith("_"))
-        type_hints = _public_type_hints(cls, public_annotation_names)
-        fields = dict(inherited_fields)
-        order = list(inherited_order)
-        for name in public_annotation_names:
-            if name not in cls.__dict__:
-                raise StrategyConfigDeclarationError(
-                    f"{cls.__name__}.{name} requires a default value"
-                )
-            value_type, optional = _resolve_supported_annotation(type_hints[name], cls, name)
-            default = cls.__dict__[name]
-            _validate_config_value(
-                field_name=name,
-                value=default,
-                value_type=value_type,
-                optional=optional,
-                error_type=StrategyConfigDeclarationError,
-            )
-            if name not in fields:
-                order.append(name)
-            fields[name] = _ConfigField(
-                name=name,
-                annotation=type_hints[name],
-                value_type=value_type,
-                optional=optional,
-                default=default,
-            )
-
-        ordered_fields = tuple(fields[name] for name in order if name in fields)
-        cls.__config_fields__ = ordered_fields
-        cls.__config_field_names__ = frozenset(field.name for field in ordered_fields)
+    def __init_subclass__(cls) -> None:  # pragma: no mutate
+        super().__init_subclass__()  # pragma: no mutate
+        _initialize_strategy_config_subclass(cls)  # pragma: no mutate
 
     def __init__(self, **overrides: JSONConfigScalar) -> None:
         values: dict[str, JSONConfigScalar] = {
@@ -165,6 +126,49 @@ class StrategyConfig:
             if field.name == name:
                 return field
         raise StrategyConfigValidationError(f"unknown strategy config field: {name}")
+
+
+def _initialize_strategy_config_subclass(cls: type[StrategyConfig]) -> None:
+    inherited_fields: dict[str, _ConfigField] = {}
+    inherited_order: list[str] = []
+    for base in reversed(cls.__mro__[1:]):
+        for field in getattr(base, "__config_fields__", ()):
+            if field.name not in inherited_fields:
+                inherited_order.append(field.name)
+            inherited_fields[field.name] = field
+
+    annotations = cls.__dict__.get("__annotations__", {})
+    public_annotation_names = tuple(name for name in annotations if not name.startswith("_"))
+    type_hints = _public_type_hints(cls, public_annotation_names)
+    fields = dict(inherited_fields)
+    order = list(inherited_order)
+    for name in public_annotation_names:
+        if name not in cls.__dict__:
+            raise StrategyConfigDeclarationError(
+                f"{cls.__name__}.{name} requires a default value"
+            )
+        value_type, optional = _resolve_supported_annotation(type_hints[name], cls, name)
+        default = cls.__dict__[name]
+        _validate_config_value(
+            field_name=name,
+            value=default,
+            value_type=value_type,
+            optional=optional,
+            error_type=StrategyConfigDeclarationError,
+        )
+        if name not in fields:
+            order.append(name)
+        fields[name] = _ConfigField(
+            name=name,
+            annotation=type_hints[name],
+            value_type=value_type,
+            optional=optional,
+            default=default,
+        )
+
+    ordered_fields = tuple(fields[name] for name in order if name in fields)
+    cls.__config_fields__ = ordered_fields
+    cls.__config_field_names__ = frozenset(field.name for field in ordered_fields)
 
 
 def _resolve_supported_annotation(

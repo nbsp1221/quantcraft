@@ -344,11 +344,17 @@ def test_mutmut_configuration_targets_aggregate_contract_tests() -> None:
     mutmut = pyproject["tool"]["mutmut"]
     mutation_score = pyproject["tool"]["mutation_score"]
 
-    assert mutmut["paths_to_mutate"] == ["src/quantleet/trading", "src/quantleet/backtest"]
+    assert mutmut["paths_to_mutate"] == [
+        "src/quantleet/trading",
+        "src/quantleet/backtest",
+        "src/quantleet/strategy",
+    ]
     assert mutmut["also_copy"] == ["src/quantleet"]
     assert mutmut["pytest_add_cli_args_test_selection"] == [
         "tests/unit/trading",
         "tests/unit/backtest",
+        "tests/unit/strategy",
+        "tests/integration/strategy",
         "tests/integration/research/test_backtest_result_contract.py",
         "tests/integration/research/test_backtest_result_reporting_contract.py",
         "tests/integration/research/test_backtest_result_reporting_edge_cases.py",
