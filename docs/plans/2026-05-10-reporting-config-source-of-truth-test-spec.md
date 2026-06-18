@@ -149,7 +149,7 @@
     shape and negative contracts, integration tests for `strategy`/`backtest`/
     `research` composition, regression tests for old-surface removal, and
     structure/docs checks for managed current surfaces.
-  - The fixture and fake policy prefers real Quantleet objects at product
+  - The fixture and fake policy prefers real Quantcraft objects at product
     boundaries and avoids private helper assertions.
   - The product spec routing index now points Stage 3 test work at the new
     product-test spec.

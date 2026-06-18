@@ -7,15 +7,15 @@
 `strategy=StrategyClass` plus `StrategyConfig` contract, removing the old
 factory API from active code, tests, examples, and public docs.
 
-**Architecture:** Keep `quantleet.strategy` as the source of strategy
-configuration truth and `quantleet.research.ParameterStudy` as the research
+**Architecture:** Keep `quantcraft.strategy` as the source of strategy
+configuration truth and `quantcraft.research.ParameterStudy` as the research
 workflow that expands search spaces, materializes config snapshots, filters
 candidates, runs fresh strategy instances, and records comparison rows.
 `StrategyConfig.validate()` owns strategy-domain invariants; `ParameterStudy`
 owns study-level pruning and result bookkeeping.
 
-**Tech Stack:** Python 3.13, `quantleet.strategy.StrategyConfig`,
-`quantleet.research.ParameterStudy`, pytest, Ruff, mypy, Poe/uv verification.
+**Tech Stack:** Python 3.13, `quantcraft.strategy.StrategyConfig`,
+`quantcraft.research.ParameterStudy`, pytest, Ruff, mypy, Poe/uv verification.
 
 ---
 
@@ -67,9 +67,9 @@ owns study-level pruning and result bookkeeping.
   - `SECURITY.md` confirms no live credentials or Tier A progression are in
     scope.
 - In-repo scope:
-  - `src/quantleet/strategy/config.py`
-  - `src/quantleet/research/parameter_exploration.py`
-  - `src/quantleet/research/__init__.py` only if public exports need adjustment
+  - `src/quantcraft/strategy/config.py`
+  - `src/quantcraft/research/parameter_exploration.py`
+  - `src/quantcraft/research/__init__.py` only if public exports need adjustment
   - `tests/unit/strategy/*`
   - `tests/unit/research/*`
   - `tests/integration/research/*`
@@ -205,7 +205,7 @@ slice.
 - Pydantic keeps validation errors structured and supports whole-model
   validation for cross-field invariants.
 
-Implication for Quantleet: use full materialized config mappings for
+Implication for Quantcraft: use full materialized config mappings for
 study-level pruning, keep strategy invariants on the config object, and expose
 structured rejection/failure diagnostics.
 
@@ -233,7 +233,7 @@ structured rejection/failure diagnostics.
     change as an auto-fail unless a human approval record is added first.
 - Checks the evaluator will use:
   - `git diff --stat`
-  - `git diff -- src/quantleet/strategy/config.py src/quantleet/research/parameter_exploration.py`
+  - `git diff -- src/quantcraft/strategy/config.py src/quantcraft/research/parameter_exploration.py`
   - `rg -n "strategy_factory" src tests docs/site README.md`
   - `rg -n "row\\.parameters|\\[\"parameters\"\\]|failure_stage=.*strategy_factory" src tests docs/site README.md`
   - targeted pytest commands listed in the planner contract
@@ -278,7 +278,7 @@ structured rejection/failure diagnostics.
   - Use TDD for each slice: write or rewrite failing tests first, run the
     targeted failure, implement the minimal code, rerun targeted tests.
   - Keep row snapshots immutable using the existing `MappingProxyType` pattern.
-  - Do not import private research validation helpers into `quantleet.strategy`.
+  - Do not import private research validation helpers into `quantcraft.strategy`.
   - Preserve deterministic cartesian ordering and `max_candidates` semantics.
   - Preserve existing objective selection behavior except for row field names.
   - Keep `Strategy.parameters()` available for report metadata until Stage 3.
@@ -291,7 +291,7 @@ structured rejection/failure diagnostics.
 
 **Files:**
 - Modify: `tests/unit/strategy/test_strategy_config_materialization.py`
-- Modify: `src/quantleet/strategy/config.py`
+- Modify: `src/quantcraft/strategy/config.py`
 
 **Step 1: Write failing tests**
 
@@ -359,7 +359,7 @@ Expected: pass.
 **Files:**
 - Modify: `tests/unit/research/test_grid_search_records.py`
 - Modify: `tests/unit/research/test_grid_search_result_selection.py`
-- Modify: `src/quantleet/research/parameter_exploration.py`
+- Modify: `src/quantcraft/research/parameter_exploration.py`
 
 **Step 1: Write failing tests**
 
@@ -467,7 +467,7 @@ Expected: pass.
 - Modify: `tests/unit/research/test_parameter_study_preflight.py`
 - Modify: `tests/unit/research/test_parameter_grid_validation.py`
 - Modify: `tests/unit/research/support_parameter_study.py`
-- Modify: `src/quantleet/research/parameter_exploration.py`
+- Modify: `src/quantcraft/research/parameter_exploration.py`
 
 **Step 1: Write failing tests**
 
@@ -563,7 +563,7 @@ Expected: pass.
 - Modify: `tests/unit/research/test_parameter_grid_validation.py`
 - Modify: `tests/integration/research/test_parameter_study_grid_search.py`
 - Modify: `tests/integration/research/test_parameter_study_failures.py`
-- Modify: `src/quantleet/research/parameter_exploration.py`
+- Modify: `src/quantcraft/research/parameter_exploration.py`
 
 **Step 1: Write failing tests**
 
@@ -640,7 +640,7 @@ Expected: pass.
 - Modify: `tests/integration/research/test_parameter_study_metric_states.py`
 - Modify: `tests/integration/research/test_parameter_study_canonical_grid_contract.py`
 - Modify: `tests/smoke/local/test_public_beta_examples.py`
-- Modify: `src/quantleet/research/parameter_exploration.py`
+- Modify: `src/quantcraft/research/parameter_exploration.py`
 
 **Step 1: Write failing tests**
 
@@ -881,7 +881,7 @@ Update `## Evaluator Review` with:
     matches.
   - `rg -n "row\\.parameters|\\[\"parameters\"\\]|failure_stage=.*strategy_factory" src tests docs/site README.md`
     returned no matches.
-  - `rg -n "_field_for_override|__config_fields__" src/quantleet/research/parameter_exploration.py`
+  - `rg -n "_field_for_override|__config_fields__" src/quantcraft/research/parameter_exploration.py`
     returned no matches.
   - `rg -n 'Factory-based|factory paths|legacy callable construction API remains|advanced.*old callable|old callable.*advanced|strategy_factory|strategy factory' docs/product-specs docs/site README.md src tests`
     returned no matches.

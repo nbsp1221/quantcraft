@@ -10,7 +10,7 @@ This document defines the approved governance model for the repository's agent-f
 
 ## Why This Document Exists
 
-`quantleet` is being built in an agent-first workflow.
+`quantcraft` is being built in an agent-first workflow.
 
 That means:
 
@@ -24,7 +24,7 @@ The OpenAI harness pattern is not “mechanize everything immediately.” It is 
 
 The repository uses these primary documents for this area:
 
-1. [quantleet-architecture.md](quantleet-architecture.md)
+1. [quantcraft-architecture.md](quantcraft-architecture.md)
    - approved top-level architecture
 2. [package-topology-and-naming.md](package-topology-and-naming.md)
    - approved package topology, naming, and public-facade rules

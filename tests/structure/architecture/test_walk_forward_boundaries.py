@@ -4,8 +4,8 @@ import ast
 import inspect
 from pathlib import Path
 
-from quantleet.backtest import BacktestEngine
-from quantleet.research import WalkForwardStudy
+from quantcraft.backtest import BacktestEngine
+from quantcraft.research import WalkForwardStudy
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -22,14 +22,16 @@ def _imports(module_path: str) -> set[str]:
 
 
 def test_walk_forward_is_owned_by_research_and_does_not_invert_dependencies() -> None:
-    assert (ROOT / "src/quantleet/research/walk_forward.py").exists()
-    assert "quantleet.research.walk_forward" in WalkForwardStudy.__module__
+    assert (ROOT / "src/quantcraft/research/walk_forward.py").exists()
+    assert "quantcraft.research.walk_forward" in WalkForwardStudy.__module__
 
-    imports = _imports("src/quantleet/research/walk_forward.py")
-    assert "quantleet.backtest.engine" not in imports
-    assert "quantleet.research.walk_forward" not in _imports("src/quantleet/backtest/engine.py")
-    assert "quantleet.research.walk_forward" not in _imports("src/quantleet/trading/__init__.py")
-    assert "quantleet.research.walk_forward" not in _imports("src/quantleet/execution/__init__.py")
+    imports = _imports("src/quantcraft/research/walk_forward.py")
+    assert "quantcraft.backtest.engine" not in imports
+    assert "quantcraft.research.walk_forward" not in _imports("src/quantcraft/backtest/engine.py")
+    assert "quantcraft.research.walk_forward" not in _imports("src/quantcraft/trading/__init__.py")
+    assert "quantcraft.research.walk_forward" not in _imports(
+        "src/quantcraft/execution/__init__.py"
+    )
 
 
 def test_backtest_engine_does_not_gain_walk_forward_or_optimizer_methods() -> None:

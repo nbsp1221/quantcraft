@@ -3,11 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from quantleet.backtest import BacktestEngine, BacktestResult
-from quantleet.data import BarSeries, TimeBar
-from quantleet.strategy import Strategy, StrategyConfig
-from quantleet.trading.domain.costs import CostConfig
-from quantleet.trading.domain.events import BarEvent
+from quantcraft.backtest import BacktestEngine, BacktestResult
+from quantcraft.data import BarSeries, TimeBar
+from quantcraft.strategy import Strategy, StrategyConfig
+from quantcraft.trading.domain.costs import CostConfig
+from quantcraft.trading.domain.events import BarEvent
 
 
 def make_bars(*, closes: tuple[float, ...] = (100.0, 102.0, 101.0, 104.0)) -> BarSeries:

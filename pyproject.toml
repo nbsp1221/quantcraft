@@ -1,5 +1,5 @@
 [project]
-name = "quantleet"
+name = "quantcraft"
 version = "0.1.0b1"
 description = "Single-symbol Python backtesting and quant research tooling"
 readme = "README.md"
@@ -26,9 +26,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/nbsp1221/quantleet"
-Repository = "https://github.com/nbsp1221/quantleet"
-Issues = "https://github.com/nbsp1221/quantleet/issues"
+Homepage = "https://github.com/nbsp1221/quantcraft"
+Repository = "https://github.com/nbsp1221/quantcraft"
+Issues = "https://github.com/nbsp1221/quantcraft/issues"
 
 [dependency-groups]
 dev = [
@@ -106,7 +106,7 @@ testpaths = ["tests"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["quantleet"]
+packages = ["quantcraft"]
 
 [[tool.mypy.overrides]]
 module = ["ccxt", "ccxt.*"]
@@ -129,7 +129,7 @@ min_confidence = 80
 sort_by_size = true
 
 [tool.deptry]
-known_first_party = ["quantleet"]
+known_first_party = ["quantcraft"]
 ignore_notebooks = true
 package_module_name_map = { "ta-lib" = "talib" }
 
@@ -139,11 +139,11 @@ show_missing = true
 
 [tool.coverage.run]
 branch = true
-source = ["quantleet"]
+source = ["quantcraft"]
 
 [tool.mutmut]
-paths_to_mutate = ["src/quantleet/trading", "src/quantleet/backtest", "src/quantleet/strategy"]
-also_copy = ["src/quantleet"]
+paths_to_mutate = ["src/quantcraft/trading", "src/quantcraft/backtest", "src/quantcraft/strategy"]
+also_copy = ["src/quantcraft"]
 pytest_add_cli_args_test_selection = [
     "tests/unit/trading",
     "tests/unit/backtest",

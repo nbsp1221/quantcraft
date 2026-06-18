@@ -5,11 +5,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import ClassVar
 
-from quantleet.backtest import BacktestEngine, BacktestResult
-from quantleet.data import BarSeries, TimeBar
-from quantleet.research import Strategy
-from quantleet.strategy import StrategyConfig
-from quantleet.trading.domain.costs import CostConfig
+from quantcraft.backtest import BacktestEngine, BacktestResult
+from quantcraft.data import BarSeries, TimeBar
+from quantcraft.research import Strategy
+from quantcraft.strategy import StrategyConfig
+from quantcraft.trading.domain.costs import CostConfig
 
 
 class DeterministicEntryExitStrategy(Strategy):

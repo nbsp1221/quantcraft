@@ -84,7 +84,7 @@
     notebook validation.
   - Notebooks are ignored for this first gate so dependency package checks focus
     on importable source.
-  - Known first-party module is `quantleet`; `ta-lib` maps to import module
+  - Known first-party module is `quantcraft`; `ta-lib` maps to import module
     `talib`.
 - Blockers or scope changes:
   - The user requested fixing the known findings after the failing-gate
@@ -106,7 +106,7 @@
 - Verification evidence:
   - `uv run poe dependency-check` failed with 10 Deptry findings:
     - `DEP004` for `nbformat` and `nbclient` imported from
-      `src/quantleet/_notebook_tools.py` while declared as dev dependencies.
+      `src/quantcraft/_notebook_tools.py` while declared as dev dependencies.
     - `DEP003` for `numpy` imported from indicator modules while available only
       as a transitive dependency.
   - `uv run poe check` passed `format-check`, `lint`, and `dead-code`, then

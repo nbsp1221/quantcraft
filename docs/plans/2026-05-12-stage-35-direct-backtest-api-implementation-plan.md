@@ -39,9 +39,9 @@
   strategy/config construction, report provenance, parameter-study composition,
   current public examples, and WFA readiness tracking.
 - In-repo scope:
-  - `src/quantleet/backtest`
-  - `src/quantleet/strategy` only if a narrow reusable type/error is required
-  - `src/quantleet/research/parameter_exploration.py`
+  - `src/quantcraft/backtest`
+  - `src/quantcraft/strategy` only if a narrow reusable type/error is required
+  - `src/quantcraft/research/parameter_exploration.py`
   - current tests under `tests/unit`, `tests/integration`, `tests/smoke`,
     `tests/structure`, and `tests/perf` that exercise direct backtests
   - current public docs, docs-site examples, README snippets, and maintained
@@ -168,30 +168,30 @@ Not in scope:
 
 ## Codebase Survey Findings
 
-The project is a Python 3.13 library under `src/quantleet` with strict `ruff`,
+The project is a Python 3.13 library under `src/quantcraft` with strict `ruff`,
 `mypy`, `pytest`, coverage, repo checks, and `uv`/`poe` verification tasks.
 
 Relevant package contexts:
 
-- `quantleet.strategy` owns `Strategy`, `StrategyConfig`, and strategy
+- `quantcraft.strategy` owns `Strategy`, `StrategyConfig`, and strategy
   construction validation.
-- `quantleet.backtest` owns direct historical execution and report creation.
-- `quantleet.research` owns parameter exploration and composes the public
+- `quantcraft.backtest` owns direct historical execution and report creation.
+- `quantcraft.research` owns parameter exploration and composes the public
   backtest surface.
-- `quantleet.data` owns `BarSeries`, `TimeBar`, and data source loading.
-- `quantleet.trading` owns trading-domain objects; Stage 3.5 should not change
+- `quantcraft.data` owns `BarSeries`, `TimeBar`, and data source loading.
+- `quantcraft.trading` owns trading-domain objects; Stage 3.5 should not change
   those semantics.
 
 Current canonical construction path:
 
-- `src/quantleet/strategy/strategy.py`
+- `src/quantcraft/strategy/strategy.py`
   - `Strategy.__init__(config=None)` materializes config through
     `_materialize_config`.
   - `Strategy.config_type()` resolves the declared config class.
   - exact config type matching already exists via
     `type(config) is self.config_type`.
   - runtime state reset already happens during construction.
-- `src/quantleet/strategy/config.py`
+- `src/quantcraft/strategy/config.py`
   - `StrategyConfig` validates declared JSON-scalar fields.
   - `to_mapping()` returns the reportable snapshot shape.
   - `StrategyConfigValidationError` already covers config mismatch and invalid
@@ -199,26 +199,26 @@ Current canonical construction path:
 
 Current direct backtest path:
 
-- `src/quantleet/backtest/engine.py`
+- `src/quantcraft/backtest/engine.py`
   - `BacktestEngine.run` currently accepts `strategy: StrategyLike`.
   - it validates bars/source exclusivity, snapshots
     `validate_strategy_like_config(strategy).to_mapping()`, loads data, then
     calls `_run_backtest`.
-- `src/quantleet/backtest/runtime.py`
+- `src/quantcraft/backtest/runtime.py`
   - `_run_backtest` takes a concrete `StrategyLike` instance and a
     `strategy_config` mapping. This should remain the runtime boundary.
-- `src/quantleet/backtest/strategy_runtime.py`
+- `src/quantcraft/backtest/strategy_runtime.py`
   - `_StrategyDriver` and `StrategyLike` are runtime protocols for an already
     constructed strategy object.
   - `validate_strategy_like_config` exists only to support the old direct
     strategy-instance engine path.
-- `src/quantleet/backtest/reporting.py`
+- `src/quantcraft/backtest/reporting.py`
   - `RunManifest.strategy_config` already stores a plain dict snapshot.
   - report creation does not need a new provenance path.
 
 Current parameter-study path:
 
-- `src/quantleet/research/parameter_exploration.py`
+- `src/quantcraft/research/parameter_exploration.py`
   - `ParameterStudy` already requires `strategy: type[Strategy[StrategyConfig]]`.
   - candidates already materialize `StrategyConfig` instances and snapshots.
   - normal execution currently constructs `self.strategy(prepared.config)`
@@ -269,24 +269,24 @@ Do not create:
 
 Source files:
 
-- `src/quantleet/backtest/engine.py`
+- `src/quantcraft/backtest/engine.py`
   - change `BacktestEngine.run` to accept `strategy` as a `Strategy` subclass
     and `config` as `StrategyConfig | None`
   - validate strategy/config before `source.load()`
   - instantiate a fresh strategy for every run
   - pass the concrete strategy instance and copied config mapping into
     `_run_backtest`
-- `src/quantleet/backtest/strategy_runtime.py`
+- `src/quantcraft/backtest/strategy_runtime.py`
   - keep `StrategyLike` and `_StrategyDriver` for runtime execution
   - remove or stop exporting `validate_strategy_like_config` if no remaining
     current runtime path needs it
-- `src/quantleet/research/parameter_exploration.py`
+- `src/quantcraft/research/parameter_exploration.py`
   - replace normal candidate strategy preconstruction with
     `engine.run(bars=self.bars, strategy=self.strategy,
     config=prepared.config, label=...)`
   - preserve candidate failure classification, including distinguishing
     strategy-construction failures from backtest failures
-- `src/quantleet/backtest/__init__.py`
+- `src/quantcraft/backtest/__init__.py`
   - update exports only if a new public error type is intentionally introduced
     after implementation review
 
@@ -492,7 +492,7 @@ run path.
 ## Implementation Order
 
 1. Add the new unit contract test file for `BacktestEngine.run`.
-2. Implement the class-plus-config path in `src/quantleet/backtest/engine.py`.
+2. Implement the class-plus-config path in `src/quantcraft/backtest/engine.py`.
 3. Remove or isolate the old `validate_strategy_like_config` engine dependency.
 4. Update existing unit tests and direct test helpers to pass strategy classes.
 5. Update `ParameterStudy` and its unit/integration tests.
@@ -562,7 +562,7 @@ run path.
     scenario wording, and Stage 1 open-question residue.
   - The construction failure signal is kept internal as
     `_BacktestStrategyConstructionError` and is not exported from
-    `quantleet.backtest`.
+    `quantcraft.backtest`.
 - Verification evidence:
   - `uv run pytest -q tests/unit/backtest tests/unit/research tests/integration/research tests/integration/strategy tests/smoke/local`
     passed: `372 passed`.

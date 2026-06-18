@@ -11,12 +11,12 @@ Related documents:
 - [architecture-governance.md](architecture-governance.md)
 - [core-beliefs.md](core-beliefs.md)
 - [golden-principles.md](golden-principles.md)
-- [quantleet-architecture.md](quantleet-architecture.md)
+- [quantcraft-architecture.md](quantcraft-architecture.md)
 - [../RELIABILITY.md](../RELIABILITY.md)
 
 ## Why This Document Exists
 
-`quantleet` is developed in an agent-first workflow. AI coding agents can
+`quantcraft` is developed in an agent-first workflow. AI coding agents can
 produce, update, and reshape code much faster than a human-only workflow.
 
 That changes the highest-return quality question.
@@ -65,7 +65,7 @@ An MSR 2026 study of 11,771 GitHub pull requests compared 7,619 agentic PRs with
 faster in median time-to-fix, but agents also introduced a large share of CI
 failures and were less involved in repairing them.
 
-Implication for `quantleet`:
+Implication for `quantcraft`:
 
 - CI and local gate parity still matter.
 - However, once basic CI catches syntax, test, type, and lint failures, the
@@ -85,7 +85,7 @@ reported pass rate and branch coverage fell materially, and the authors
 concluded that generated tests can rely heavily on surface-level cues rather
 than durable semantic understanding.
 
-Implication for `quantleet`:
+Implication for `quantcraft`:
 
 - Line and branch coverage are necessary but insufficient.
 - Diff coverage is valuable, but it still needs mutation and semantic scenario
@@ -104,7 +104,7 @@ from 6,299 GitHub repositories. The study found that code smells were the most
 common introduced issue category, and that a non-trivial share of tracked
 AI-introduced issues survived into the latest repository revisions.
 
-Implication for `quantleet`:
+Implication for `quantcraft`:
 
 - The risk is not only broken code.
 - The higher-volume risk is maintainability drift that remains after tests pass.
@@ -121,7 +121,7 @@ A 2025 systematic analysis of LLM coding agents found insecure actions in a
 meaningful share of evaluated agent trajectories, with large variation between
 models and mitigation strategies.
 
-Implication for `quantleet`:
+Implication for `quantcraft`:
 
 - Security gates should not be dismissed.
 - They are still a lower-cost safety layer, but for this repository they are a
@@ -139,7 +139,7 @@ FSE 2026 work on vibe coding describes a spectrum from users who rely almost
 entirely on AI to users who inspect and adapt generated output. Across that
 spectrum, evaluation practice and trust calibration shape outcomes.
 
-Implication for `quantleet`:
+Implication for `quantcraft`:
 
 - The repository should not assume that every agent-generated change received
   deep human inspection.
@@ -186,7 +186,7 @@ Current strengths:
 Remaining gaps:
 
 1. Mutation testing is too narrow for the full agent risk surface.
-   - Current mutation scope is `src/quantleet/trading`.
+   - Current mutation scope is `src/quantcraft/trading`.
    - High-risk behavior also lives in `backtest`, `research`, data adapters,
      order activation, sizing, and execution-model code.
 2. Mutation results are not yet a ratcheted policy.
@@ -212,7 +212,7 @@ High-value test-quality candidates:
 
 Current strengths:
 
-- `quantleet` has explicit bounded contexts.
+- `quantcraft` has explicit bounded contexts.
 - Cross-domain import rules already exist in repository tooling.
 - Structure tests protect public docs, package metadata, test layout, and
   several current contract surfaces.
@@ -249,7 +249,7 @@ Candidate tools to evaluate:
   and supports forbidden dependency checks.
 - `import-linter`, which supports contracts such as layers, independence,
   protected modules, and acyclic siblings.
-- Custom extensions to `quantleet._repo_tools`, which may fit best when the
+- Custom extensions to `quantcraft._repo_tools`, which may fit best when the
   check is repo-specific and should remain legible to agents.
 
 Sources:

@@ -21,8 +21,8 @@
   context, current mutation-gate policy, and the reviewed critical/high
   remediation priorities.
 - In-repo scope:
-  - `src/quantleet/strategy/config.py` and
-    `src/quantleet/strategy/strategy.py` only for narrowing the mutmut
+  - `src/quantcraft/strategy/config.py` and
+    `src/quantcraft/strategy/strategy.py` only for narrowing the mutmut
     `__init_subclass__` collection workaround while keeping declaration logic
     under mutation
   - `tests/unit/strategy/**`
@@ -155,7 +155,7 @@
 ### Read-Only Review Synthesis
 
 - Review scope: current `# pragma: no mutate` changes in
-  `src/quantleet/strategy/config.py` and `src/quantleet/strategy/strategy.py`,
+  `src/quantcraft/strategy/config.py` and `src/quantcraft/strategy/strategy.py`,
   current survivor evidence, and plan consistency.
 - Finding 1: broad pragmas on
   `StrategyConfig.__init_subclass__` lines 43-99 and
@@ -190,7 +190,7 @@
 ### Follow-Up Handoff Contract
 
 - Scope: one writer may edit only the active plan,
-  `src/quantleet/strategy/config.py`, `src/quantleet/strategy/strategy.py`, and
+  `src/quantcraft/strategy/config.py`, `src/quantcraft/strategy/strategy.py`, and
   focused strategy tests needed to resolve remaining verified critical/high
   mutants.
 - Owner: Codex.
@@ -219,7 +219,7 @@
   top-level helper functions; the helper bodies no longer carry
   `# pragma: no mutate`.
 - Fresh targeted representative mutmut run killed
-  `quantleet.strategy.strategy.xǁStrategyǁbuy__mutmut_1`.
+  `quantcraft.strategy.strategy.xǁStrategyǁbuy__mutmut_1`.
 - Fresh single-owner `uv run poe mutation-gates` passed with
   `total=3458 killed=2807 survived=651 no_tests=0 suspicious=0 timeout=0
   segfault=0 score=81.17% threshold=80%`.

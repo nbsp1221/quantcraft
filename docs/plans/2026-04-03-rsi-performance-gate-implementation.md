@@ -12,7 +12,7 @@ repository command surface instead of mixing timing-sensitive checks directly
 into the default correctness lane.
 
 **Tech Stack:** Python 3.13, `uv`, `pytest`, `pytest-benchmark`,
-`quantleet`, repo-local `poe`
+`quantcraft`, repo-local `poe`
 
 ---
 

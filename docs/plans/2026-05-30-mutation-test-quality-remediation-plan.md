@@ -62,7 +62,7 @@
   - Adding broad implementation-detail assertions only to kill mutants.
   - Marking mutants as ignored before proving they are equivalent or intentionally
     out of contract.
-  - Expanding to all `src/quantleet` mutation testing in this slice.
+  - Expanding to all `src/quantcraft` mutation testing in this slice.
 
 ## Research Findings
 
@@ -73,12 +73,12 @@ Current local evidence:
 - Initial failing stats: `total=2945`, `killed=2001`, `survived=922`, `no_tests=22`,
   `suspicious=0`, `timeout=0`, `segfault=0`, `score=67.95%`, `threshold=80%`.
 - Survivor concentration:
-  - `367` in `quantleet.backtest.runtime`
-  - `309` in `quantleet.backtest.reporting`
-  - `87` in `quantleet.trading.sizing`
-  - `74` in `quantleet.backtest.strategy_runtime`
-  - `33` in `quantleet.backtest.plotting`
-  - `18` in `quantleet.trading.domain.state`
+  - `367` in `quantcraft.backtest.runtime`
+  - `309` in `quantcraft.backtest.reporting`
+  - `87` in `quantcraft.trading.sizing`
+  - `74` in `quantcraft.backtest.strategy_runtime`
+  - `33` in `quantcraft.backtest.plotting`
+  - `18` in `quantcraft.trading.domain.state`
 - High-survivor functions include `ReportBuilder.build`,
   `_trade_metrics`, `_build_backtest_result`, `_trade_statistics`,
   `_runtime_fill_rejection`, `_buy_order_reserved_cash`,
@@ -111,8 +111,8 @@ Representative low-value or equivalent-looking survivors:
 
 Test-layering signal:
 
-- The mutation target scope is `src/quantleet/trading` and
-  `src/quantleet/backtest`, but the current test selection is
+- The mutation target scope is `src/quantcraft/trading` and
+  `src/quantcraft/backtest`, but the current test selection is
   `tests/unit/trading` and `tests/unit/backtest`.
 - Many backtest runtime/reporting contracts are asserted in
   `tests/integration/research` and `tests/integration/backtest`, including
@@ -218,7 +218,7 @@ Slice 1: survivor taxonomy and first triage artifact.
 
 Slice 2: trading sizing and domain boundary tests.
 
-- Target `quantleet.trading.sizing`, `trading.domain.matching`,
+- Target `quantcraft.trading.sizing`, `trading.domain.matching`,
   `trading.domain.state`, and `trading.domain.intents`.
 - Focus on minimum quantity, zero budget, rounding boundaries, fee precision,
   state preservation, and stable rejection/fill contracts.
@@ -228,7 +228,7 @@ Slice 2: trading sizing and domain boundary tests.
 
 Slice 3: backtest runtime local invariants.
 
-- Target `quantleet.backtest.runtime` and `strategy_runtime`.
+- Target `quantcraft.backtest.runtime` and `strategy_runtime`.
 - Focus on loop continuation, runtime rejection reasons, reservation accounting,
   fill application, mark-to-market state preservation, and executable-order
   processing.

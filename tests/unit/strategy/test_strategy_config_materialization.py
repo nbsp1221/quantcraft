@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from quantleet.strategy import (
+from quantcraft.strategy import (
     StrategyConfig,
     StrategyConfigMutationError,
     StrategyConfigValidationError,

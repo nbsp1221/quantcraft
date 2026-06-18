@@ -114,9 +114,9 @@ Market practice supports this direction:
 - PyBroker and NautilusTrader both use explicit configuration objects for
   important runtime or strategy settings.
 
-Quantleet does not copy any one library exactly. The chosen shape follows the
+Quantcraft does not copy any one library exactly. The chosen shape follows the
 common pattern that the framework owns execution-time strategy construction,
-while preserving Quantleet's existing `StrategyConfig` contract.
+while preserving Quantcraft's existing `StrategyConfig` contract.
 
 ## Goals
 

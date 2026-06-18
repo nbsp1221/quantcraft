@@ -16,7 +16,7 @@
   - `docs/design-docs/core-beliefs.md`
   - `docs/design-docs/golden-principles.md`
   - `docs/design-docs/architecture-governance.md`
-  - `docs/design-docs/quantleet-architecture.md`
+  - `docs/design-docs/quantcraft-architecture.md`
 - Why these are governing: This is documentation-only repository-governance work about which repeated agent failure modes should become docs or checks.
 - In-repo scope: Add a long-lived design note under `docs/design-docs/` and route it from `docs/design-docs/index.md`.
 - Out-of-repo scope: No external state changes.

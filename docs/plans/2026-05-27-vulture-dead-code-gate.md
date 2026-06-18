@@ -95,7 +95,7 @@
   - `uv run pytest tests/structure/repo/test_repo_check_contracts.py
     tests/structure/repo/test_poe_task_contracts.py
     tests/structure/repo/test_coverage_harness.py -q` passed with 29 tests.
-  - `uv run ruff check AGENTS.md src/quantleet/_repo_tools.py
+  - `uv run ruff check AGENTS.md src/quantcraft/_repo_tools.py
     tests/unit/scripts/test_coverage_baseline.py
     tests/structure/repo/test_coverage_harness.py
     tests/structure/repo/test_poe_task_contracts.py

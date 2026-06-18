@@ -98,7 +98,7 @@
     JSON score checker, matching the dominant public examples found during
     research.
   - Accepted: the default mutmut scope is static and covers both
-    `src/quantleet/trading` and `src/quantleet/backtest`.
+    `src/quantcraft/trading` and `src/quantcraft/backtest`.
   - Accepted: the gate still fails for the intended reason, the current
     aggregate mutation score deficit.
   - Residual risk: removing targeted lane tasks means one-folder diagnostics now

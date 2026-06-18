@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from quantleet.backtest import BacktestEngine
-from quantleet.strategy import Strategy, StrategyConfig
-from quantleet.trading.domain.costs import CostConfig
-from quantleet.trading.domain.events import BarEvent
+from quantcraft.backtest import BacktestEngine
+from quantcraft.strategy import Strategy, StrategyConfig
+from quantcraft.trading.domain.costs import CostConfig
+from quantcraft.trading.domain.events import BarEvent
 from tests.integration.research.support_backtest_runner import (
     DeterministicEntryExitStrategy,
     fixture_bar_series,

@@ -46,7 +46,7 @@ def test_repository_defines_approved_coverage_thresholds() -> None:
     dev_dependencies = _pyproject()["dependency-groups"]["dev"]
 
     assert coverage["run"]["branch"] is True
-    assert coverage["run"]["source"] == ["quantleet"]
+    assert coverage["run"]["source"] == ["quantcraft"]
     assert coverage["report"]["fail_under"] == 90
     assert coverage["report"]["show_missing"] is True
     assert any(dependency.startswith("diff-cover>=") for dependency in dev_dependencies)

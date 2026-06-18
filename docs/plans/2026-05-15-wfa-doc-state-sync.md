@@ -10,7 +10,7 @@
 ## Planner Contract
 
 - Goal: Fix the two WFA beta-readiness documentation gaps: public docs must
-  match the implemented `quantleet.research.WalkForwardStudy` surface, and
+  match the implemented `quantcraft.research.WalkForwardStudy` surface, and
   internal WFA product/roadmap routing must no longer imply Stage 4 is still
   paused or only draft.
 - Governing docs:
@@ -91,7 +91,7 @@
   2. Update internal WFA product-spec/roadmap status and routing.
   3. Run targeted verification and audit the actual diff.
 - Notes:
-  - Current code already exports WFA public types from `quantleet.research`.
+  - Current code already exports WFA public types from `quantcraft.research`.
   - Current smoke tests already assert WFA public imports exist.
   - Current public docs still list only `ParameterStudy`.
   - Current structure tests still assert stale paused WFA wording.

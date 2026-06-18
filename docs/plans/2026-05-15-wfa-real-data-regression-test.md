@@ -71,7 +71,7 @@
   2. Run targeted verification.
   3. Record evaluator review evidence.
 - Notes:
-  - The focused setup comes from `/tmp/quantleet-wfa-sweetspot`:
+  - The focused setup comes from `/tmp/quantcraft-wfa-sweetspot`:
     12 valid candidates, 3 folds, about 2 seconds in the experiment.
   - Added `tests/integration/research/test_walk_forward_real_data_contract.py`.
   - The test slices the checked-in 2025 BTC fixture from `2025-05-01` through

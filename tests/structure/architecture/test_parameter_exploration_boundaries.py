@@ -4,8 +4,8 @@ import ast
 import inspect
 from pathlib import Path
 
-from quantleet.backtest import BacktestEngine
-from quantleet.research import ParameterStudy
+from quantcraft.backtest import BacktestEngine
+from quantcraft.research import ParameterStudy
 from tests.support import ROOT
 
 DEFERRED_CONTROLS = {"source", "n_jobs", "workers", "parallel", "executor"}
@@ -16,24 +16,24 @@ def _imports_parameter_exploration(path: Path) -> bool:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             if any(
-                alias.name == "quantleet.research.parameter_exploration" for alias in node.names
+                alias.name == "quantcraft.research.parameter_exploration" for alias in node.names
             ):
                 return True
         elif (
             isinstance(node, ast.ImportFrom)
-            and node.module == "quantleet.research.parameter_exploration"
+            and node.module == "quantcraft.research.parameter_exploration"
         ):
             return True
     return False
 
 
 def test_parameter_exploration_lives_under_research_boundary() -> None:
-    assert (ROOT / "src" / "quantleet" / "research" / "parameter_exploration.py").exists()
+    assert (ROOT / "src" / "quantcraft" / "research" / "parameter_exploration.py").exists()
 
 
 def test_backtest_trading_and_execution_do_not_import_parameter_exploration() -> None:
     for package_name in ("backtest", "trading", "execution"):
-        package_root = ROOT / "src" / "quantleet" / package_name
+        package_root = ROOT / "src" / "quantcraft" / package_name
         offenders = [
             path for path in package_root.rglob("*.py") if _imports_parameter_exploration(path)
         ]
@@ -41,7 +41,7 @@ def test_backtest_trading_and_execution_do_not_import_parameter_exploration() ->
 
 
 def test_backtest_surface_does_not_gain_optimizer_or_study_exports() -> None:
-    import quantleet.backtest as backtest
+    import quantcraft.backtest as backtest
 
     assert not hasattr(BacktestEngine, "optimize")
     for name in ("ParameterStudy", "GridSearchResult", "GridSearchRow"):

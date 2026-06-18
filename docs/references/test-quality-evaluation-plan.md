@@ -1,6 +1,6 @@
 # Test Quality Evaluation Plan
 
-Use this plan when evaluating whether the `quantleet` test suite is strong
+Use this plan when evaluating whether the `quantcraft` test suite is strong
 enough to support new feature work. The output of this plan is a test quality
 report with concrete numbers, qualitative LLM findings, and recommended gate
 changes.
@@ -12,7 +12,7 @@ measure, how to review the tests, and how to turn the results into a report.
 
 The goal is to evaluate test-code quality before increasing future feature
 velocity. A good test suite should make failures clear, deterministic, and
-useful. It should verify the external contracts that `quantleet` promises to
+useful. It should verify the external contracts that `quantcraft` promises to
 users, not merely execute implementation details.
 
 The evaluation must keep three evidence types separate:

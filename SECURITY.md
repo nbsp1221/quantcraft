@@ -27,7 +27,7 @@ test fixtures before opening a pull request.
 
 ## Financial Safety
 
-Quantleet is research and software tooling, not financial advice. Backtest
+Quantcraft is research and software tooling, not financial advice. Backtest
 results do not guarantee future performance. You are responsible for data
 quality, assumptions, execution risk, and trading decisions.
 

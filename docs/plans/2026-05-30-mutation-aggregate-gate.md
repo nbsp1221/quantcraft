@@ -32,7 +32,7 @@
   - `uv run pytest tests/structure/repo/test_coverage_harness.py tests/structure/repo/test_poe_task_contracts.py -q`
   - `uv run poe mutation-gates`
 - Success criteria:
-  - `mutation-gates` performs one mutmut run over both `src/quantleet/trading` and `src/quantleet/backtest`.
+  - `mutation-gates` performs one mutmut run over both `src/quantcraft/trading` and `src/quantcraft/backtest`.
   - The default hard gate checks one aggregate score against the 80% threshold.
   - Targeted one-lane commands remain available for deeper investigation.
   - Documentation no longer describes the default gate as sequential per-lane enforcement.
@@ -63,7 +63,7 @@
   3. Run targeted structure and mutation-gate checks.
 - Notes:
   - `mutation-gates` maps the public `all` selector to an internal `aggregate` mutmut configuration.
-  - The aggregate config mutates `src/quantleet/trading` and `src/quantleet/backtest` in one mutmut run.
+  - The aggregate config mutates `src/quantcraft/trading` and `src/quantcraft/backtest` in one mutmut run.
   - The aggregate config uses `mutate_only_covered_lines=false` because the backtest lane previously required avoiding the covered-lines pre-pass.
   - Targeted `mutation-trading` and `mutation-backtest` commands remain available for investigation.
 - Blockers or scope changes:
@@ -82,6 +82,6 @@
   - `uv run ruff check scripts/mutation_gate.py tests/structure/repo/test_poe_task_contracts.py tests/structure/repo/test_coverage_harness.py`: passed.
   - `uv run pytest tests/structure/repo/test_coverage_harness.py tests/structure/repo/test_poe_task_contracts.py -q`: passed, `25 passed in 0.06s`.
   - `uv run poe mutation-gates`: failed as expected, `lane=aggregate total=2945 killed=2001 survived=922 no_tests=22 suspicious=0 timeout=0 segfault=0 score=67.95% threshold=80%`.
-  - Post-run cleanup: generated `mutants/` artifacts removed and the default `[tool.mutmut]` block restored to `src/quantleet/trading`.
+  - Post-run cleanup: generated `mutants/` artifacts removed and the default `[tool.mutmut]` block restored to `src/quantcraft/trading`.
 - Final disposition:
   - Complete. The default mutation gate now follows the common aggregate score policy and currently blocks at 67.95%.

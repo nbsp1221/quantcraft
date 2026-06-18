@@ -3,7 +3,7 @@
 `BacktestEngine` is the first-beta backtest entry point.
 
 ```python
-from quantleet.backtest import BacktestEngine, CostConfig
+from quantcraft.backtest import BacktestEngine, CostConfig
 
 engine = BacktestEngine(
     initial_cash=1_000.0,

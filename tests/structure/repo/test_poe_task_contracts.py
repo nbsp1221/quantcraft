@@ -1,6 +1,6 @@
 import tomllib
 
-from quantleet._repo_tools import collect_poe_task_contract_issues, poe_executor_type
+from quantcraft._repo_tools import collect_poe_task_contract_issues, poe_executor_type
 from scripts import check_docs
 from tests.support import ROOT
 
@@ -38,11 +38,11 @@ REQUIRED_POE_TASKS = [
 def write_minimal_repo_docs(tmp_path) -> None:
     (tmp_path / "README.md").write_text(
         (
-            "# quantleet\n\n## Installation\n\n"
+            "# quantcraft\n\n## Installation\n\n"
             "uv run poe check\n"
             "uv run poe perf-check\n"
             "uv run poe check-runtime\n"
-            "Quantleet is research and software tooling, not financial advice. "
+            "Quantcraft is research and software tooling, not financial advice. "
             "Backtest results do not guarantee future performance. "
             "Users are responsible for data quality, assumptions, execution risk, "
             "and trading decisions.\n"
@@ -91,7 +91,7 @@ def write_minimal_repo_docs(tmp_path) -> None:
         encoding="utf-8",
     )
     (tmp_path / "ARCHITECTURE.md").write_text(
-        "[architecture](docs/design-docs/quantleet-architecture.md)\n",
+        "[architecture](docs/design-docs/quantcraft-architecture.md)\n",
         encoding="utf-8",
     )
 
@@ -103,7 +103,7 @@ def write_minimal_repo_docs(tmp_path) -> None:
     (site_dir / "concepts").mkdir()
     (site_dir / "reference").mkdir()
     public_doc_text = (
-        "Quantleet is research and software tooling, not financial advice. "
+        "Quantcraft is research and software tooling, not financial advice. "
         "Backtest results do not guarantee future performance. "
         "Users are responsible for data quality, assumptions, execution risk, "
         "and trading decisions.\n"
@@ -128,8 +128,8 @@ def write_minimal_repo_docs(tmp_path) -> None:
             "# Design Pointers\n\n"
             "- [design-docs/index.md](design-docs/index.md)\n"
             "- [../ARCHITECTURE.md](../ARCHITECTURE.md)\n"
-            "- [design-docs/quantleet-architecture.md]"
-            "(design-docs/quantleet-architecture.md)\n"
+            "- [design-docs/quantcraft-architecture.md]"
+            "(design-docs/quantcraft-architecture.md)\n"
             "- [design-docs/architecture-governance.md]"
             "(design-docs/architecture-governance.md)\n"
             "- [product-specs/](product-specs/)\n"
@@ -189,7 +189,7 @@ def write_minimal_repo_docs(tmp_path) -> None:
             "| Governing | harness maintenance | Before changing cleanup loops, "
             "doc upkeep, or quality-tracking expectations. |\n"
             "| Architecture and bounded contexts | "
-            "[`quantleet-architecture.md`](quantleet-architecture.md) | Governing "
+            "[`quantcraft-architecture.md`](quantcraft-architecture.md) | Governing "
             "| architecture and bounded-context work | Before changing top-level "
             "contexts, dependency rules, or package ownership. |\n"
             "| Governance for docs versus checks | "
@@ -211,8 +211,8 @@ def write_minimal_repo_docs(tmp_path) -> None:
         encoding="utf-8",
     )
     (design_docs_dir / "doc-gardening.md").write_text("doc gardening\n", encoding="utf-8")
-    (design_docs_dir / "quantleet-architecture.md").write_text(
-        "quantleet architecture\n",
+    (design_docs_dir / "quantcraft-architecture.md").write_text(
+        "quantcraft architecture\n",
         encoding="utf-8",
     )
     (design_docs_dir / "architecture-governance.md").write_text(
@@ -234,7 +234,7 @@ def write_minimal_repo_docs(tmp_path) -> None:
             "| Existing market-data behavior | [`market-data.md`](market-data.md) "
             "| Governing | current implemented scope | Before changing the existing "
             "market-data codebase or its tests. |\n"
-            "| Historical ingestion under `quantleet.data` | "
+            "| Historical ingestion under `quantcraft.data` | "
             "[`data-ingestion.md`](data-ingestion.md) | Governing | current "
             "implemented scope | Before changing the shipped historical ingestion "
             "surface for exchange, CSV, and dataframe-backed backtest workflows. |\n"
@@ -345,11 +345,11 @@ def test_mutmut_configuration_targets_aggregate_contract_tests() -> None:
     mutation_score = pyproject["tool"]["mutation_score"]
 
     assert mutmut["paths_to_mutate"] == [
-        "src/quantleet/trading",
-        "src/quantleet/backtest",
-        "src/quantleet/strategy",
+        "src/quantcraft/trading",
+        "src/quantcraft/backtest",
+        "src/quantcraft/strategy",
     ]
-    assert mutmut["also_copy"] == ["src/quantleet"]
+    assert mutmut["also_copy"] == ["src/quantcraft"]
     assert mutmut["pytest_add_cli_args_test_selection"] == [
         "tests/unit/trading",
         "tests/unit/backtest",
@@ -393,7 +393,7 @@ def test_dependency_check_task_uses_deptry_pyproject_configuration() -> None:
     deptry = pyproject["tool"]["deptry"]
 
     assert tasks["dependency-check"]["cmd"] == "deptry src"
-    assert deptry["known_first_party"] == ["quantleet"]
+    assert deptry["known_first_party"] == ["quantcraft"]
     assert deptry["ignore_notebooks"] is True
     assert deptry["package_module_name_map"] == {"ta-lib": "talib"}
 
@@ -431,7 +431,7 @@ def test_repo_check_flags_missing_required_poe_task(tmp_path) -> None:
     (tmp_path / "pyproject.toml").write_text(
         """
 [project]
-name = "quantleet"
+name = "quantcraft"
 version = "0.1.0"
 
 [dependency-groups]
@@ -456,7 +456,7 @@ def test_repo_check_flags_forbidden_verify_aliases(tmp_path) -> None:
     (tmp_path / "pyproject.toml").write_text(
         """
 [project]
-name = "quantleet"
+name = "quantcraft"
 version = "0.1.0"
 
 [dependency-groups]
@@ -611,7 +611,7 @@ def test_repo_check_accepts_table_form_poe_executor(tmp_path) -> None:
     (tmp_path / "pyproject.toml").write_text(
         """
 [project]
-name = "quantleet"
+name = "quantcraft"
 version = "0.1.0"
 
 [dependency-groups]

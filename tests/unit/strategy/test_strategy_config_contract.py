@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from quantleet.strategy import (
+from quantcraft.strategy import (
     Strategy,
     StrategyConfig,
     StrategyConfigDeclarationError,
 )
-from quantleet.trading.domain.events import BarEvent
+from quantcraft.trading.domain.events import BarEvent
 
 
 def test_public_annotated_defaults_become_ordered_config_fields() -> None:

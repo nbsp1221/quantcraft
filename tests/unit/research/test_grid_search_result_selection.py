@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from quantleet.research import GridSearchResult, GridSearchRow
+from quantcraft.research import GridSearchResult, GridSearchRow
 
 
 def row(

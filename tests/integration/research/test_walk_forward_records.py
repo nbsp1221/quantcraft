@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from quantleet.research import WalkForwardStudy
+from quantcraft.research import WalkForwardStudy
 from tests.integration.research.support_parameter_studies import (
     WfaRoundTripStrategy,
     engine,

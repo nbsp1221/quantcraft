@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from quantleet.backtest import BacktestEngine
-from quantleet.data import BarSeries
-from quantleet.research import WalkForwardStudy, qc, ta
-from quantleet.strategy import Strategy, StrategyConfig
-from quantleet.trading.domain.costs import CostConfig
+from quantcraft.backtest import BacktestEngine
+from quantcraft.data import BarSeries
+from quantcraft.research import WalkForwardStudy, qc, ta
+from quantcraft.strategy import Strategy, StrategyConfig
+from quantcraft.trading.domain.costs import CostConfig
 from tests.support_backtest import load_canonical_bars
 
 _DAY = 24

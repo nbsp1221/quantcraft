@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from quantleet.backtest import BacktestEngine, CostConfig
-from quantleet.data import DataFrameDataSource
-from quantleet.strategy import Strategy, StrategyConfig, StrategyConfigMutationError
-from quantleet.trading.domain.events import BarEvent
+from quantcraft.backtest import BacktestEngine, CostConfig
+from quantcraft.data import DataFrameDataSource
+from quantcraft.strategy import Strategy, StrategyConfig, StrategyConfigMutationError
+from quantcraft.trading.domain.events import BarEvent
 
 
 class EntryConfig(StrategyConfig):

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from quantleet.data import BarSeries, TimeBar
-from quantleet.research import WalkForwardStudy
+from quantcraft.data import BarSeries, TimeBar
+from quantcraft.research import WalkForwardStudy
 from tests.unit.research.support_parameter_study import (
     CountingEngine,
     NoTradeStrategy,

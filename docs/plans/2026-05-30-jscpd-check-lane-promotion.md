@@ -19,7 +19,7 @@
   - They define the repository command surface, hard-gate expectations, active-plan workflow, and safety boundary.
 - In-repo scope:
   - Poe check sequence in `pyproject.toml`.
-  - Repo harness required task metadata in `src/quantleet/_repo_tools.py`.
+  - Repo harness required task metadata in `src/quantcraft/_repo_tools.py`.
   - Repo check documentation in `AGENTS.md` and `docs/RELIABILITY.md`.
 - Out-of-repo scope:
   - No commits, no worktree split, no threshold changes, no external service setup.

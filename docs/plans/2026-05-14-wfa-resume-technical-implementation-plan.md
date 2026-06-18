@@ -13,8 +13,8 @@ Do not add another strategy construction model, execution engine, optimizer, or
 continuous OOS account model.
 
 **Tech Stack:** Python 3.13, stdlib dataclasses/statistics/math, strict mypy,
-Ruff, pytest, `uv`, Poe, existing `quantleet.data`, `quantleet.strategy`,
-`quantleet.backtest`, and `quantleet.research` contracts.
+Ruff, pytest, `uv`, Poe, existing `quantcraft.data`, `quantcraft.strategy`,
+`quantcraft.backtest`, and `quantcraft.research` contracts.
 
 ---
 
@@ -54,8 +54,8 @@ Ruff, pytest, `uv`, Poe, existing `quantleet.data`, `quantleet.strategy`,
   define the canonical paths WFA must compose; architecture and reliability
   docs define package ownership, safety tier, and verification.
 - In-repo scope:
-  - add WFA implementation under `src/quantleet/research/`
-  - export WFA public types from `quantleet.research`
+  - add WFA implementation under `src/quantcraft/research/`
+  - export WFA public types from `quantcraft.research`
   - add focused unit, integration, structure, smoke, and docs tests
   - add only Stage 4 public documentation/examples required by the specs
   - update this plan during implementation with work log, review findings, and
@@ -121,7 +121,7 @@ Ruff, pytest, `uv`, Poe, existing `quantleet.data`, `quantleet.strategy`,
   - run `uv run poe verify-runtime`
   - obtain third-party subagent review before final completion
 - Auto-fail conditions:
-  - WFA does not live under `quantleet.research`
+  - WFA does not live under `quantcraft.research`
   - WFA creates a second strategy construction model or accepts strategy
     instances/callable factories
   - WFA bypasses `ParameterStudy` for train search or bypasses
@@ -149,7 +149,7 @@ claiming optimization, tradability, or future performance.
 
 In scope:
 
-- public `quantleet.research.WalkForwardStudy`
+- public `quantcraft.research.WalkForwardStudy`
 - public result dataclasses:
   - `WalkForwardResult`
   - `WalkForwardFold`
@@ -175,18 +175,18 @@ hidden extras.
 
 ### Current Project Structure
 
-- `src/quantleet/data/`
+- `src/quantcraft/data/`
   - owns `TimeBar`, `BarSeries`, and historical source adapters
   - WFA should accept `BarSeries` and slice it by `rows`
-- `src/quantleet/strategy/`
+- `src/quantcraft/strategy/`
   - owns `Strategy`, `StrategyConfig`, config validation, config snapshots, and
     strategy runtime authoring contracts
   - WFA should validate strategy class shape through the same expectations as
     `ParameterStudy` and `BacktestEngine`
-- `src/quantleet/backtest/`
+- `src/quantcraft/backtest/`
   - owns `BacktestEngine`, result/report objects, and historical execution
   - WFA should compose this public surface for selected OOS tests
-- `src/quantleet/research/`
+- `src/quantcraft/research/`
   - owns research ergonomics, indicators, QC helpers, and `ParameterStudy`
   - WFA belongs here as another research study
 - `tests/unit`, `tests/integration`, `tests/structure`, `tests/smoke/local`
@@ -195,7 +195,7 @@ hidden extras.
 
 ### Related Modules And Files
 
-- `src/quantleet/research/parameter_exploration.py`
+- `src/quantcraft/research/parameter_exploration.py`
   - `ParameterStudy` is the canonical finite-grid train search path
   - `GridSearchResult.best()` and `.top()` are the canonical objective-based
     selection helpers
@@ -206,24 +206,24 @@ hidden extras.
   - `_METRIC_EXTRACTORS`, `_METRIC_KEYS`, `_validate_objective`,
     `_validate_parameter_grid`, `_candidate_count`, `_validate_max_candidates`,
     `_normalize_metrics`, and `_normalize_metric` are reusable mechanics
-- `src/quantleet/backtest/engine.py`
+- `src/quantcraft/backtest/engine.py`
   - `BacktestEngine.run(...)` is the canonical selected-test execution path
   - `_materialize_strategy(...)` enforces strategy class plus config
   - `_BacktestStrategyConstructionError` wraps direct construction failures
-- `src/quantleet/backtest/results.py`
+- `src/quantcraft/backtest/results.py`
   - `BacktestResult` retains report, trade log, equity curve, and plot support
   - WFA should retain selected test results but must not stitch them into a
     continuous account
-- `src/quantleet/backtest/reporting.py`
+- `src/quantcraft/backtest/reporting.py`
   - `BacktestReport` exposes the metrics used by `ParameterStudy`
   - `RunManifest.strategy_config` is the reporting source of truth for config
     snapshots
-- `src/quantleet/data/bars.py`
+- `src/quantcraft/data/bars.py`
   - `TimeBar.timestamp` is an `int`
   - `BarSeries.rows` is a tuple of `TimeBar`
   - `BarSeries` currently validates metadata and row type, not chronological
     uniqueness
-- `src/quantleet/research/__init__.py`
+- `src/quantcraft/research/__init__.py`
   - lazy public export surface for research types
   - WFA public types should be added here
 
@@ -284,7 +284,7 @@ Implementation can reuse:
 Recommended small refactor before WFA implementation:
 
 - move shared research-study mechanics from `parameter_exploration.py` to a
-  private module `src/quantleet/research/_study_metrics.py`
+  private module `src/quantcraft/research/_study_metrics.py`
 - expose only internal names there:
   - `JSONScalar`
   - `Objective`
@@ -314,7 +314,7 @@ API small.
 - Full default verification: `uv run poe verify`
 - Runtime-sensitive verification: `uv run poe verify-runtime`
 
-Because WFA touches `src/quantleet/research` and composes the runtime-sensitive
+Because WFA touches `src/quantcraft/research` and composes the runtime-sensitive
 backtest path, final implementation verification must include
 `uv run poe verify-runtime`.
 
@@ -345,12 +345,12 @@ backtest path, final implementation verification must include
 These are implementation-detail decisions, not product-scope changes.
 
 - Public module exposure:
-  - `from quantleet.research import WalkForwardStudy`
+  - `from quantcraft.research import WalkForwardStudy`
   - `WalkForwardResult`, `WalkForwardFold`, `WalkForwardDiagnostic`,
     `WalkForwardOosSummary`, and `WalkForwardExecutionScale` are also exported
-    from `quantleet.research`
+    from `quantcraft.research`
 - Implementation file:
-  - create `src/quantleet/research/walk_forward.py`
+  - create `src/quantcraft/research/walk_forward.py`
 - `WalkForwardStudy.__init__`:
   ```python
   WalkForwardStudy(
@@ -596,12 +596,12 @@ Modify:
 
 - `tests/smoke/local/test_public_imports.py`
   - assert `WalkForwardStudy` and result/diagnostic types are available from
-    `quantleet.research`
+    `quantcraft.research`
 
 Create:
 
 - `tests/structure/architecture/test_walk_forward_boundaries.py`
-  - WFA implementation lives under `src/quantleet/research`
+  - WFA implementation lives under `src/quantcraft/research`
   - `backtest`, `trading`, and `execution` do not import WFA
   - `BacktestEngine` does not gain WFA/optimizer methods
   - WFA signature omits deferred controls such as `source`, parallel workers,
@@ -614,11 +614,11 @@ Create:
 ## Migration And Compatibility Considerations
 
 - This is pre-beta Stage 4 planning; no legacy WFA API exists.
-- Adding public names to `quantleet.research` is additive.
+- Adding public names to `quantcraft.research` is additive.
 - Existing `ParameterStudy` public behavior must remain compatible. If shared
   helper extraction changes it, existing parameter exploration tests must catch
   regressions.
-- No changes should be made to root `quantleet` exports.
+- No changes should be made to root `quantcraft` exports.
 - No new runtime dependencies are required.
 - No persistence or data migration is needed.
 
@@ -652,8 +652,8 @@ Create:
 
 **Files:**
 
-- Create: `src/quantleet/research/_study_metrics.py`
-- Modify: `src/quantleet/research/parameter_exploration.py`
+- Create: `src/quantcraft/research/_study_metrics.py`
+- Modify: `src/quantcraft/research/parameter_exploration.py`
 - Test: existing parameter exploration tests
 
 Steps:
@@ -670,7 +670,7 @@ Steps:
 
 **Files:**
 
-- Create: `src/quantleet/research/walk_forward.py`
+- Create: `src/quantcraft/research/walk_forward.py`
 - Create: `tests/unit/research/test_walk_forward_windows.py`
 - Create: `tests/unit/research/test_walk_forward_preflight.py`
 
@@ -687,7 +687,7 @@ Steps:
 
 **Files:**
 
-- Modify: `src/quantleet/research/walk_forward.py`
+- Modify: `src/quantcraft/research/walk_forward.py`
 - Create: `tests/integration/research/test_walk_forward_study.py`
 - Create: `tests/integration/research/test_walk_forward_failures.py`
 
@@ -706,7 +706,7 @@ Steps:
 
 **Files:**
 
-- Modify: `src/quantleet/research/walk_forward.py`
+- Modify: `src/quantcraft/research/walk_forward.py`
 - Create: `tests/unit/research/test_walk_forward_result_summary.py`
 - Create: `tests/unit/research/test_walk_forward_diagnostics.py`
 
@@ -723,7 +723,7 @@ Steps:
 
 **Files:**
 
-- Modify: `src/quantleet/research/walk_forward.py`
+- Modify: `src/quantcraft/research/walk_forward.py`
 - Create: `tests/unit/research/test_walk_forward_records.py`
 - Create: `tests/integration/research/test_walk_forward_records.py`
 
@@ -741,7 +741,7 @@ Steps:
 
 **Files:**
 
-- Modify: `src/quantleet/research/__init__.py`
+- Modify: `src/quantcraft/research/__init__.py`
 - Modify: `tests/smoke/local/test_public_imports.py`
 - Create: `tests/structure/architecture/test_walk_forward_boundaries.py`
 
@@ -807,7 +807,7 @@ No product-scope human questions remain before implementation.
 
 The implementation plan closes the remaining technical details as follows:
 
-- public export surface: `quantleet.research`
+- public export surface: `quantcraft.research`
 - timestamp record representation: integer timestamps
 - diagnostic codes: snake-case stable strings listed above
 - no-closed-trades severity: `info`
@@ -876,7 +876,7 @@ pause and bring that specific question back to the user.
     identified result-level `mode`, `train_size`, `test_size`, and resolved
     `step_size` metadata plus a stale plan stage name; both were fixed before
     final verification.
-  - WFA remains under `quantleet.research`, composes `ParameterStudy` and
+  - WFA remains under `quantcraft.research`, composes `ParameterStudy` and
     `BacktestEngine.run(strategy=..., config=...)`, and does not introduce a
     second strategy construction or execution path.
 - Verification evidence:

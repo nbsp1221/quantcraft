@@ -10,7 +10,7 @@
 
 ## Planner Contract
 
-- Goal: Document how `quantleet` should evaluate test-code quality before
+- Goal: Document how `quantcraft` should evaluate test-code quality before
   raising future feature gates.
 - Governing docs:
   - `AGENTS.md`

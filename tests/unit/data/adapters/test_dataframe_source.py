@@ -17,17 +17,17 @@ class FakeDataFrame:
 
 
 def _dataframe_source_type() -> type:
-    data_module = importlib.import_module("quantleet.data")
+    data_module = importlib.import_module("quantcraft.data")
     return data_module.DataFrameDataSource
 
 
 def _time_bar_type() -> type:
-    data_module = importlib.import_module("quantleet.data")
+    data_module = importlib.import_module("quantcraft.data")
     return data_module.TimeBar
 
 
 def _bar_series_type() -> type:
-    data_module = importlib.import_module("quantleet.data")
+    data_module = importlib.import_module("quantcraft.data")
     return data_module.BarSeries
 
 

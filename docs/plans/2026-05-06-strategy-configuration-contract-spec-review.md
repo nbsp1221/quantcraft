@@ -142,7 +142,7 @@
     ambiguous, and conflicting config declarations.
   - Added an architecture constraint that the chosen package path must be legal
     for future `execution` usage and must not force execution to depend on
-    `quantleet.research`.
+    `quantcraft.research`.
   - Relabeled study preflight as a search-space validation contract that Stage 2
     wires into `ParameterStudy`.
   - Added explicit supersession wording for future canonical

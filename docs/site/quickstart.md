@@ -4,10 +4,10 @@ This quickstart runs a single-symbol SMA crossover backtest from in-memory
 OHLCV data.
 
 ```python
-from quantleet.backtest import BacktestEngine, CostConfig
-from quantleet.data import DataFrameDataSource
-from quantleet.research import qc, ta
-from quantleet.strategy import Strategy
+from quantcraft.backtest import BacktestEngine, CostConfig
+from quantcraft.data import DataFrameDataSource
+from quantcraft.research import qc, ta
+from quantcraft.strategy import Strategy
 
 
 class SmaCrossStrategy(Strategy):
@@ -53,6 +53,6 @@ with price, fills, equity, and drawdown panels.
 
 ## Financial Disclaimer
 
-Quantleet is research and software tooling, not financial advice. Backtest
+Quantcraft is research and software tooling, not financial advice. Backtest
 results do not guarantee future performance. You are responsible for data quality,
 assumptions, execution risk, and trading decisions.

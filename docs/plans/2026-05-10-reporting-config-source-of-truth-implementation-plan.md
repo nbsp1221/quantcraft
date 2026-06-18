@@ -7,14 +7,14 @@
 execution-config truth for direct backtests and retained `ParameterStudy`
 backtests.
 
-**Architecture:** Keep `StrategyConfig` ownership in `quantleet.strategy`,
-historical report construction in `quantleet.backtest`, and study composition in
-`quantleet.research`. The implementation reuses `StrategyConfig.to_mapping()`
+**Architecture:** Keep `StrategyConfig` ownership in `quantcraft.strategy`,
+historical report construction in `quantcraft.backtest`, and study composition in
+`quantcraft.research`. The implementation reuses `StrategyConfig.to_mapping()`
 as the only snapshot source and removes the old `Strategy.parameters()` report
 path instead of adding an adapter, alias, or compatibility layer.
 
 **Tech Stack:** Python 3.13, dataclasses, pytest, mypy strict mode, Ruff,
-Poe/uv repository verification, existing Quantleet `Strategy`, `StrategyConfig`,
+Poe/uv repository verification, existing Quantcraft `Strategy`, `StrategyConfig`,
 `BacktestEngine`, `BacktestReport`, and `ParameterStudy` surfaces.
 
 ---
@@ -49,7 +49,7 @@ Poe/uv repository verification, existing Quantleet `Strategy`, `StrategyConfig`,
     default-engine setup, keeping assertions focused on report behavior.
   - Verification passed:
     `uv run pytest tests/integration/research/test_backtest_result_reporting_contract.py tests/unit/backtest/test_strategy_like_report_config_validation.py -q`
-    (`10 passed`), `uv run ruff check src/quantleet/backtest/engine.py tests/integration/research/test_backtest_result_reporting_contract.py`,
+    (`10 passed`), `uv run ruff check src/quantcraft/backtest/engine.py tests/integration/research/test_backtest_result_reporting_contract.py`,
     `uv run mypy src`, `git diff --check`, and
     `uv run poe verify-runtime` (`693 passed, 4 skipped`, coverage policy
     passed, build/repo/notebook/perf checks passed).
@@ -89,8 +89,8 @@ Poe/uv repository verification, existing Quantleet `Strategy`, `StrategyConfig`,
   - Reliability docs require runtime-sensitive verification for backtest and
     research changes.
 - In-repo scope:
-  - Source changes under `src/quantleet/strategy`, `src/quantleet/backtest`,
-    and current `src/quantleet/research` call sites only as required by the
+  - Source changes under `src/quantcraft/strategy`, `src/quantcraft/backtest`,
+    and current `src/quantcraft/research` call sites only as required by the
     Stage 3 contract.
   - Tests under existing `tests/unit`, `tests/integration`, `tests/structure`,
     and `tests/smoke/local` taxonomy.
@@ -179,13 +179,13 @@ Poe/uv repository verification, existing Quantleet `Strategy`, `StrategyConfig`,
 
 ### Project Structure
 
-- The package is a Python 3.13 library under `src/quantleet`.
+- The package is a Python 3.13 library under `src/quantcraft`.
 - Capability roots are `data`, `trading`, `research`, `strategy`, `backtest`,
   `execution`, and `integrations`.
 - Relevant Tier B roots for this work:
-  - `src/quantleet/strategy`: shared strategy authoring and config contract.
-  - `src/quantleet/backtest`: historical runtime, result, report, and plotting.
-  - `src/quantleet/research`: `ParameterStudy` composition and study records.
+  - `src/quantcraft/strategy`: shared strategy authoring and config contract.
+  - `src/quantcraft/backtest`: historical runtime, result, report, and plotting.
+  - `src/quantcraft/research`: `ParameterStudy` composition and study records.
 - Tests use the existing taxonomy:
   - `tests/unit`
   - `tests/integration`
@@ -198,38 +198,38 @@ Poe/uv repository verification, existing Quantleet `Strategy`, `StrategyConfig`,
 
 ### Relevant Domain Files
 
-- `src/quantleet/strategy/config.py`
+- `src/quantcraft/strategy/config.py`
   - Defines `StrategyConfig`, `JSONConfigScalar`, config validation errors,
     immutable materialized snapshots, and `StrategyConfig.to_mapping()`.
   - This is the canonical snapshot source to reuse.
-- `src/quantleet/strategy/strategy.py`
+- `src/quantcraft/strategy/strategy.py`
   - Defines `Strategy[ConfigT]`, config declaration resolution, config
     materialization, runtime state reset, `display_name`, and the old
     `parameters()` method.
   - Stage 3 must remove the base `parameters()` method.
-- `src/quantleet/backtest/strategy_runtime.py`
+- `src/quantcraft/backtest/strategy_runtime.py`
   - Defines `StrategyLike` and `_StrategyDriver`.
   - `StrategyLike` currently requires `parameters()`. It must require
     `config: StrategyConfig` instead.
   - This is the right place for a small private strategy-like config validation
     helper because it owns runtime strategy protocol shape.
-- `src/quantleet/backtest/engine.py`
+- `src/quantcraft/backtest/engine.py`
   - Public `BacktestEngine.run(...)` entry point.
   - Keep the signature unchanged. Add validation through the runtime helper
     before `_run_backtest(...)` starts.
-- `src/quantleet/backtest/runtime.py`
+- `src/quantcraft/backtest/runtime.py`
   - `_run_backtest(...)` creates `_ReportBuilder`, runs `_StrategyDriver`, then
     calls `report_builder.build(..., strategy=strategy, ...)`.
   - No new report path is needed. The existing handoff to `_ReportBuilder` is
     the canonical path.
-- `src/quantleet/backtest/reporting.py`
+- `src/quantcraft/backtest/reporting.py`
   - Defines `RunManifest` with current `strategy_parameters`.
   - `_ReportBuilder.build(...)` currently sets
     `strategy_parameters=_strategy_parameters(strategy)`.
   - `_strategy_parameters(...)` currently calls `strategy.parameters()`.
   - Replace this with `strategy_config=_strategy_config(strategy)` using
     `strategy.config.to_mapping()`.
-- `src/quantleet/research/parameter_exploration.py`
+- `src/quantcraft/research/parameter_exploration.py`
   - `ParameterStudy` already materializes candidates as `StrategyConfig`
     instances and records `strategy_config=MappingProxyType(config.to_mapping())`.
   - `_row_to_record(...)` already exports `strategy_config`.
@@ -256,10 +256,10 @@ Poe/uv repository verification, existing Quantleet `Strategy`, `StrategyConfig`,
 ### Current Stale Surface Found
 
 - Source:
-  - `src/quantleet/strategy/strategy.py` defines `Strategy.parameters()`.
-  - `src/quantleet/backtest/strategy_runtime.py` requires `parameters()` in
+  - `src/quantcraft/strategy/strategy.py` defines `Strategy.parameters()`.
+  - `src/quantcraft/backtest/strategy_runtime.py` requires `parameters()` in
     `StrategyLike`.
-  - `src/quantleet/backtest/reporting.py` has `strategy_parameters` and calls
+  - `src/quantcraft/backtest/reporting.py` has `strategy_parameters` and calls
     `_strategy_parameters(strategy)`.
 - Tests:
   - Backtest reporting tests assert `report.run.strategy_parameters`.
@@ -318,7 +318,7 @@ serialization is explicitly out of Stage 3 scope.
 
 ### Strategy-Like Validation
 
-Add a small private helper in `src/quantleet/backtest/strategy_runtime.py`:
+Add a small private helper in `src/quantcraft/backtest/strategy_runtime.py`:
 
 ```python
 def validate_strategy_like_config(strategy: object) -> StrategyConfig:
@@ -425,26 +425,26 @@ This avoids adding repository workflow surface for a single slice.
 
 ### Production Code
 
-- `src/quantleet/strategy/strategy.py`
+- `src/quantcraft/strategy/strategy.py`
   - Remove base `parameters()`.
   - Keep `display_name`.
   - Do not change config materialization or runtime order APIs.
-- `src/quantleet/backtest/strategy_runtime.py`
+- `src/quantcraft/backtest/strategy_runtime.py`
   - Update `StrategyLike` to require `config: StrategyConfig`.
   - Remove `parameters()` from the protocol.
   - Add private config-validation helper.
-- `src/quantleet/backtest/engine.py`
+- `src/quantcraft/backtest/engine.py`
   - Call the validation helper in `BacktestEngine.run(...)`.
   - Keep the public signature unchanged.
-- `src/quantleet/backtest/reporting.py`
+- `src/quantcraft/backtest/reporting.py`
   - Replace `RunManifest.strategy_parameters` with `strategy_config`.
   - Replace `_strategy_parameters(...)` with `_strategy_config(...)`.
   - Remove old NaN-normalization behavior for strategy metadata because
     `StrategyConfig` rejects non-finite float values upstream.
-- `src/quantleet/backtest/__init__.py`
+- `src/quantcraft/backtest/__init__.py`
   - No planned public export change unless type names need import ordering
     cleanup after `RunManifest` changes.
-- `src/quantleet/research/parameter_exploration.py`
+- `src/quantcraft/research/parameter_exploration.py`
   - No planned data-flow change.
   - Update only if mypy or tests expose a stale report-field reference.
 
@@ -471,7 +471,7 @@ This avoids adding repository workflow surface for a single slice.
 - `tests/unit/research/test_strategy_surface.py`
   - This older research-surface test currently asserts `parameters()`.
     Update it to `display_name` only or move config assertions to
-    `quantleet.strategy`.
+    `quantcraft.strategy`.
 - `tests/fixtures/backtest/canonical_report_snapshots.json`
   - Rename `strategy_parameters` keys to `strategy_config`.
   - Expected values are `{}` for current config-less canonical strategies unless
@@ -613,10 +613,10 @@ Expected: failures show missing validation and old base method.
 
 **Files:**
 
-- Modify: `src/quantleet/strategy/strategy.py`
-- Modify: `src/quantleet/backtest/strategy_runtime.py`
-- Modify: `src/quantleet/backtest/engine.py`
-- Modify: `src/quantleet/backtest/reporting.py`
+- Modify: `src/quantcraft/strategy/strategy.py`
+- Modify: `src/quantcraft/backtest/strategy_runtime.py`
+- Modify: `src/quantcraft/backtest/engine.py`
+- Modify: `src/quantcraft/backtest/reporting.py`
 
 **Implementation notes:**
 

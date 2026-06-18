@@ -9,7 +9,7 @@
 
 ## Planner Contract
 
-- Goal: Promote the first mutation expansion target, `src/quantleet/backtest`, into the repo-local check surface so `uv run poe check` fails on the current survivor baseline.
+- Goal: Promote the first mutation expansion target, `src/quantcraft/backtest`, into the repo-local check surface so `uv run poe check` fails on the current survivor baseline.
 - Governing docs:
   - `AGENTS.md`
   - `docs/RELIABILITY.md`
@@ -67,8 +67,8 @@
 
 - Findings:
   - `mutation-backtest` is now part of the default `uv run poe check` hard-gate sequence.
-  - The default `[tool.mutmut]` block remains targeted at `src/quantleet/trading`; the backtest lane applies its target only during wrapper execution and restores the file afterward.
-  - The new gate fails for mutation evidence, not for command wiring or configuration: `survived=798` and `no_tests=22` for `src/quantleet/backtest`.
+  - The default `[tool.mutmut]` block remains targeted at `src/quantcraft/trading`; the backtest lane applies its target only during wrapper execution and restores the file afterward.
+  - The new gate fails for mutation evidence, not for command wiring or configuration: `survived=798` and `no_tests=22` for `src/quantcraft/backtest`.
 - Verification evidence:
   - `uv run ruff check scripts/mutation_gate.py tests/structure/repo/test_poe_task_contracts.py`: passed.
   - `uv run pytest tests/structure/repo/test_coverage_harness.py tests/structure/repo/test_poe_task_contracts.py -q`: passed, `23 passed`.

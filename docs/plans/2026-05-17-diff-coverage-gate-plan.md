@@ -119,17 +119,17 @@
 
 ## Experiment Summary
 
-- Experiment location: `/tmp/quantleet-diffcov-exp`
+- Experiment location: `/tmp/quantcraft-diffcov-exp`
 - Base commit: `93c2f1b`
 - Probe changes:
   - staged new source file:
-    `src/quantleet/research/_diffcov_staged_new.py`
+    `src/quantcraft/research/_diffcov_staged_new.py`
   - untracked new source file:
-    `src/quantleet/research/_diffcov_untracked_new.py`
+    `src/quantcraft/research/_diffcov_untracked_new.py`
   - staged modified source file:
-    `src/quantleet/research/series.py`
+    `src/quantcraft/research/series.py`
   - unstaged modified source file:
-    `src/quantleet/research/qc.py`
+    `src/quantcraft/research/qc.py`
 - Probe result with `--include-untracked`:
   - `Total: 26 lines`
   - `Missing: 8 lines`

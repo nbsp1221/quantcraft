@@ -251,13 +251,13 @@ Initial assessment:
 
 Question:
 
-- When should Quantleet expose `oos_summary` versus `oos_report`, and what
+- When should Quantcraft expose `oos_summary` versus `oos_report`, and what
   account-continuity semantics does each name imply?
 
 Why it matters for WFA:
 
 - The MVP should emphasize `oos_summary` because fold tests may be independent.
-- A future `oos_report` may be valid if Quantleet defines continuous
+- A future `oos_report` may be valid if Quantcraft defines continuous
   OOS-equity/account semantics.
 - Incorrect naming can mislead users into believing WFA output is a live-like
   continuous account simulation.

@@ -4,12 +4,12 @@ Date: 2026-05-18
 
 ## Question
 
-Quantleet currently has two coverage gates:
+Quantcraft currently has two coverage gates:
 
 - full-project combined line/branch coverage must stay at or above `90%`
 - changed-line coverage for the current diff must stay at or above `80%`
 
-This research evaluates whether Quantleet should also add a baseline-relative
+This research evaluates whether Quantcraft should also add a baseline-relative
 coverage regression gate:
 
 ```text
@@ -42,7 +42,7 @@ its `threshold` setting allows a configured coverage drop before failing the
 status check.
 
 Codecov's patch coverage status is separate: it measures adjusted lines in the
-pull request or commit. That separation matches Quantleet's current split
+pull request or commit. That separation matches Quantcraft's current split
 between full-project coverage and changed-line coverage.
 
 Codecov support material also documents a real failure mode where patch coverage
@@ -70,7 +70,7 @@ Python-local tools are less complete:
   baseline file, blocks coverage regressions, and documents committing that
   baseline file to version control. Its GitHub repository currently has `0`
   stars, so it is useful prior art but not a dependency candidate under
-  Quantleet's `>= 100` star adoption rule.
+  Quantcraft's `>= 100` star adoption rule.
 - Kubeflow Pipelines uses `frontend/scripts/coverage-baseline.mjs` and writes a
   `.coverage-baseline.json` artifact for coverage baseline capture and
   comparison. The repository has more than `4,000` GitHub stars, so this is
@@ -83,9 +83,9 @@ Python-local tools are less complete:
 - `jest-coverage-ratchet` shows the same ratchet idea in the JavaScript
   ecosystem by updating thresholds upward when coverage improves
 
-## Design Implications For Quantleet
+## Design Implications For Quantcraft
 
-A regression gate is meaningful if Quantleet can produce a reliable base
+A regression gate is meaningful if Quantcraft can produce a reliable base
 coverage number and compare it against the current work without adding too much
 local latency.
 
@@ -103,7 +103,7 @@ The real implementation question is how to obtain `base_total_coverage`:
 - rely on CI services such as Codecov
 - cache the baseline locally and invalidate it when the baseline commit changes
 
-For Quantleet's local agent harness, relying only on a hosted service is not
+For Quantcraft's local agent harness, relying only on a hosted service is not
 enough. Agents need local feedback. A local implementation therefore needs a
 repeatable base/head measurement strategy.
 

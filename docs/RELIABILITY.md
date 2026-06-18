@@ -102,20 +102,20 @@ The performance gate is explicit:
 Run `uv run poe check-runtime` when a change touches the runtime-sensitive
 backtest or research path, especially:
 
-- `src/quantleet/backtest/engine.py`
-- `src/quantleet/backtest/runtime.py`
-- `src/quantleet/backtest/execution_model.py`
-- `src/quantleet/backtest/order_activation.py`
-- `src/quantleet/backtest/strategy_runtime.py`
-- `src/quantleet/research/ta.py`
-- `src/quantleet/research/strategy.py`
-- `src/quantleet/research/indicators/runtime/runtime.py`
-- `src/quantleet/research/indicators/runtime/factory.py`
-- `src/quantleet/research/indicators/pure/`
+- `src/quantcraft/backtest/engine.py`
+- `src/quantcraft/backtest/runtime.py`
+- `src/quantcraft/backtest/execution_model.py`
+- `src/quantcraft/backtest/order_activation.py`
+- `src/quantcraft/backtest/strategy_runtime.py`
+- `src/quantcraft/research/ta.py`
+- `src/quantcraft/research/strategy.py`
+- `src/quantcraft/research/indicators/runtime/runtime.py`
+- `src/quantcraft/research/indicators/runtime/factory.py`
+- `src/quantcraft/research/indicators/pure/`
 
 ## Coverage Guardrail
 
-The repository treats coverage as a repo-local reliability floor for source code under `quantleet`.
+The repository treats coverage as a repo-local reliability floor for source code under `quantcraft`.
 
 - coverage.py branch measurement must remain enabled
 - coverage.py's combined line/branch total must stay at or above `90%`

@@ -8,7 +8,7 @@
 
 Related documents:
 
-- [../design-docs/quantleet-architecture.md](../design-docs/quantleet-architecture.md)
+- [../design-docs/quantcraft-architecture.md](../design-docs/quantcraft-architecture.md)
 - [../design-docs/architecture-governance.md](../design-docs/architecture-governance.md)
 - [backtest-mvp.md](backtest-mvp.md)
 - [backtest-plotting.md](backtest-plotting.md)
@@ -34,7 +34,7 @@ Build a usable research surface on top of the current backtest kernel so that:
 
 ## Why This Slice Exists
 
-`quantleet` already has a deterministic single-symbol backtest MVP, but it is still weak compared with established Python backtesting libraries in the following areas:
+`quantcraft` already has a deterministic single-symbol backtest MVP, but it is still weak compared with established Python backtesting libraries in the following areas:
 
 - strategy-writing ergonomics
 - time-series access surface
@@ -84,28 +84,28 @@ trading stay outside the first beta.
 
 ## Official Import Surface
 
-The official user-facing research ergonomics surface lives under `quantleet.research`.
-The canonical strategy authoring base lives under `quantleet.strategy`.
-The canonical backtest runtime surface lives under `quantleet.backtest`.
+The official user-facing research ergonomics surface lives under `quantcraft.research`.
+The canonical strategy authoring base lives under `quantcraft.strategy`.
+The canonical backtest runtime surface lives under `quantcraft.backtest`.
 
 Recommended import:
 
 ```python
-from quantleet.backtest import BacktestEngine
-from quantleet.research import ParameterStudy, ta, qc
-from quantleet.strategy import Strategy
+from quantcraft.backtest import BacktestEngine
+from quantcraft.research import ParameterStudy, ta, qc
+from quantcraft.strategy import Strategy
 ```
 
 This slice does not promote:
 
-- root-level kitchen-sink imports such as `from quantleet import ta, qc`
+- root-level kitchen-sink imports such as `from quantcraft import ta, qc`
 - root-level `Strategy` imports
 
 ### Backtest Entry Surface
 
 The preferred public execution entry for the current research workflow is:
 
-- `quantleet.backtest.BacktestEngine`
+- `quantcraft.backtest.BacktestEngine`
 
 Approved execution paths:
 
@@ -114,9 +114,9 @@ Approved execution paths:
 
 Current rules:
 
-- `bars` must be `quantleet.data.BarSeries`
-- the canonical single-bar type is `quantleet.data.TimeBar`
-- `BarSeries.rows` must be `tuple[quantleet.data.TimeBar, ...]`
+- `bars` must be `quantcraft.data.BarSeries`
+- the canonical single-bar type is `quantcraft.data.TimeBar`
+- `BarSeries.rows` must be `tuple[quantcraft.data.TimeBar, ...]`
 - `source.load()` returns `BarSeries`
 - the engine does not expose public `bar_type`
 - the current historical backtest path fixes bar type internally to `time`
@@ -163,7 +163,7 @@ They are reference workflows, not automatically all strict merge gates.
 ### Strategy Type
 
 The user-facing strategy surface is an abstract base class named `Strategy`.
-Its canonical import path is `quantleet.strategy.Strategy`.
+Its canonical import path is `quantcraft.strategy.Strategy`.
 
 Users define strategies by subclassing `Strategy`.
 
@@ -361,7 +361,7 @@ Rules:
 
 Users should not import third-party indicator libraries directly as the canonical research path.
 
-The public indicator contract is owned by `quantleet` and exposed through `ta.*`.
+The public indicator contract is owned by `quantcraft` and exposed through `ta.*`.
 
 The approved baseline signatures are:
 
@@ -375,7 +375,7 @@ The approved baseline signatures are:
 
 Rules:
 
-- the public contract belongs to `quantleet`
+- the public contract belongs to `quantcraft`
 - `TA-Lib` semantics are the canonical truth for warmup, lookback, seed, and `NaN` behavior
 - internal implementations may wrap `TA-Lib` or another calculation backend
 - external dependencies are implementation details, not public API ownership
@@ -593,7 +593,7 @@ Rules:
 - the document is the system of record
 - the notebook is an executable supporting artifact
 - the notebook must not define a competing contract
-- lower-layer setup imports used to construct example input data must be labeled as supporting setup types, not as part of the `quantleet.research` public import surface
+- lower-layer setup imports used to construct example input data must be labeled as supporting setup types, not as part of the `quantcraft.research` public import surface
 
 ### Canonical Quickstart Examples
 

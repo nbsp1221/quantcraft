@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantleet.backtest import BacktestResult, BacktestStrategyConstructionError
-from quantleet.data import BarSeries
-from quantleet.research import WalkForwardStudy
-from quantleet.strategy import Strategy, StrategyConfig
+from quantcraft.backtest import BacktestResult, BacktestStrategyConstructionError
+from quantcraft.data import BarSeries
+from quantcraft.research import WalkForwardStudy
+from quantcraft.strategy import Strategy, StrategyConfig
 from tests.integration.research.support_parameter_studies import (
     WfaRoundTripStrategy,
     engine,

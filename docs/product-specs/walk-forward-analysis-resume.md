@@ -26,7 +26,7 @@ technical implementation plan.
 
 ## Background And Problem Definition
 
-Quantleet can already run deterministic single-symbol backtests and compare a
+Quantcraft can already run deterministic single-symbol backtests and compare a
 finite strategy-parameter grid through `ParameterStudy`. That is enough to ask
 "which candidate performed best on this historical range?" It is not enough to
 ask the more important research-validation question:
@@ -51,7 +51,7 @@ account simulation.
 
 ## Goals
 
-- Provide Quantleet's first official walk-forward validation workflow.
+- Provide Quantcraft's first official walk-forward validation workflow.
 - Let users repeatedly select parameters on an in-sample training window and
   evaluate the selected config on the following out-of-sample test window.
 - Compose the existing `BacktestEngine`, `ParameterStudy`, `Strategy`, and
@@ -104,7 +104,7 @@ They want to:
 - understand failures without losing the rest of the validation run
 - export stable structured records without depending on pandas
 
-They are not asking Quantleet to declare a strategy profitable or tradable.
+They are not asking Quantcraft to declare a strategy profitable or tradable.
 They are asking for a careful validation study that makes overfitting harder to
 hide.
 
@@ -134,7 +134,7 @@ hide.
 
 ### Public Entry Surface
 
-The first workflow is a study object under `quantleet.research`:
+The first workflow is a study object under `quantcraft.research`:
 
 ```python
 study = WalkForwardStudy(
@@ -481,7 +481,7 @@ The product slice is successful when a user can:
 The following sources were used to close questions that do not require a human
 product decision:
 
-- Quantleet `ParameterStudy` already retains successful row `BacktestResult`
+- Quantcraft `ParameterStudy` already retains successful row `BacktestResult`
   objects, exposes `GridSearchResult.to_records()`, preserves metric states,
   validates `max_candidates`, and records `error_type` plus `error_message`.
 - PyBroker documents walk-forward analysis as splitting supplied data into
@@ -515,10 +515,10 @@ Source links:
 
 Local source snapshots inspected:
 
-- `/tmp/quantleet-wfa-research/pybroker/src/pybroker/strategy.py`
-- `/tmp/quantleet-wfa-research/backtesting.py/backtesting/backtesting.py`
-- `/tmp/quantleet-wfa-research/backtrader/backtrader/cerebro.py`
-- `/tmp/quantleet-wfa-research/vectorbt/vectorbt/records/base.py`
+- `/tmp/quantcraft-wfa-research/pybroker/src/pybroker/strategy.py`
+- `/tmp/quantcraft-wfa-research/backtesting.py/backtesting/backtesting.py`
+- `/tmp/quantcraft-wfa-research/backtrader/backtrader/cerebro.py`
+- `/tmp/quantcraft-wfa-research/vectorbt/vectorbt/records/base.py`
 
 ## Evidence-Based Decisions
 
@@ -529,7 +529,7 @@ review explicitly reopens them.
 
 1. Each successful selected test fold retains the full `BacktestResult`.
 
-   Rationale: Quantleet `ParameterStudy` already retains successful row
+   Rationale: Quantcraft `ParameterStudy` already retains successful row
    backtests for inspectability. PyBroker also returns rich result artifacts
    for walk-forward/backtest runs. Dropping selected test results would make WFA
    less inspectable than the current single-slice study.
@@ -544,7 +544,7 @@ review explicitly reopens them.
 3. The first slice does not expose a memory-light result mode.
 
    Rationale: Backtrader proves that lightweight optimization result modes are
-   useful, but they are an additional product mode. Quantleet should first ship
+   useful, but they are an additional product mode. Quantcraft should first ship
    the more inspectable behavior that matches its current research API, then add
    memory-light retention only if measured memory pressure justifies it.
 
@@ -577,7 +577,7 @@ review explicitly reopens them.
    Backtesting.py exposes `max_tries` for optimization but lets exhaustive grid
    search run by default, PyBroker exposes `windows` without a separate total
    run cap, and Backtrader focuses on memory/performance controls such as
-   `optreturn` and `exactbars`. Quantleet should still let advanced users set a
+   `optreturn` and `exactbars`. Quantcraft should still let advanced users set a
    cap explicitly when they want one.
 
 8. The total-run guardrail counts planned train candidate backtests plus one
@@ -618,7 +618,7 @@ review explicitly reopens them.
 
 13. A fold with rejected candidates but one selected eligible row is successful.
 
-    Rationale: constraints are normal search behavior in both Quantleet and
+    Rationale: constraints are normal search behavior in both Quantcraft and
     Backtesting.py.
 
 14. A fold with failed train candidates but one selected eligible row is
@@ -687,7 +687,7 @@ review explicitly reopens them.
 23. `oos_summary` includes state counts for undefined, positive-infinity, and
     negative-infinity metric states.
 
-    Rationale: Quantleet already preserves metric states in `ParameterStudy`;
+    Rationale: Quantcraft already preserves metric states in `ParameterStudy`;
     silently coercing those values would hide important validation facts.
 
 24. `oos_summary` includes a positive-fold ratio for `returns.total_return`.
@@ -721,7 +721,7 @@ review explicitly reopens them.
 
     Rationale: comparison libraries generally provide metrics, records,
     analyzers, or bootstrap outputs and leave strategy-quality interpretation to
-    the user. Quantleet should avoid overclaiming by automatically judging
+    the user. Quantcraft should avoid overclaiming by automatically judging
     strategy quality in the first WFA slice.
 
 29. Required fact-based diagnostics are fold execution failure, no selected
@@ -744,7 +744,7 @@ review explicitly reopens them.
     parameter-stability evidence.
 
     Rationale: users can see whether selected configs repeat or jump around
-    fold by fold without Quantleet inventing a stability score or threshold.
+    fold by fold without Quantcraft inventing a stability score or threshold.
     A separate stability summary can be added later if real usage shows that
     users need a more compressed view.
 
@@ -807,7 +807,7 @@ review explicitly reopens them.
 41. Pandas `to_frame()` is not part of the first slice.
 
     Rationale: VectorBT and PyBroker rely heavily on dataframe outputs, but
-    Quantleet's first-beta contract already prefers portable records and avoids
+    Quantcraft's first-beta contract already prefers portable records and avoids
     pandas-only canonical output.
 
 ### Fold Boundary Records
@@ -889,5 +889,5 @@ Future slices may reopen:
 
 - WFA-level total-run default limits if runtime evidence shows users need a
   stronger safety brake than transparent planned-run metadata.
-- threshold-based robustness diagnostics if Quantleet deliberately chooses a
+- threshold-based robustness diagnostics if Quantcraft deliberately chooses a
   more opinionated validation-warning product.

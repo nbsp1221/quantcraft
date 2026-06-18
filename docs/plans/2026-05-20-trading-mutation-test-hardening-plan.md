@@ -53,10 +53,10 @@
 - In-repo scope:
   - Add or strengthen unit tests under `tests/unit/trading/`.
   - Target these existing production modules without changing their behavior:
-    - `src/quantleet/trading/domain/state.py`
-    - `src/quantleet/trading/sizing.py`
-    - `src/quantleet/trading/order_requests.py`
-    - optionally `src/quantleet/trading/domain/matching.py` if earlier
+    - `src/quantcraft/trading/domain/state.py`
+    - `src/quantcraft/trading/sizing.py`
+    - `src/quantcraft/trading/order_requests.py`
+    - optionally `src/quantcraft/trading/domain/matching.py` if earlier
       survivor clusters are resolved cleanly.
   - Use `uv run poe mutation-trading` as the before/after evidence command.
   - Classify remaining survivors into real gaps, equivalent/noisy mutants, or
@@ -120,11 +120,11 @@ Survivors by module:
 
 | Module | Killed | Survived | Total | Score |
 | --- | ---: | ---: | ---: | ---: |
-| `quantleet.trading.domain.intents` | 5 | 0 | 5 | 100.0% |
-| `quantleet.trading.domain.matching` | 104 | 8 | 112 | 92.9% |
-| `quantleet.trading.domain.state` | 68 | 26 | 94 | 72.3% |
-| `quantleet.trading.order_requests` | 3 | 2 | 5 | 60.0% |
-| `quantleet.trading.sizing` | 270 | 85 | 355 | 76.1% |
+| `quantcraft.trading.domain.intents` | 5 | 0 | 5 | 100.0% |
+| `quantcraft.trading.domain.matching` | 104 | 8 | 112 | 92.9% |
+| `quantcraft.trading.domain.state` | 68 | 26 | 94 | 72.3% |
+| `quantcraft.trading.order_requests` | 3 | 2 | 5 | 60.0% |
+| `quantcraft.trading.sizing` | 270 | 85 | 355 | 76.1% |
 
 Worst survivor clusters:
 
@@ -367,11 +367,11 @@ Survivors by module:
 
 | Module | Killed | Survived | Total | Score |
 | --- | ---: | ---: | ---: | ---: |
-| `quantleet.trading.domain.intents` | 5 | 0 | 5 | 100.0% |
-| `quantleet.trading.domain.matching` | 104 | 8 | 112 | 92.9% |
-| `quantleet.trading.domain.state` | 76 | 18 | 94 | 80.9% |
-| `quantleet.trading.order_requests` | 5 | 0 | 5 | 100.0% |
-| `quantleet.trading.sizing` | 337 | 57 | 394 | 85.5% |
+| `quantcraft.trading.domain.intents` | 5 | 0 | 5 | 100.0% |
+| `quantcraft.trading.domain.matching` | 104 | 8 | 112 | 92.9% |
+| `quantcraft.trading.domain.state` | 76 | 18 | 94 | 80.9% |
+| `quantcraft.trading.order_requests` | 5 | 0 | 5 | 100.0% |
+| `quantcraft.trading.sizing` | 337 | 57 | 394 | 85.5% |
 
 Survivors by remaining function cluster:
 
@@ -394,17 +394,17 @@ Survivors by remaining function cluster:
 
 Remaining equivalent/noisy survivors explicitly triaged:
 
-- `quantleet.trading.domain.state.x_apply_fill__mutmut_4`,
+- `quantcraft.trading.domain.state.x_apply_fill__mutmut_4`,
   `__mutmut_14`, and `__mutmut_28` mutate exception message text. Current tests
   assert stable public error classes and meaningful substrings, not exact full
   messages. These are low-value message mutants, not financial behavior gaps.
-- `quantleet.trading.domain.state.x_apply_fill__mutmut_47` changes
+- `quantcraft.trading.domain.state.x_apply_fill__mutmut_47` changes
   `next_quantity > 0.0` to `next_quantity >= 0.0` for unrealized PnL. At
   `next_quantity == 0.0`, both branches produce `0.0`, so this is equivalent
   for the current long-only arithmetic contract.
-- `quantleet.trading.domain.state.x_apply_fill__mutmut_69`,
-  `quantleet.trading.sizing.x__buy_anchor_price__mutmut_6`, and
-  `quantleet.trading.domain.matching.x_match_order__mutmut_46` change rounding
+- `quantcraft.trading.domain.state.x_apply_fill__mutmut_69`,
+  `quantcraft.trading.sizing.x__buy_anchor_price__mutmut_6`, and
+  `quantcraft.trading.domain.matching.x_match_order__mutmut_46` change rounding
   precision by one decimal place or to whole-number rounding in fixtures where
   the public result remains unchanged. These are precision-contract candidates,
   not immediate evidence of a trading logic bug.

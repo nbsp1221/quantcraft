@@ -7,13 +7,13 @@ from tests.support import ROOT
 
 
 def test_strategy_package_is_shared_capability_root() -> None:
-    assert (ROOT / "src/quantleet/strategy/__init__.py").exists()
+    assert (ROOT / "src/quantcraft/strategy/__init__.py").exists()
 
 
 def test_repository_scan_rejects_strategy_importing_research_backtest_or_execution(
     tmp_path: Path,
 ) -> None:
-    src_root = tmp_path / "src" / "quantleet"
+    src_root = tmp_path / "src" / "quantcraft"
     strategy_root = src_root / "strategy"
     research_root = src_root / "research"
     backtest_root = src_root / "backtest"
@@ -25,10 +25,10 @@ def test_repository_scan_rejects_strategy_importing_research_backtest_or_executi
 
     (strategy_root / "bad_imports.py").write_text(
         "from __future__ import annotations\n"
-        "from quantleet.research import Strategy\n"
-        "from quantleet.backtest import BacktestEngine\n"
-        "from quantleet.execution import runtime\n"
-        "from quantleet.integrations import venues\n",
+        "from quantcraft.research import Strategy\n"
+        "from quantcraft.backtest import BacktestEngine\n"
+        "from quantcraft.execution import runtime\n"
+        "from quantcraft.integrations import venues\n",
         encoding="utf-8",
     )
 
@@ -47,7 +47,7 @@ def test_repository_scan_rejects_strategy_importing_research_backtest_or_executi
 
 
 def test_repository_scan_allows_strategy_as_shared_runtime_surface(tmp_path: Path) -> None:
-    src_root = tmp_path / "src" / "quantleet"
+    src_root = tmp_path / "src" / "quantcraft"
     strategy_root = src_root / "strategy"
     trading_root = src_root / "trading"
     research_root = src_root / "research"
@@ -58,19 +58,19 @@ def test_repository_scan_allows_strategy_as_shared_runtime_surface(tmp_path: Pat
         (path / "__init__.py").write_text("from __future__ import annotations\n", encoding="utf-8")
 
     (strategy_root / "strategy.py").write_text(
-        "from __future__ import annotations\nfrom quantleet.trading import order_requests\n",
+        "from __future__ import annotations\nfrom quantcraft.trading import order_requests\n",
         encoding="utf-8",
     )
     (research_root / "strategy_use.py").write_text(
-        "from __future__ import annotations\nfrom quantleet.strategy import Strategy\n",
+        "from __future__ import annotations\nfrom quantcraft.strategy import Strategy\n",
         encoding="utf-8",
     )
     (backtest_root / "strategy_use.py").write_text(
-        "from __future__ import annotations\nfrom quantleet.strategy import Strategy\n",
+        "from __future__ import annotations\nfrom quantcraft.strategy import Strategy\n",
         encoding="utf-8",
     )
     (execution_root / "strategy_use.py").write_text(
-        "from __future__ import annotations\nfrom quantleet.strategy import Strategy\n",
+        "from __future__ import annotations\nfrom quantcraft.strategy import Strategy\n",
         encoding="utf-8",
     )
 

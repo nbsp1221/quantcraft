@@ -36,7 +36,7 @@
     verification lane, and the approved long-lived direction that public
     strategy ergonomics may be simpler than the internal symbol-bearing kernel
 - In-repo scope:
-  - `src/quantleet/research/strategy.py`
+  - `src/quantcraft/research/strategy.py`
   - runtime touchpoints needed to carry the active bar symbol only inside
     current bar handling
   - unit and integration tests for additive helper behavior

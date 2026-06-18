@@ -1,6 +1,6 @@
 # Testing Reference
 
-Use this reference when adding or moving tests in `quantleet`.
+Use this reference when adding or moving tests in `quantcraft`.
 
 ## Top-Level Taxonomy
 
@@ -36,7 +36,7 @@ Use this reference when adding or moving tests in `quantleet`.
 - `uv run poe coverage-baseline-update` creates or explicitly raises the
   committed coverage baseline without lowering it
 - `uv run poe mutation-gates` runs the default mutation score gate once across
-  `src/quantleet/trading` and `src/quantleet/backtest` with one aggregate `80%`
+  `src/quantcraft/trading` and `src/quantcraft/backtest` with one aggregate `80%`
   threshold
 - use `coverage` when the question is whether test coverage still satisfies the
   repository reliability floor, not only whether tests pass

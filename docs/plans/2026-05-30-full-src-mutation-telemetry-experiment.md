@@ -1,7 +1,7 @@
 # Full Source Mutation Telemetry Experiment
 
 - Date: 2026-05-30
-- Task: Run a full `src/quantleet` mutation-testing experiment and collect telemetry for future mutation gate scope decisions.
+- Task: Run a full `src/quantcraft` mutation-testing experiment and collect telemetry for future mutation gate scope decisions.
 - Status: `complete`
 - Risk class: `Tier C`
 - Requestor: user
@@ -16,7 +16,7 @@
   - `docs/design-docs/agentic-quality-gates.md`
   - `docs/design-docs/architecture-governance.md`
 - Why these are governing: The task is a reliability-gate experiment for AI-agent-led test quality, not a product behavior change.
-- In-repo scope: Run mutation telemetry against `src/quantleet` and record results in the final report.
+- In-repo scope: Run mutation telemetry against `src/quantcraft` and record results in the final report.
 - Out-of-repo scope: No remote services or external state changes beyond normal package/tool execution.
 - Tier A progression requested: `no`
 - Approval record, if required: Not required; experiment only.
@@ -54,18 +54,18 @@
   3. Collect mutmut results, CI stats, and time estimates.
   4. Report findings and recommended next scope.
 - Notes:
-  - The repository currently configures mutation only for `src/quantleet/trading`.
+  - The repository currently configures mutation only for `src/quantcraft/trading`.
 - Blockers or scope changes:
-  - Full `src/quantleet` mutation generation succeeded but the run could not
+  - Full `src/quantcraft` mutation generation succeeded but the run could not
     collect tests without exclusions because mutmut generated an invalid
     `__init_subclass__` trampoline for strategy configuration classes.
   - Full package test selection also exposed mutmut covered-lines collection
     noise with `matplotlib`/`numpy` plotting tests.
   - A bounded `backtest` core experiment completed after excluding plotting and
-    copying `src/quantleet` into the mutant workspace.
+    copying `src/quantcraft` into the mutant workspace.
   - Follow-up investigation showed that excluding plotting was premature:
     the full `backtest` folder completed when the lane disabled
-    `mutate_only_covered_lines` and copied `src/quantleet` into the mutant
+    `mutate_only_covered_lines` and copied `src/quantcraft` into the mutant
     workspace.
 
 ## Evaluator Review
@@ -93,8 +93,8 @@
     imported modules from `sys.modules`. This is risky around NumPy/Matplotlib
     C extensions, which are not generally safe to reinitialize in the same
     process.
-  - A full `src/quantleet/backtest` lane completed with
-    `mutate_only_covered_lines=false`, `also_copy=["src/quantleet"]`, and
+  - A full `src/quantcraft/backtest` lane completed with
+    `mutate_only_covered_lines=false`, `also_copy=["src/quantcraft"]`, and
     `tests/unit/backtest`: 2,148 mutants, 1,328 killed, 798 survived,
     22 no-test mutants, no suspicious results, no timeouts, and 56.11s wall
     clock with `--max-children 4`.

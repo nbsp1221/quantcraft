@@ -10,7 +10,7 @@
 ## Planner Contract
 
 - Goal: Add a tag-triggered GitHub Actions release workflow that builds the
-  `quantleet` package, validates the release artifacts, and publishes to PyPI
+  `quantcraft` package, validates the release artifacts, and publishes to PyPI
   through Trusted Publishing from the `pypi` GitHub environment.
 - Governing docs:
   - `AGENTS.md`
@@ -34,7 +34,7 @@
     publish with short-lived OIDC credentials instead of stored API tokens.
   - PyPI Trusted Publisher internals document that publisher matching may
     include repository, workflow, and environment claims; the user's configured
-    pending publisher uses `nbsp1221/quantleet`, `release.yaml`, and `pypi`.
+    pending publisher uses `nbsp1221/quantcraft`, `release.yaml`, and `pypi`.
   - PyPI troubleshooting guidance says the GitHub Actions environment must
     match the configured publisher environment.
   - GitHub OIDC documentation says a job must grant `id-token: write` before
@@ -42,8 +42,8 @@
   - PyPA `gh-action-pypi-publish` documents Trusted Publishing through
     `pypa/gh-action-pypi-publish@release/v1`.
 - Human setup already reported:
-  - PyPI pending publisher exists for project `quantleet`.
-  - Publisher owner/repository: `nbsp1221/quantleet`.
+  - PyPI pending publisher exists for project `quantcraft`.
+  - Publisher owner/repository: `nbsp1221/quantcraft`.
   - Publisher workflow: `release.yaml`.
   - Publisher environment: `pypi`.
   - GitHub environment `pypi` exists and has the user's reviewer gate.
@@ -208,11 +208,11 @@
   - `uv run poe lint` -> `All checks passed!`.
   - `uv run poe typecheck` -> `Success: no issues found in 61 source files`.
   - `uv run poe test` -> `739 passed, 4 skipped`.
-  - `uv run poe build` -> built `dist/quantleet-0.1.0b1.tar.gz` and
-    `dist/quantleet-0.1.0b1-py3-none-any.whl`.
+  - `uv run poe build` -> built `dist/quantcraft-0.1.0b1.tar.gz` and
+    `dist/quantcraft-0.1.0b1-py3-none-any.whl`.
   - `uvx twine check --strict dist/*` -> wheel and sdist `PASSED`.
-  - Isolated wheel smoke under `/tmp/quantleet-release-smoke` -> installed the
-    built wheel and imported `quantleet`; printed `release smoke passed`.
+  - Isolated wheel smoke under `/tmp/quantcraft-release-smoke` -> installed the
+    built wheel and imported `quantcraft`; printed `release smoke passed`.
   - Tag/version guard positive check with `GITHUB_REF_NAME=v0.1.0b1` -> passed.
   - Tag/version guard negative check with `GITHUB_REF_NAME=v0.1.0b2` -> failed
     as expected with `Expected tag: v0.1.0b1`.

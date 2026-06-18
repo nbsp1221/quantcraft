@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from quantleet.strategy.series import SeriesView
+from quantcraft.strategy.series import SeriesView
 
 
 def test_series_view_respects_visible_length_and_history_order() -> None:

@@ -120,7 +120,7 @@
 - Findings:
   - Subagent review found an important gap: tests and repo-check did not
     enforce the "no `verify` / `verify-runtime` alias" contract. Fixed by
-    adding forbidden Poe task checks in `src/quantleet/_repo_tools.py` and
+    adding forbidden Poe task checks in `src/quantcraft/_repo_tools.py` and
     structure tests that fail if those aliases return.
   - Subagent review found active doc wording that still said "default
     verification" and an active exec-plan reference to the old runtime test

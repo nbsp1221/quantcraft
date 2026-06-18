@@ -4,8 +4,8 @@ import inspect
 
 import pytest
 
-from quantleet.research import GridSearchResult, GridSearchRow, ParameterStudy
-from quantleet.strategy import StrategyConfigValidationError
+from quantcraft.research import GridSearchResult, GridSearchRow, ParameterStudy
+from quantcraft.strategy import StrategyConfigValidationError
 from tests.unit.research.support_parameter_study import (
     CountingEngine,
     NoTradeStrategy,

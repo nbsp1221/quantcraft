@@ -5,10 +5,10 @@ from matplotlib.figure import Figure
 
 matplotlib.use("Agg")
 
-from quantleet.backtest import BacktestEngine, CostConfig
-from quantleet.data import BarSeries, DataFrameDataSource, TimeBar
-from quantleet.research import ParameterStudy, qc, ta
-from quantleet.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
+from quantcraft.backtest import BacktestEngine, CostConfig
+from quantcraft.data import BarSeries, DataFrameDataSource, TimeBar
+from quantcraft.research import ParameterStudy, qc, ta
+from quantcraft.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
 
 
 def test_public_sma_crossover_quickstart_example_runs() -> None:

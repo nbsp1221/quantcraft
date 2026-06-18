@@ -4,18 +4,18 @@ import math
 
 import pytest
 
-from quantleet.backtest.reporting import (
+from quantcraft.backtest.reporting import (
     ClosedTrade,
     _geometric_average,
     _periodic_returns,
     _trade_metrics,
     periods_per_year_for_timeframe,
 )
-from quantleet.backtest.runtime import _trade_statistics
-from quantleet.data import BarSeries, TimeBar
-from quantleet.research import Strategy
-from quantleet.trading.domain.costs import CostConfig
-from quantleet.trading.domain.events import BarEvent
+from quantcraft.backtest.runtime import _trade_statistics
+from quantcraft.data import BarSeries, TimeBar
+from quantcraft.research import Strategy
+from quantcraft.trading.domain.costs import CostConfig
+from quantcraft.trading.domain.events import BarEvent
 from tests.integration.research.support_backtest_runner import run_engine_backtest
 
 

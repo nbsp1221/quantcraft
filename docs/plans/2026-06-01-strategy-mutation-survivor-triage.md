@@ -21,7 +21,7 @@
   scope, strategy bounded-context ownership, mutation-gate expectations, and
   the current `strategy` gate reproduction state.
 - In-repo scope: A new plan/report artifact under `docs/plans/`; read-only
-  inspection of mutation artifacts, `src/quantleet/strategy`, and existing
+  inspection of mutation artifacts, `src/quantcraft/strategy`, and existing
   tests.
 - Out-of-repo scope: dependency changes, mutmut package patches, external
   service calls, and network research.
@@ -129,7 +129,7 @@ Classification is based on domain risk, not on raw mutant count alone:
 
 ### Function Distribution
 
-`uv run mutmut results | rg '^    quantleet\.strategy'` produced these
+`uv run mutmut results | rg '^    quantcraft\.strategy'` produced these
 strategy function groups:
 
 | Function group | Non-killed mutants | Initial classification |
@@ -169,10 +169,10 @@ intent semantics or stop trigger semantics.
 
 1. `Strategy.buy` and `Strategy.sell` default order type mutations
    - Mutants:
-     - `quantleet.strategy.strategy.xǁStrategyǁbuy__mutmut_1`
-     - `quantleet.strategy.strategy.xǁStrategyǁbuy__mutmut_2`
-     - `quantleet.strategy.strategy.xǁStrategyǁsell__mutmut_1`
-     - `quantleet.strategy.strategy.xǁStrategyǁsell__mutmut_2`
+     - `quantcraft.strategy.strategy.xǁStrategyǁbuy__mutmut_1`
+     - `quantcraft.strategy.strategy.xǁStrategyǁbuy__mutmut_2`
+     - `quantcraft.strategy.strategy.xǁStrategyǁsell__mutmut_1`
+     - `quantcraft.strategy.strategy.xǁStrategyǁsell__mutmut_2`
    - Representative evidence: default `order_type="market"` changes to
      `"XXmarketXX"` or `"MARKET"`.
    - Why critical: strategy authors commonly call `buy(quantity=...)` and
@@ -183,12 +183,12 @@ intent semantics or stop trigger semantics.
 
 2. Explicit symbol propagation and mismatch rejection
    - Mutants:
-     - `quantleet.strategy.strategy.xǁStrategyǁbuy__mutmut_4`
-     - `quantleet.strategy.strategy.xǁStrategyǁsell__mutmut_4`
-     - `quantleet.strategy.strategy.xǁStrategyǁ_submit_order_request__mutmut_20`
-     - `quantleet.strategy.strategy.xǁStrategyǁ_resolve_order_symbol__mutmut_3`
-     - `quantleet.strategy.strategy.xǁStrategyǁ_resolve_order_symbol__mutmut_4`
-     - `quantleet.strategy.strategy.xǁStrategyǁ_resolve_order_symbol__mutmut_5`
+     - `quantcraft.strategy.strategy.xǁStrategyǁbuy__mutmut_4`
+     - `quantcraft.strategy.strategy.xǁStrategyǁsell__mutmut_4`
+     - `quantcraft.strategy.strategy.xǁStrategyǁ_submit_order_request__mutmut_20`
+     - `quantcraft.strategy.strategy.xǁStrategyǁ_resolve_order_symbol__mutmut_3`
+     - `quantcraft.strategy.strategy.xǁStrategyǁ_resolve_order_symbol__mutmut_4`
+     - `quantcraft.strategy.strategy.xǁStrategyǁ_resolve_order_symbol__mutmut_5`
    - Representative evidence:
      - `symbol=symbol` changes to `symbol=None`.
      - `symbol != active_bar_symbol` changes to `symbol == active_bar_symbol`.
@@ -201,8 +201,8 @@ intent semantics or stop trigger semantics.
 
 3. Stop trigger condition return contract
    - Mutants:
-     - `quantleet.strategy.strategy.xǁStrategyǁ_infer_trigger_condition__mutmut_21`
-     - `quantleet.strategy.strategy.xǁStrategyǁ_infer_trigger_condition__mutmut_22`
+     - `quantcraft.strategy.strategy.xǁStrategyǁ_infer_trigger_condition__mutmut_21`
+     - `quantcraft.strategy.strategy.xǁStrategyǁ_infer_trigger_condition__mutmut_22`
    - Representative evidence: return `"crosses_below"` changes to
      `"XXcrosses_belowXX"` or `"CROSSES_BELOW"`.
    - Why critical: stop-family orders depend on the inferred trigger condition.
@@ -413,7 +413,7 @@ Three read-only reviewers checked the report through the
   - `rm -rf mutants && time uv run poe mutation-gates`: failed at the intended
     mutation score gate with `total=3357 killed=2681 survived=671 no_tests=5
     suspicious=0 timeout=0 segfault=0 score=79.86% threshold=80%`.
-  - `uv run mutmut results | rg '^    quantleet\.strategy'`: confirmed
+  - `uv run mutmut results | rg '^    quantcraft\.strategy'`: confirmed
     `128` strategy survived mutants and `5` strategy no-tests mutants.
   - Representative `uv run mutmut show` evidence was collected for order type,
     symbol propagation, stop trigger return value, series visibility/indexing,

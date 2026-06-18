@@ -4,39 +4,39 @@ This curated reference lists the first-beta imports users should prefer.
 
 ## Data
 
-- `quantleet.data.TimeBar`
-- `quantleet.data.BarSeries`
-- `quantleet.data.DataFrameDataSource`
-- `quantleet.data.CSVDataSource`
-- `quantleet.data.CCXTDataSource`
+- `quantcraft.data.TimeBar`
+- `quantcraft.data.BarSeries`
+- `quantcraft.data.DataFrameDataSource`
+- `quantcraft.data.CSVDataSource`
+- `quantcraft.data.CCXTDataSource`
 
 ## Backtesting
 
-- `quantleet.backtest.BacktestEngine`
-- `quantleet.backtest.CostConfig`
-- `quantleet.backtest.BacktestResult`
+- `quantcraft.backtest.BacktestEngine`
+- `quantcraft.backtest.CostConfig`
+- `quantcraft.backtest.BacktestResult`
 - `BacktestResult.report`
 - `BacktestResult.plot()`
 
 ## Research
 
-- `quantleet.strategy.Strategy`
-- `quantleet.strategy.StrategyConfig`
+- `quantcraft.strategy.Strategy`
+- `quantcraft.strategy.StrategyConfig`
 - `Strategy.buy(...)`
 - `Strategy.sell(...)`
-- `quantleet.research.ParameterStudy`
+- `quantcraft.research.ParameterStudy`
 - `ParameterStudy.grid_search(...)`
-- `quantleet.research.WalkForwardStudy`
+- `quantcraft.research.WalkForwardStudy`
 - `WalkForwardStudy.run(...)`
-- `quantleet.research.WalkForwardResult`
-- `quantleet.research.WalkForwardFold`
-- `quantleet.research.WalkForwardDiagnostic`
-- `quantleet.research.WalkForwardOosSummary`
-- `quantleet.research.WalkForwardExecutionScale`
-- `quantleet.research.ta`
-- `quantleet.research.qc`
+- `quantcraft.research.WalkForwardResult`
+- `quantcraft.research.WalkForwardFold`
+- `quantcraft.research.WalkForwardDiagnostic`
+- `quantcraft.research.WalkForwardOosSummary`
+- `quantcraft.research.WalkForwardExecutionScale`
+- `quantcraft.research.ta`
+- `quantcraft.research.qc`
 
-`quantleet.research.Strategy` remains available as a migration-compatible
+`quantcraft.research.Strategy` remains available as a migration-compatible
 re-export.
 
 `WalkForwardStudy` is a research validation workflow. It uses rolling

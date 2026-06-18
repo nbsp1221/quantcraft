@@ -86,7 +86,7 @@ Purpose:
 
 Primary questions:
 
-- Should Quantleet expose a separate `StrategyConfig` class, class-level
+- Should Quantcraft expose a separate `StrategyConfig` class, class-level
   strategy parameters, descriptor-based parameters, or another minimal contract?
 - What is the relationship between `Strategy` and the config object?
 - What values are true strategy config values versus runtime dependencies or

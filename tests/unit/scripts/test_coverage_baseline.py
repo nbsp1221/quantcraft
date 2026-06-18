@@ -29,7 +29,7 @@ def write_baseline(path: Path, percent: float, *, allowed_drop: float = 0.25) ->
                 "coverage_tool": "coverage.py",
                 "coverage_command": "coverage run -m pytest -q",
                 "coverage_run_branch": True,
-                "coverage_run_source": ["quantleet"],
+                "coverage_run_source": ["quantcraft"],
             },
         ),
         encoding="utf-8",
@@ -100,7 +100,7 @@ def test_check_raises_baseline_when_current_coverage_improves(tmp_path: Path) ->
     assert payload["coverage_tool"] == "coverage.py"
     assert payload["coverage_command"] == "coverage run -m pytest -q"
     assert payload["coverage_run_branch"] is True
-    assert payload["coverage_run_source"] == ["quantleet"]
+    assert payload["coverage_run_source"] == ["quantcraft"]
 
 
 def test_check_leaves_baseline_unchanged_when_coverage_is_equal(tmp_path: Path) -> None:

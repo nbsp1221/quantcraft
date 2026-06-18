@@ -27,7 +27,7 @@
     non-trivial documentation changes.
   - The product and test specs are the artifacts being updated.
   - Architecture and package topology docs constrain the chosen
-    `quantleet.strategy` ownership decision.
+    `quantcraft.strategy` ownership decision.
 - In-repo scope:
   - Update the product spec and test spec to record closed decisions.
   - Remove or narrow open questions that are now answered.

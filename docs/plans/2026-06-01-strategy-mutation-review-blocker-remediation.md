@@ -22,8 +22,8 @@
   context, current mutation gate policy, and the prior remediation claim that
   must be corrected with fresh evidence.
 - In-repo scope:
-  - `src/quantleet/strategy/config.py` and
-    `src/quantleet/strategy/strategy.py` for moving declaration logic out of
+  - `src/quantcraft/strategy/config.py` and
+    `src/quantcraft/strategy/strategy.py` for moving declaration logic out of
     mutmut-sensitive `__init_subclass__` wrappers and for narrowly scoped
     mutmut exclusion comments on trampoline-equivalent default-argument
     mutants.
@@ -103,7 +103,7 @@
     `_resolve_order_symbol`, `_infer_trigger_condition`, and `sell(symbol=None)`
     mutants killed, while `buy(symbol=None)` and `buy`/`sell` default-argument
     mutants survived.
-  - Inspecting `mutants/src/quantleet/strategy/strategy.py` showed mutmut's
+  - Inspecting `mutants/src/quantcraft/strategy/strategy.py` showed mutmut's
     trampoline wrapper keeps the outer `buy`/`sell` default `order_type` value
     as `"market"` and passes it as a keyword into the selected inner mutant;
     therefore inner default-argument mutations are not observable through
@@ -122,7 +122,7 @@
     review agents and killing orphan mutmut processes, a single-owner
     `mutation-gates` run completed successfully.
 - Blockers or scope changes:
-  - The prior remediation plan incorrectly omitted `src/quantleet/strategy/config.py`
+  - The prior remediation plan incorrectly omitted `src/quantcraft/strategy/config.py`
     from the follow-up scope; this plan now includes it explicitly.
 
 ## Evaluator Review
@@ -150,11 +150,11 @@
 - Verification evidence:
   - `uv run pytest tests/unit/strategy tests/structure/repo/test_poe_task_contracts.py -q`:
     `70 passed in 0.17s`.
-  - `uv run ruff check src/quantleet/strategy tests/unit/strategy tests/structure/repo/test_poe_task_contracts.py`:
+  - `uv run ruff check src/quantcraft/strategy tests/unit/strategy tests/structure/repo/test_poe_task_contracts.py`:
     passed.
   - `git diff --check`: passed before the full mutation gate.
   - `uv run mutmut run --max-children 1
-    'quantleet.strategy.strategy.xǁStrategyǁbuy__mutmut_1'`: killed the
+    'quantcraft.strategy.strategy.xǁStrategyǁbuy__mutmut_1'`: killed the
     representative default-buy mutant.
   - Fresh single-owner `uv run poe mutation-gates`: passed with
     `total=3458 killed=2807 survived=651 no_tests=0 suspicious=0 timeout=0

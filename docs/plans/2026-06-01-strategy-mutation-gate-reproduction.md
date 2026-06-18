@@ -9,10 +9,10 @@
 
 ## Planner Contract
 
-- Goal: Make `uv run poe mutation-gates` and therefore `uv run poe check` include `src/quantleet/strategy`, while avoiding the known mutmut `__init_subclass__` collection failure so the observed failure is a mutation score/no-tests failure.
+- Goal: Make `uv run poe mutation-gates` and therefore `uv run poe check` include `src/quantcraft/strategy`, while avoiding the known mutmut `__init_subclass__` collection failure so the observed failure is a mutation score/no-tests failure.
 - Governing docs: `AGENTS.md`, `ARCHITECTURE.md`, `docs/design-docs/package-topology-and-naming.md`
 - Why these are governing: They define the repo workflow, bounded contexts, and check surface.
-- In-repo scope: `pyproject.toml`, `src/quantleet/strategy/config.py`, `src/quantleet/strategy/strategy.py`, this plan.
+- In-repo scope: `pyproject.toml`, `src/quantcraft/strategy/config.py`, `src/quantcraft/strategy/strategy.py`, this plan.
 - Out-of-repo scope: mutmut package patches, dependency changes, test fixes.
 - Tier A progression requested: `no`
 - Approval record, if required: not required; `strategy` is Tier B.
@@ -32,7 +32,7 @@
 ## Generator Work Log
 
 - Planned slice order: add strategy mutation scope, add minimal mutmut pragmas for `__init_subclass__`, run mutation gate, report score failure.
-- Notes: `src/quantleet/strategy` was added to `paths_to_mutate`; `tests/unit/strategy` and `tests/integration/strategy` were added to mutmut test selection. The two `__init_subclass__` methods were marked with `# pragma: no mutate` to avoid mutmut trampoline collection failure.
+- Notes: `src/quantcraft/strategy` was added to `paths_to_mutate`; `tests/unit/strategy` and `tests/integration/strategy` were added to mutmut test selection. The two `__init_subclass__` methods were marked with `# pragma: no mutate` to avoid mutmut trampoline collection failure.
 - Blockers or scope changes: none.
 
 ## Evaluator Review

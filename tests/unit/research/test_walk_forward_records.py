@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from quantleet.research import WalkForwardStudy
+from quantcraft.research import WalkForwardStudy
 from tests.unit.research.support_parameter_study import NoTradeStrategy, make_bars, make_engine
 
 

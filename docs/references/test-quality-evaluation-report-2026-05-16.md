@@ -3,7 +3,7 @@
 - Date: 2026-05-16
 - Evaluator: Codex with three read-only LLM subagent reviewers
 - Commit: current working tree on `main`
-- Scope: current `quantleet` test suite quality
+- Scope: current `quantcraft` test suite quality
 - Evaluation plan: `docs/references/test-quality-evaluation-plan.md`
 
 ## Executive Summary
@@ -20,7 +20,7 @@
   - Integration tests cover many externally visible backtest, reporting,
     parameter-study, and walk-forward contracts.
 - Main risks:
-  - Some integration tests import internal `quantleet.trading.domain.*` paths
+  - Some integration tests import internal `quantcraft.trading.domain.*` paths
     instead of public beta surfaces.
   - Some real-data golden tests lock broad incidental numeric behavior into the
     default lane.
@@ -105,13 +105,13 @@ Coverage passed the repository policy:
 
 Lowest notable files from the coverage report:
 
-- `src/quantleet/_notebook_tools.py`: `0%`
-- `src/quantleet/_repo_tools.py`: `75%`
-- `src/quantleet/trading/order_requests.py`: `85%`
-- `src/quantleet/data/sources.py`: `86%`
-- `src/quantleet/trading/sizing.py`: `87%`
-- `src/quantleet/data/__init__.py`: `88%`
-- `src/quantleet/strategy/series.py`: `90%`
+- `src/quantcraft/_notebook_tools.py`: `0%`
+- `src/quantcraft/_repo_tools.py`: `75%`
+- `src/quantcraft/trading/order_requests.py`: `85%`
+- `src/quantcraft/data/sources.py`: `86%`
+- `src/quantcraft/trading/sizing.py`: `87%`
+- `src/quantcraft/data/__init__.py`: `88%`
+- `src/quantcraft/strategy/series.py`: `90%`
 
 Interpretation: coverage is healthy as a floor. The current gate intentionally
 uses coverage.py's standard combined line/branch semantics instead of custom
@@ -180,10 +180,10 @@ Reason:
 
 Recommended first target:
 
-- `src/quantleet/trading/domain/`
-- `src/quantleet/trading/sizing.py`
-- `src/quantleet/backtest/execution_model.py`
-- `src/quantleet/research/walk_forward.py`
+- `src/quantcraft/trading/domain/`
+- `src/quantcraft/trading/sizing.py`
+- `src/quantcraft/backtest/execution_model.py`
+- `src/quantcraft/research/walk_forward.py`
 
 Do not make mutation score a full-repository hard gate before a baseline run
 establishes runtime cost and equivalent-mutant handling.
@@ -237,15 +237,15 @@ Three read-only subagent reviews were used:
    - `tests/integration/backtest/test_plotting.py`
 
    These tests import internal domain types such as `CostConfig`, `BarEvent`,
-   `OrderRejectedEvent`, and `TradingState` from `quantleet.trading.domain.*`
+   `OrderRejectedEvent`, and `TradingState` from `quantcraft.trading.domain.*`
    where public surfaces exist for at least some of the contracts. This makes
    integration tests more sensitive to internal topology refactors than a
    public-contract integration suite should be.
 
    Recommendation:
 
-   - prefer `quantleet.backtest`, `quantleet.research`, `quantleet.strategy`,
-     and `quantleet.data` imports in integration tests when a public facade
+   - prefer `quantcraft.backtest`, `quantcraft.research`, `quantcraft.strategy`,
+     and `quantcraft.data` imports in integration tests when a public facade
      exists
    - add a structure check that flags integration imports from internal domain
      paths once a public equivalent exists
@@ -358,7 +358,7 @@ Three read-only subagent reviews were used:
    Evidence:
 
    - `docs/references/testing.md` includes `tests/perf`
-   - `src/quantleet/_repo_tools.py` has
+   - `src/quantcraft/_repo_tools.py` has
      `SUPPORTED_TEST_DIRS = ("unit", "integration", "structure", "smoke")`
    - `perf` is omitted
 

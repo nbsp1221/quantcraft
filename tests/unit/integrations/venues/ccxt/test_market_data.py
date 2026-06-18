@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-import quantleet.integrations.venues.ccxt as exchange_module
-import quantleet.integrations.venues.ccxt.market_data as exchange_backend
-from quantleet.data import TimeBar
+import quantcraft.integrations.venues.ccxt as exchange_module
+import quantcraft.integrations.venues.ccxt.market_data as exchange_backend
+from quantcraft.data import TimeBar
 from tests.support_ccxt import FakeExchangeClient
 
 

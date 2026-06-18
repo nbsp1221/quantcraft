@@ -14,7 +14,7 @@ DEFAULT_BASELINE_PATH = Path(".coverage-baseline.json")
 DEFAULT_CURRENT_JSON_PATH = Path("coverage-baseline-current.json")
 DEFAULT_ALLOWED_DROP = Decimal("0.25")
 DEFAULT_COVERAGE_COMMAND = "coverage run -m pytest -q"
-DEFAULT_COVERAGE_SOURCE = ["quantleet"]
+DEFAULT_COVERAGE_SOURCE = ["quantcraft"]
 
 ExitCode = Literal[0, 1, 2, 3]
 Decision = Literal["raised", "unchanged", "tolerated", "failed", "created", "refused"]

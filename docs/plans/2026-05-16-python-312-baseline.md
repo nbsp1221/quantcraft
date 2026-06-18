@@ -9,7 +9,7 @@
 
 ## Planner Contract
 
-- Goal: Make the current Quantleet package, user docs, repo checks, and local
+- Goal: Make the current Quantcraft package, user docs, repo checks, and local
   developer default consistently use Python 3.12 as the beta baseline, while
   leaving historical plan and execution records intact.
 - Governing docs:

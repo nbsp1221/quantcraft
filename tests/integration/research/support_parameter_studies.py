@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from quantleet.backtest import BacktestEngine
-from quantleet.data import BarSeries, TimeBar
-from quantleet.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
-from quantleet.trading.domain.costs import CostConfig
-from quantleet.trading.domain.events import BarEvent
+from quantcraft.backtest import BacktestEngine
+from quantcraft.data import BarSeries, TimeBar
+from quantcraft.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
+from quantcraft.trading.domain.costs import CostConfig
+from quantcraft.trading.domain.events import BarEvent
 
 
 def crossing_bars(

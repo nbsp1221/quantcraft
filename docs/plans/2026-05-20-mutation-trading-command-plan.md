@@ -30,7 +30,7 @@
   - `docs/references/testing.md` defines testing command lane policy.
 - In-repo scope:
   - Add a Poe task named `mutation-trading`.
-  - Add mutmut configuration scoped to `src/quantleet/trading` and
+  - Add mutmut configuration scoped to `src/quantcraft/trading` and
     `tests/unit/trading`.
   - Ignore mutmut's local `mutants/` run directory.
   - Keep `check` unchanged in this slice.
@@ -56,7 +56,7 @@
   - `uv run poe repo-check`
 - Success criteria:
   - `uv run poe mutation-trading` is available.
-  - The command runs mutmut against `src/quantleet/trading`.
+  - The command runs mutmut against `src/quantcraft/trading`.
   - The command uses `tests/unit/trading` as the targeted pytest selection.
   - The default `check` sequence remains unchanged.
   - Focused structure checks pass.
@@ -82,7 +82,7 @@
   - `uv run poe repo-check`
 - Auto-fail conditions:
   - `check` is changed to include mutation testing in this slice.
-  - The mutmut configuration mutates outside `src/quantleet/trading`.
+  - The mutmut configuration mutates outside `src/quantcraft/trading`.
   - The mutation command cannot complete.
   - Structure tests or repo-check fail due to this change.
 
@@ -105,7 +105,7 @@
   - No blocking findings.
   - `mutation-trading` is a manual Poe task and is not included in the default
     `check` sequence.
-  - Mutmut configuration is scoped to `src/quantleet/trading` with
+  - Mutmut configuration is scoped to `src/quantcraft/trading` with
     `tests/unit/trading`.
   - `.gitignore` excludes `/mutants/`, which mutmut creates as local run data.
 - Verification evidence:

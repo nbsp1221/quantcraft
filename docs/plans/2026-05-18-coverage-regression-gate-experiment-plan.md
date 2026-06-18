@@ -1,7 +1,7 @@
 # Coverage Regression Gate Experiment Plan
 
 - Date: 2026-05-18
-- Task: Evaluate whether Quantleet should add a base/head coverage regression
+- Task: Evaluate whether Quantcraft should add a base/head coverage regression
   gate and determine a practical allowed-drop threshold.
 - Status: `complete`
 - Risk class: `Tier C`
@@ -160,7 +160,7 @@ Why `0.25`:
 - `0.25` matches the intended "tiny noise budget" policy without making the
   gate as brittle as strict `0.00`
 - `0.50` and `1.00` produced the same result in this sample, but they give away
-  more regression budget without evidence that Quantleet needs that much slack
+  more regression budget without evidence that Quantcraft needs that much slack
 
 Performance recommendation:
 
@@ -234,7 +234,7 @@ Optimized runtime results:
 | current head, warm cache | already paid | `0.51s` | `90.754001%` | `90.754001%` | `0.000000` | pass |
 | artificial uncovered source, warm cache | `50s` | `0.50s` | `90.754001%` | `89.826975%` | `0.927026` | fail, exit code `2` |
 
-The fail probe added an untested source file under `src/quantleet` in a
+The fail probe added an untested source file under `src/quantcraft` in a
 temporary detached worktree under `/tmp`. The repository worktree was not
 modified.
 

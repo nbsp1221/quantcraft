@@ -452,7 +452,7 @@ Fixture rules:
 
 ## Mock, Stub, And Fake Use Criteria
 
-Prefer real Quantleet objects for product-contract tests:
+Prefer real Quantcraft objects for product-contract tests:
 
 - real `StrategyConfig` subclasses
 - real `Strategy` subclasses

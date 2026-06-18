@@ -10,7 +10,7 @@
 ## Planner Contract
 
 - Goal:
-  - Create a governing product-spec draft for Quantleet walk-forward analysis
+  - Create a governing product-spec draft for Quantcraft walk-forward analysis
     research workflows.
 - Governing docs:
   - `AGENTS.md`

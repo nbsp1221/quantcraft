@@ -34,7 +34,7 @@ planning.
 
 ## Background And Problem Definition
 
-Quantleet's first-beta research workflow now has a canonical strategy
+Quantcraft's first-beta research workflow now has a canonical strategy
 configuration model:
 
 - strategies declare configurable execution settings through
@@ -61,7 +61,7 @@ backtest report can still expose strategy-authored `strategy_parameters` that
 say something else. This makes reports harder to trust, harder to compare, and
 unsafe as a basis for future WFA fold records.
 
-The problem is not that Quantleet lacks another metadata feature. The problem is
+The problem is not that Quantcraft lacks another metadata feature. The problem is
 that the same run can appear to have two different configuration truths:
 
 - the framework-owned config snapshot used by research/study workflows
@@ -124,7 +124,7 @@ They want to:
 - carry selected configs into future WFA planning without reverse-engineering
   strategy-authored metadata
 
-They are not asking Quantleet to infer hidden constructor arguments, inspect
+They are not asking Quantcraft to infer hidden constructor arguments, inspect
 arbitrary strategy attributes, or provide a general metadata bag.
 
 ## Core Requirements
@@ -302,9 +302,9 @@ runtime contract. The product does not define a fallback that silently reports
 - The migration must be breaking and clean before public beta; compatibility
   aliases must not preserve the old ambiguity.
 - The design must preserve capability ownership:
-  - `quantleet.strategy` owns strategy config semantics
-  - `quantleet.backtest` owns historical runtime reporting
-  - `quantleet.research` composes those surfaces for studies
+  - `quantcraft.strategy` owns strategy config semantics
+  - `quantcraft.backtest` owns historical runtime reporting
+  - `quantcraft.research` composes those surfaces for studies
 - The stage must not create Tier A trading or execution behavior.
 - Errors caused by invalid custom strategy-like config contracts should be
   visible rather than hidden by fallback metadata.
@@ -449,7 +449,7 @@ spec. The following adjacent decisions are resolved for planning continuity:
   prerequisite immediately after Stage 3, not as general future cleanup. This
   follow-on is tracked as Stage 3.5 in
   [direct-backtest-class-config-api.md](direct-backtest-class-config-api.md).
-- Arbitrary run metadata remains out of scope. Quantleet should not add a
+- Arbitrary run metadata remains out of scope. Quantcraft should not add a
   distinct metadata bag until a concrete user need justifies the API,
   serialization, and safety policy.
 - Future domain-object config serialization is out of scope for Stage 3 and

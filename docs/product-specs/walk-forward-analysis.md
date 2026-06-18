@@ -18,14 +18,14 @@ Related documents:
 - [backtest-plotting.md](backtest-plotting.md)
 - [data-ingestion.md](data-ingestion.md)
 - [../design-docs/package-topology-and-naming.md](../design-docs/package-topology-and-naming.md)
-- [../design-docs/quantleet-architecture.md](../design-docs/quantleet-architecture.md)
+- [../design-docs/quantcraft-architecture.md](../design-docs/quantcraft-architecture.md)
 - [../research/2026-03-23-python-quant-library-landscape.md](../research/2026-03-23-python-quant-library-landscape.md)
 - [../research/libraries/backtesting-py.md](../research/libraries/backtesting-py.md)
 - [../research/libraries/vectorbt.md](../research/libraries/vectorbt.md)
 - [../research/libraries/pybroker.md](../research/libraries/pybroker.md)
 
 This document records the earlier product target and accepted decisions for
-Quantleet walk-forward analysis research workflows. It is superseded for the
+Quantcraft walk-forward analysis research workflows. It is superseded for the
 implemented Stage 4 first slice by
 [walk-forward-analysis-resume.md](walk-forward-analysis-resume.md).
 
@@ -56,7 +56,7 @@ and records decisions made after Stage 3.5.
 
 ## Background And Problem Definition
 
-Quantleet already has the pieces needed for a useful first single-symbol
+Quantcraft already has the pieces needed for a useful first single-symbol
 research loop:
 
 - a deterministic `BacktestEngine`
@@ -87,7 +87,7 @@ out-of-sample window, and inspect whether the strategy remains coherent across
 time. The output must emphasize out-of-sample evidence, not the in-sample score
 that selected the parameters.
 
-This feature is still desired if Quantleet is positioned as a tool for finding
+This feature is still desired if Quantcraft is positioned as a tool for finding
 and screening alpha candidates rather than only as a correct backtest runner. A
 correct backtest engine proves that a historical simulation was computed
 consistently. Walk-forward analysis helps users judge whether a research result
@@ -135,7 +135,7 @@ Resume criteria that were later satisfied for Stage 4:
 
 ## Goals
 
-- Provide the first official overfitting-resistance workflow in Quantleet.
+- Provide the first official overfitting-resistance workflow in Quantcraft.
 - Let users run repeated train-then-test validation without manually composing
   folds, grid searches, and backtest reruns.
 - Keep the public API small enough for notebook users to understand quickly.
@@ -197,14 +197,14 @@ They want to:
   investigation
 - receive clear diagnostics when the validation result looks fragile
 
-They are not asking Quantleet to discover a profitable strategy. They are
-asking Quantleet to make honest train/test validation difficult to misuse.
+They are not asking Quantcraft to discover a profitable strategy. They are
+asking Quantcraft to make honest train/test validation difficult to misuse.
 
 ## Decision Summary
 
 The user-facing model is a research-level study object:
 
-- `quantleet.research.WalkForwardStudy` owns the walk-forward UX.
+- `quantcraft.research.WalkForwardStudy` owns the walk-forward UX.
 - `WalkForwardStudy(...).run(...)` is the first execution method.
 - `WalkForwardStudy` composes the existing backtest and parameter exploration
   surfaces; it does not introduce a second execution engine.
@@ -230,7 +230,7 @@ The user-facing model is a research-level study object:
 ## Core Requirements
 
 1. Walk-forward analysis must be a research-layer feature under
-   `quantleet.research`.
+   `quantcraft.research`.
 2. It must compose existing public `BacktestEngine`, `BarSeries`, `Strategy`,
    and `ParameterStudy` surfaces.
 3. It must not change `trading`, `execution`, or backtest matching semantics.
@@ -256,7 +256,7 @@ The user-facing model is a research-level study object:
 The first public workflow should be centered on:
 
 ```python
-from quantleet.research import WalkForwardStudy
+from quantcraft.research import WalkForwardStudy
 
 study = WalkForwardStudy(
     engine=engine,

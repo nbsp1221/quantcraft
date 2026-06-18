@@ -20,8 +20,8 @@ def test_product_index_routes_strategy_configuration_and_wfa_prerequisites() -> 
 def test_strategy_configuration_contract_keeps_stage_boundaries_explicit() -> None:
     spec = _read("docs/product-specs/strategy-configuration-contract.md")
 
-    assert "The chosen package path is `quantleet.strategy`." in spec
-    assert "from quantleet.strategy import Strategy, StrategyConfig" in spec
+    assert "The chosen package path is `quantcraft.strategy`." in spec
+    assert "from quantcraft.strategy import Strategy, StrategyConfig" in spec
     assert "`Strategy[Config]` is the canonical user-facing declaration" in spec
     assert "Stage 1 does not have to migrate `ParameterStudy`" in spec
     assert "replace report-facing `strategy_parameters` with `strategy_config`" in spec
@@ -32,7 +32,7 @@ def test_strategy_configuration_test_spec_targets_observable_contracts() -> None
     test_spec = _read("docs/product-specs/strategy-configuration-contract-test-scenarios.md")
 
     assert "`Strategy` and `StrategyConfig` are canonically imported from" in test_spec
-    assert "`quantleet.strategy`" in test_spec
+    assert "`quantcraft.strategy`" in test_spec
     assert "Tests must validate these contracts as user-visible behavior" in test_spec
     normalized = " ".join(test_spec.split())
     assert "not private helper names or generic-introspection internals" in normalized

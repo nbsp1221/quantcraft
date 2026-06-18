@@ -99,11 +99,11 @@ Current coverage settings:
 
 - `tool.coverage.report.fail_under = 90`
 - `tool.coverage.run.branch = true`
-- `tool.coverage.run.source = ["quantleet"]`
+- `tool.coverage.run.source = ["quantcraft"]`
 
 Existing reusable paths:
 
-- `src/quantleet/_repo_tools.py`
+- `src/quantcraft/_repo_tools.py`
   - owns repo contract checks and required Poe task lists
 - `scripts/repo_check.py`
   - runs repo and architecture contract checks
@@ -133,7 +133,7 @@ Modify:
   - add `coverage-baseline`
   - add `coverage-baseline-update`
   - append `coverage-baseline` to `coverage-gates`
-- `src/quantleet/_repo_tools.py`
+- `src/quantcraft/_repo_tools.py`
   - add `coverage-baseline` and `coverage-baseline-update` to
     `REQUIRED_POE_TASKS`
 - `tests/structure/repo/test_coverage_harness.py`
@@ -168,7 +168,7 @@ Shape:
   "coverage_tool": "coverage.py",
   "coverage_command": "coverage run -m pytest -q",
   "coverage_run_branch": true,
-  "coverage_run_source": ["quantleet"]
+  "coverage_run_source": ["quantcraft"]
 }
 ```
 
@@ -236,7 +236,7 @@ Conclusion:
 - automatic downward ratcheting is risky and should not be the default
 - no known Python library found in this review satisfies the minimum `100` star
   adoption threshold while matching this exact policy
-- Quantleet should directly implement the small repo-local script while
+- Quantcraft should directly implement the small repo-local script while
   following observed conventions:
   - baseline artifact: `.coverage-baseline.json`
   - Python helper: `scripts/coverage_baseline.py`, matching this repository's

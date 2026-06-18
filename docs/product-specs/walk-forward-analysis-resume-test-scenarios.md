@@ -40,7 +40,7 @@ than a single parameter grid can answer:
 
 The core test contract is:
 
-- `quantleet.research.WalkForwardStudy` is the public research study container.
+- `quantcraft.research.WalkForwardStudy` is the public research study container.
 - `WalkForwardStudy(...).run(...)` accepts materialized `bars: BarSeries`, a
   strategy class, finite config candidates, one explicit objective tuple, an
   optional constraint, and bar-count windows.
@@ -84,7 +84,7 @@ Operational rules:
 3. Make inputs and expected results easy to read. A human or AI agent should
    be able to diagnose a failed test without reverse-engineering large market
    fixtures or production internals.
-4. Prefer real Quantleet objects at public boundaries. Use fakes only to prove
+4. Prefer real Quantcraft objects at public boundaries. Use fakes only to prove
    call timing, preflight no-run behavior, and hard-to-trigger failure states.
 5. Test edge cases as first-class behavior. A WFA test suite that only covers a
    happy rolling run is not enough because this feature's product value depends
@@ -558,9 +558,9 @@ Expected behavior:
 
 Expected behavior:
 
-- WFA code is owned by `quantleet.research`
-- WFA composes public `quantleet.backtest`, `quantleet.strategy`, and
-  `quantleet.data` contracts
+- WFA code is owned by `quantcraft.research`
+- WFA composes public `quantcraft.backtest`, `quantcraft.strategy`, and
+  `quantcraft.data` contracts
 - `trading` and `execution` do not depend on WFA
 - no Tier A domain change is required by WFA tests
 
@@ -649,7 +649,7 @@ plan must close these test-detail questions before concrete tests are written:
 2. What are the exact public field names for `oos_summary`, planned execution
    scale metadata, diagnostics, and record exports?
 3. How should timestamp values be represented in JSON-friendly record exports:
-   datetime objects, ISO-8601 strings, or an existing Quantleet timestamp
+   datetime objects, ISO-8601 strings, or an existing Quantcraft timestamp
    convention?
 4. What exact diagnostic code strings should be public and stable?
 5. Should a successful test fold with no closed trades emit `info` or

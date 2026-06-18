@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from quantleet.research import GridSearchResult, WalkForwardStudy
+from quantcraft.research import GridSearchResult, WalkForwardStudy
 from tests.integration.research.support_parameter_studies import (
     WfaRoundTripStrategy,
     engine,

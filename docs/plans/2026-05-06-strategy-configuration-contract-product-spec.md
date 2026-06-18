@@ -9,7 +9,7 @@
 
 ## Planner Contract
 
-- Goal: Create a product spec that defines Quantleet's unified strategy
+- Goal: Create a product spec that defines Quantcraft's unified strategy
   configuration contract before `ParameterStudy` migration, reporting metadata
   changes, or WFA implementation continue.
 - Governing docs:

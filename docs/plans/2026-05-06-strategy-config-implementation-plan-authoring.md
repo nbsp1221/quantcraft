@@ -30,7 +30,7 @@
     non-trivial documentation work.
   - The product and test specs are the source of truth for scope.
   - Architecture and package topology docs constrain the new
-    `quantleet.strategy` package.
+    `quantcraft.strategy` package.
 - In-repo scope:
   - Read source, tests, product specs, design docs, and repo configuration.
   - Create a technical implementation plan under `docs/plans/`.
@@ -54,7 +54,7 @@
   - The plan does not exceed the product/test spec scope or implement code.
   - Fresh verification passes.
 - Out of scope:
-  - Implementing `quantleet.strategy`.
+  - Implementing `quantcraft.strategy`.
   - Migrating `ParameterStudy`.
   - Reporting migration.
   - WFA implementation.

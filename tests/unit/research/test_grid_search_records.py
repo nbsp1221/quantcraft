@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 import math
 
-from quantleet.research import GridSearchResult, GridSearchRow
-from quantleet.strategy import StrategyConfigValidationError
+from quantcraft.research import GridSearchResult, GridSearchRow
+from quantcraft.strategy import StrategyConfigValidationError
 from tests.unit.research.support_parameter_study import (
     NoTradeConfig,
     NoTradeStrategy,

@@ -28,14 +28,14 @@ internals.
 
 ## Testing Basis
 
-The feature exists because Quantleet needs a shared, framework-recognizable
+The feature exists because Quantcraft needs a shared, framework-recognizable
 strategy configuration contract before `ParameterStudy` migration, reporting
 metadata changes, and WFA resume can safely proceed.
 
 The core product contract is:
 
 - `Strategy` and `StrategyConfig` are canonically imported from
-  `quantleet.strategy`
+  `quantcraft.strategy`
 - canonical strategy authors declare config with `Strategy[MyConfig]`
 - `config_type = MyConfig` is a public advanced fallback, with same-type
   redundant declarations allowed and conflicting declarations rejected
@@ -106,7 +106,7 @@ Operational rules:
 
 In scope for Stage 1:
 
-- canonical `quantleet.strategy` public ownership and migration/re-export
+- canonical `quantcraft.strategy` public ownership and migration/re-export
   guardrails
 - `StrategyConfig` field discovery from annotated public fields
 - default-value requirement for MVP config fields
@@ -171,7 +171,7 @@ No browser-style E2E tests are required. This is a Python library contract with
 no UI. Full workflow confidence belongs in targeted integration tests once
 Stage 2 and Stage 3 wire the contract into `ParameterStudy` and reporting.
 
-The Stage 1 shared strategy/runtime contract lives under `quantleet.strategy`.
+The Stage 1 shared strategy/runtime contract lives under `quantcraft.strategy`.
 `research` placement remains appropriate for Stage 2 `ParameterStudy` migration
 tests, not for the canonical Stage 1 strategy configuration surface.
 
@@ -243,7 +243,7 @@ snapshot outputs rather than importing private discovery helpers.
 Tests must verify:
 
 - the canonical user can declare `Strategy[MyConfig]`
-- Quantleet can discover one effective config schema for a canonical strategy
+- Quantcraft can discover one effective config schema for a canonical strategy
 - public annotated config fields with defaults are discovered as config fields
 - private fields are not configurable fields
 - all MVP config fields require defaults
@@ -606,10 +606,10 @@ Purpose: preserve shared runtime ownership.
 
 Assertions:
 
-- `StrategyConfig` is owned by `quantleet.strategy`
-- `quantleet.research.Strategy` remains only a migration/re-export path if
+- `StrategyConfig` is owned by `quantcraft.strategy`
+- `quantcraft.research.Strategy` remains only a migration/re-export path if
   present
-- future execution portability is not forced to depend on `quantleet.research`
+- future execution portability is not forced to depend on `quantcraft.research`
 - `trading` dependency rules are not violated
 - no Tier A paper/live behavior is introduced by Stage 1
 
@@ -629,7 +629,7 @@ Assertions after relevant stages:
 
 ### P0
 
-- canonical `quantleet.strategy` import ownership
+- canonical `quantcraft.strategy` import ownership
 - config field discovery
 - defaults-only MVP rule
 - canonical `Strategy[Config]` declaration

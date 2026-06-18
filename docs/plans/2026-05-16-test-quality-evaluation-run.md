@@ -1,7 +1,7 @@
 # Current Test Quality Evaluation Run
 
 - Date: 2026-05-16
-- Task: Evaluate the current `quantleet` test-code quality using the documented
+- Task: Evaluate the current `quantcraft` test-code quality using the documented
   quantitative and qualitative plan.
 - Status: `complete`
 - Risk class: `Tier C`

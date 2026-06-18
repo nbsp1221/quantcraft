@@ -102,7 +102,7 @@
     - Backtesting.py API reference
     - Backtesting.py parameter heatmap example
     - Backtrader Cerebro reference
-  - Open-source snapshots cloned/inspected under `/tmp/quantleet-wfa-research`:
+  - Open-source snapshots cloned/inspected under `/tmp/quantcraft-wfa-research`:
     - `backtesting.py`
     - `pybroker`
     - `backtrader`

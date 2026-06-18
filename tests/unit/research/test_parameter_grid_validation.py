@@ -7,9 +7,9 @@ from typing import Any
 
 import pytest
 
-from quantleet.research import ParameterStudy
-from quantleet.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
-from quantleet.trading.domain.events import BarEvent
+from quantcraft.research import ParameterStudy
+from quantcraft.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
+from quantcraft.trading.domain.events import BarEvent
 from tests.unit.research.support_parameter_study import (
     CountingEngine,
     NoTradeStrategy,

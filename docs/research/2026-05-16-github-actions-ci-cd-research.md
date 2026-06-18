@@ -1,4 +1,4 @@
-# GitHub Actions CI/CD Research For Quantleet (2026)
+# GitHub Actions CI/CD Research For Quantcraft (2026)
 
 ## Status
 
@@ -11,31 +11,31 @@
 This document is a research artifact, not a system-of-record implementation
 contract.
 
-Use it to inform the Quantleet CI/CD implementation plan. If a conclusion from
+Use it to inform the Quantcraft CI/CD implementation plan. If a conclusion from
 this report should drive implementation, promote it into a product spec, design
 doc, or execution plan first.
 
 ## Purpose
 
-Quantleet is close to a first public beta package release. Runtime, package
+Quantcraft is close to a first public beta package release. Runtime, package
 build, and wheel smoke checks have passed locally, but the repository currently
 has no GitHub Actions workflow beyond the pull request template.
 
 This report answers:
 
-1. Which GitHub Actions setup is the most appropriate for Quantleet's current
+1. Which GitHub Actions setup is the most appropriate for Quantcraft's current
    Python package stack in 2026?
 2. Which action versions and release patterns are current enough to use now?
 3. How do comparable open-source projects configure CI and PyPI publishing in
    practice?
-4. What should Quantleet implement first, and what should remain out of scope
+4. What should Quantcraft implement first, and what should remain out of scope
    for the first beta?
 
-## Quantleet Context
+## Quantcraft Context
 
 Observed repository state on 2026-05-16:
 
-- package: `quantleet`
+- package: `quantcraft`
 - version: `0.1.0b1`
 - Python requirement: `>=3.12`
 - local package manager and command runner: `uv` and `poethepoet`
@@ -63,7 +63,7 @@ Research inputs:
 - official Python Packaging User Guide and PyPI Trusted Publishing
   documentation
 - local shallow clones of open-source repositories under
-  `/tmp/quantleet-ci-research`
+  `/tmp/quantcraft-ci-research`
 
 Local repositories inspected:
 
@@ -104,7 +104,7 @@ beside the SHA.
 
 Observed current versions in strong reference repositories:
 
-| Purpose | Current/recommended action | Practical recommendation for Quantleet |
+| Purpose | Current/recommended action | Practical recommendation for Quantcraft |
 | --- | --- | --- |
 | Checkout | `actions/checkout@v6`, observed `v6.0.2` in `packaging`, `pytest`, `uv`, and `freqtrade` | Use full SHA pin for `v6.0.2` with a comment. Use `persist-credentials: false` unless the job pushes. |
 | Python setup | `actions/setup-python@v6`, observed `v6.2.0` in `packaging`, `pytest`, `uv`, and `freqtrade` | Use full SHA pin for `v6.2.0`, with `python-version: "3.12"`. |
@@ -119,7 +119,7 @@ Observed current versions in strong reference repositories:
 ### Python Setup
 
 `actions/setup-python` is still the standard official way to install Python in
-GitHub Actions. For Quantleet, the workflow should explicitly request Python
+GitHub Actions. For Quantcraft, the workflow should explicitly request Python
 `3.12` because the package metadata requires `>=3.12` and the first beta is not
 trying to support earlier Python versions.
 
@@ -131,7 +131,7 @@ first-beta signal with less CI cost.
 ### uv Setup
 
 The uv documentation recommends `astral-sh/setup-uv` for GitHub Actions and
-supports cache configuration. For Quantleet, the workflow should stay aligned
+supports cache configuration. For Quantcraft, the workflow should stay aligned
 with local development and run repository commands through `uv run poe ...`
 instead of inventing separate CI-only commands.
 
@@ -177,7 +177,7 @@ permission-limited, and easier to audit.
 
 ### `packaging`
 
-`packaging` is the strongest compact reference for Quantleet.
+`packaging` is the strongest compact reference for Quantcraft.
 
 Observed patterns:
 
@@ -191,7 +191,7 @@ Observed patterns:
 - environment named `pypi`
 - `pypa/gh-action-pypi-publish` for publishing
 
-Quantleet should use this style as the primary reference.
+Quantcraft should use this style as the primary reference.
 
 ### `freqtrade`
 
@@ -209,13 +209,13 @@ Observed patterns:
 - `id-token: write` for publishing
 - `zizmor` workflow for GitHub Actions security analysis
 
-Quantleet should copy the security posture, not the matrix size. The full
+Quantcraft should copy the security posture, not the matrix size. The full
 `freqtrade` matrix is too broad for a first beta.
 
 ### `uv`
 
 `uv` is useful as a uv-native release reference, but it is much more complex
-than Quantleet needs.
+than Quantcraft needs.
 
 Observed patterns:
 
@@ -226,7 +226,7 @@ Observed patterns:
 - some workflows publish with `uv publish`
 - `zizmor` check workflow
 
-Quantleet can learn from the security and artifact boundaries, but should not
+Quantcraft can learn from the security and artifact boundaries, but should not
 copy the release orchestration complexity.
 
 ### `ruff`
@@ -239,7 +239,7 @@ copy the release orchestration complexity.
 - SHA-pinned actions
 - reusable workflow calls
 
-For Quantleet beta, this is a future reference. The first CI/CD implementation
+For Quantcraft beta, this is a future reference. The first CI/CD implementation
 should be smaller.
 
 ### `pytest`
@@ -255,7 +255,7 @@ Observed patterns:
 - `attestations: true` in the PyPI publish action
 - release notes and GitHub release orchestration
 
-Quantleet can consider package attestations later. For the first beta, Trusted
+Quantcraft can consider package attestations later. For the first beta, Trusted
 Publishing and artifact separation are enough.
 
 ### `vectorbt`
@@ -283,7 +283,7 @@ action versions are older than the strongest 2026 references.
 - PyPI publish through a stored PyPI API token
 
 This is a useful historical comparison, but not the recommended pattern for
-Quantleet in 2026. Trusted Publishing is preferable.
+Quantcraft in 2026. Trusted Publishing is preferable.
 
 ### `backtesting.py`
 
@@ -307,15 +307,15 @@ security reference.
 - Poetry install
 - format, mypy, pytest, coverage
 
-This is not a direct fit for Quantleet because Quantleet is uv-based and Python
+This is not a direct fit for Quantcraft because Quantcraft is uv-based and Python
 `>=3.12`. The matrix breadth is more than the first beta needs.
 
 ### `backtrader`
 
 The inspected upstream did not provide a modern GitHub Actions CI/CD reference.
-It is not useful for Quantleet's current CI/CD design.
+It is not useful for Quantcraft's current CI/CD design.
 
-## Recommended Quantleet CI/CD Shape
+## Recommended Quantcraft CI/CD Shape
 
 ### 1. Minimal CI Workflow
 
@@ -422,7 +422,7 @@ Use these defaults:
 
 ## Recommendation Summary
 
-Quantleet should implement the first beta CI/CD in two workflow files:
+Quantcraft should implement the first beta CI/CD in two workflow files:
 
 1. `ci.yml`
    - PR and main verification
@@ -452,7 +452,7 @@ Avoid for the first beta:
 - Add `.github/workflows/release.yml`.
 - Configure PyPI Trusted Publisher for:
   - repository owner: `nbsp1221`
-  - repository name: `quantleet`
+  - repository name: `quantcraft`
   - workflow file: `release.yml`
   - environment: `pypi`
 - Optionally configure TestPyPI Trusted Publisher for:
@@ -463,7 +463,7 @@ Avoid for the first beta:
 
 ## Final Judgment
 
-The best current model for Quantleet is:
+The best current model for Quantcraft is:
 
 - `packaging` for modern Python package workflow shape
 - `freqtrade` for uv-based trading-project CI posture

@@ -5,10 +5,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from quantleet.data import BarSeries
-from quantleet.research import ParameterStudy
-from quantleet.strategy import Strategy, StrategyConfig
-from quantleet.trading.domain.events import BarEvent
+from quantcraft.data import BarSeries
+from quantcraft.research import ParameterStudy
+from quantcraft.strategy import Strategy, StrategyConfig
+from quantcraft.trading.domain.events import BarEvent
 from tests.integration.research.support_parameter_studies import crossing_bars, engine
 from tests.unit.research.support_parameter_study import NoTradeStrategy
 

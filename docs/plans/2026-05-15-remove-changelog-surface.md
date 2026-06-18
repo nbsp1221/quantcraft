@@ -15,7 +15,7 @@
   - `docs/PLANS.md`
   - `README.md`
   - `docs/product-specs/public-beta-documentation.md`
-  - `src/quantleet/_repo_tools.py`
+  - `src/quantcraft/_repo_tools.py`
   - `tests/structure/repo/test_repository_entrypoint_docs.py`
   - `tests/structure/repo/test_public_package_metadata.py`
   - `tests/structure/repo/test_poe_task_contracts.py`

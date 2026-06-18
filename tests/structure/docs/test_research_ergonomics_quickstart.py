@@ -20,10 +20,10 @@ def test_research_ergonomics_quickstart_doc_covers_canonical_usage_path() -> Non
         encoding="utf-8"
     )
 
-    assert "from quantleet.backtest import BacktestEngine" in quickstart_doc
-    assert "from quantleet.research import ParameterStudy, ta, qc" in quickstart_doc
-    assert "from quantleet.strategy import Strategy" in quickstart_doc
-    assert "from quantleet.data import BarSeries, DataFrameDataSource, TimeBar" in quickstart_doc
+    assert "from quantcraft.backtest import BacktestEngine" in quickstart_doc
+    assert "from quantcraft.research import ParameterStudy, ta, qc" in quickstart_doc
+    assert "from quantcraft.strategy import Strategy" in quickstart_doc
+    assert "from quantcraft.data import BarSeries, DataFrameDataSource, TimeBar" in quickstart_doc
     assert "quantity=1" in quickstart_doc
     assert "SMA crossover" in quickstart_doc
     assert "RSI 30/70 mean reversion" in quickstart_doc
@@ -71,10 +71,10 @@ def test_research_ergonomics_quickstart_notebook_uses_canonical_import_path() ->
     notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
     notebook_source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
 
-    assert "from quantleet.backtest import BacktestEngine" in notebook_source
-    assert "from quantleet.research import qc, ta" in notebook_source
-    assert "from quantleet.strategy import Strategy" in notebook_source
-    assert "from quantleet.data import BarSeries, DataFrameDataSource, TimeBar" in notebook_source
+    assert "from quantcraft.backtest import BacktestEngine" in notebook_source
+    assert "from quantcraft.research import qc, ta" in notebook_source
+    assert "from quantcraft.strategy import Strategy" in notebook_source
+    assert "from quantcraft.data import BarSeries, DataFrameDataSource, TimeBar" in notebook_source
     assert "source = DataFrameDataSource(" in notebook_source
     assert "bars = source.load()" in notebook_source
     assert "BarSeries(" in notebook_source
@@ -104,8 +104,8 @@ def test_real_data_plotting_example_uses_public_plot_flow() -> None:
     notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
     notebook_source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
 
-    assert "from quantleet.backtest import BacktestEngine" in notebook_source
-    assert "from quantleet.data import CSVDataSource" in notebook_source
+    assert "from quantcraft.backtest import BacktestEngine" in notebook_source
+    assert "from quantcraft.data import CSVDataSource" in notebook_source
     assert "binance_usdm_btcusdtusdt_1h_2025.csv" in notebook_source
     assert "class Rsi3070Strategy(Strategy):" in notebook_source
     assert "engine.run(" in notebook_source

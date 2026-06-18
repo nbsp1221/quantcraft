@@ -102,7 +102,7 @@ remaining survivors.
 
 ### Backtest Runtime: Buy Reservation Update After Fill
 
-- Mutant: `quantleet.backtest.runtime.x__process_executable_order__mutmut_60`
+- Mutant: `quantcraft.backtest.runtime.x__process_executable_order__mutmut_60`
 - Observed mutation:
   - `_update_buy_reservation_after_fill(..., costs=costs)` becomes
     `_update_buy_reservation_after_fill(..., costs=None)`.
@@ -126,8 +126,8 @@ remaining survivors.
 ### Backtest Runtime: Entry Fee Pool And Closed PnL Accounting
 
 - Mutants:
-  - `quantleet.backtest.runtime.x__apply_runtime_fill__mutmut_43`
-  - `quantleet.backtest.runtime.x__apply_runtime_fill__mutmut_44`
+  - `quantcraft.backtest.runtime.x__apply_runtime_fill__mutmut_43`
+  - `quantcraft.backtest.runtime.x__apply_runtime_fill__mutmut_44`
 - Observed mutations:
   - `round(open_entry_fee_pool - allocated_entry_fee, 12)` becomes lower-quality
     rounding or an invalid constant-like rounding expression.
@@ -144,7 +144,7 @@ remaining survivors.
 ### Backtest Strategy Runtime: Invalid Flat Stop Sell Intent
 
 - Mutant:
-  - `quantleet.backtest.strategy_runtime.xǁ_StrategyDriverǁactivate_pending_order_intents__mutmut_33`
+  - `quantcraft.backtest.strategy_runtime.xǁ_StrategyDriverǁactivate_pending_order_intents__mutmut_33`
 - Observed mutation:
   - `_is_stop_order_type(request.order_type)` becomes `_is_stop_order_type(None)`.
 - Reclassification after implementation inspection: `low/equivalent-current-path`.
@@ -166,7 +166,7 @@ remaining survivors.
 ### Trading Sizing: Active Buy Reservation Price Removal
 
 - Mutant:
-  - `quantleet.trading.sizing.x__resolve_quantity_request__mutmut_67`
+  - `quantcraft.trading.sizing.x__resolve_quantity_request__mutmut_67`
 - Observed mutation:
   - `_active_buy_cash_reservation(..., market_buy_price=market_buy_price)`
     becomes `_active_buy_cash_reservation(..., market_buy_price=None)`.
@@ -185,9 +185,9 @@ remaining survivors.
 ### Backtest Runtime: Fill Rejection Cash Guard
 
 - Mutants:
-  - `quantleet.backtest.runtime.x__runtime_fill_rejection__mutmut_6`
-  - `quantleet.backtest.runtime.x__runtime_fill_rejection__mutmut_21`
-  - `quantleet.backtest.runtime.x__runtime_fill_rejection__mutmut_27`
+  - `quantcraft.backtest.runtime.x__runtime_fill_rejection__mutmut_6`
+  - `quantcraft.backtest.runtime.x__runtime_fill_rejection__mutmut_21`
+  - `quantcraft.backtest.runtime.x__runtime_fill_rejection__mutmut_27`
 - Observed mutations:
   - Required cash rounding changes.
   - Reservation fallback behavior changes.
@@ -203,7 +203,7 @@ remaining survivors.
 ### Trading Sizing: Zero Quantity Buy Boundary
 
 - Mutant:
-  - `quantleet.trading.sizing.x__resolve_buy_percent_request__mutmut_67`
+  - `quantcraft.trading.sizing.x__resolve_buy_percent_request__mutmut_67`
 - Observed mutation:
   - `quantity <= 0.0` becomes `quantity < 0.0`.
 - Risk: A zero-quantity buy can pass a sizing boundary when minimum quantity is
@@ -217,7 +217,7 @@ remaining survivors.
 ### Backtest Reporting: Final Cash Contract
 
 - Mutant:
-  - `quantleet.backtest.reporting.xǁ_ReportBuilderǁbuild__mutmut_158`
+  - `quantcraft.backtest.reporting.xǁ_ReportBuilderǁbuild__mutmut_158`
 - Observed mutation:
   - `final_cash=final_state.cash` becomes `final_cash=None`.
 - Risk: The final portfolio state can be reported with missing cash while tests
@@ -230,7 +230,7 @@ remaining survivors.
 ### Backtest Reporting: Profit Factor Contract
 
 - Mutant:
-  - `quantleet.backtest.reporting.x__trade_metrics__mutmut_37`
+  - `quantcraft.backtest.reporting.x__trade_metrics__mutmut_37`
 - Observed mutation:
   - `profit_factor = round(gross_profit / gross_loss, 12)` becomes rounding to
     integer precision.
@@ -245,7 +245,7 @@ remaining survivors.
 ### Backtest Reporting: Closed Trade Sell Economics
 
 - Survivor group:
-  - `quantleet.backtest.reporting.xǁ_ReportBuilderǁ_record_sell`
+  - `quantcraft.backtest.reporting.xǁ_ReportBuilderǁ_record_sell`
 - Observed risk from sampled survivors:
   - Closed-trade fees, net PnL, net return, and sell-side attribution can be
     mutated without enough local assertions.
@@ -260,7 +260,7 @@ remaining survivors.
 ### Trading State: Fill Application Accounting
 
 - Survivor group:
-  - `quantleet.trading.domain.state.x_apply_fill`
+  - `quantcraft.trading.domain.state.x_apply_fill`
 - Observed risk from sampled survivors:
   - Realized PnL, unrealized PnL, average entry price, and equity preservation
     are not fully pinned by local tests.
@@ -351,21 +351,21 @@ remaining survivors.
     zero-quantity buy percent sizing, final cash reporting, and fractional
     profit factor reporting.
   - Targeted mutation execution killed:
-    - `quantleet.backtest.runtime.x__runtime_fill_rejection__mutmut_6`
-    - `quantleet.backtest.runtime.x__runtime_fill_rejection__mutmut_21`
-    - `quantleet.backtest.runtime.x__runtime_fill_rejection__mutmut_27`
-    - `quantleet.backtest.runtime.x__apply_runtime_fill__mutmut_43`
-    - `quantleet.backtest.runtime.x__apply_runtime_fill__mutmut_44`
-    - `quantleet.trading.sizing.x__resolve_quantity_request__mutmut_67`
-    - `quantleet.trading.sizing.x__resolve_buy_percent_request__mutmut_67`
-    - `quantleet.backtest.reporting.xǁ_ReportBuilderǁbuild__mutmut_158`
-    - `quantleet.backtest.reporting.x__trade_metrics__mutmut_37`
+    - `quantcraft.backtest.runtime.x__runtime_fill_rejection__mutmut_6`
+    - `quantcraft.backtest.runtime.x__runtime_fill_rejection__mutmut_21`
+    - `quantcraft.backtest.runtime.x__runtime_fill_rejection__mutmut_27`
+    - `quantcraft.backtest.runtime.x__apply_runtime_fill__mutmut_43`
+    - `quantcraft.backtest.runtime.x__apply_runtime_fill__mutmut_44`
+    - `quantcraft.trading.sizing.x__resolve_quantity_request__mutmut_67`
+    - `quantcraft.trading.sizing.x__resolve_buy_percent_request__mutmut_67`
+    - `quantcraft.backtest.reporting.xǁ_ReportBuilderǁbuild__mutmut_158`
+    - `quantcraft.backtest.reporting.x__trade_metrics__mutmut_37`
   - Targeted mutation execution still left the two reclassified
     equivalent-current-path mutants alive:
-    - `quantleet.backtest.runtime.x__process_executable_order__mutmut_60`
-    - `quantleet.backtest.strategy_runtime.xǁ_StrategyDriverǁactivate_pending_order_intents__mutmut_33`
+    - `quantcraft.backtest.runtime.x__process_executable_order__mutmut_60`
+    - `quantcraft.backtest.strategy_runtime.xǁ_StrategyDriverǁactivate_pending_order_intents__mutmut_33`
 - Reclassification evidence:
-  - `quantleet.backtest.runtime.x__process_executable_order__mutmut_60`
+  - `quantcraft.backtest.runtime.x__process_executable_order__mutmut_60`
     changes the `costs` argument passed into
     `_update_buy_reservation_after_fill`. In the current runtime,
     `match_order` fills the full remaining order quantity or returns `None`;
@@ -374,7 +374,7 @@ remaining survivors.
     is therefore unreachable through `_process_executable_order` today. The
     underlying partial-fill reservation contract is still tested directly in
     `tests/unit/backtest/test_runtime_accounting.py`.
-  - `quantleet.backtest.strategy_runtime.xǁ_StrategyDriverǁactivate_pending_order_intents__mutmut_33`
+  - `quantcraft.backtest.strategy_runtime.xǁ_StrategyDriverǁactivate_pending_order_intents__mutmut_33`
     disables the explicit flat-position stop-sell guard. In the current sizing
     contract, flat sell requests already resolve to no-op before that guard:
     explicit-quantity sells fail with `insufficient_position`, and

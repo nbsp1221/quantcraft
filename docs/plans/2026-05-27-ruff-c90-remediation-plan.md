@@ -25,15 +25,15 @@
   modules.
 - In-repo scope:
   - `pyproject.toml`
-  - `src/quantleet/_repo_tools.py`
-  - `src/quantleet/backtest/execution_model.py`
-  - `src/quantleet/backtest/runtime.py`
-  - `src/quantleet/integrations/venues/ccxt/market_data.py`
-  - `src/quantleet/research/parameter_exploration.py`
-  - `src/quantleet/strategy/config.py`
-  - `src/quantleet/trading/domain/intents.py`
-  - `src/quantleet/trading/domain/orders.py`
-  - `src/quantleet/trading/order_requests.py`
+  - `src/quantcraft/_repo_tools.py`
+  - `src/quantcraft/backtest/execution_model.py`
+  - `src/quantcraft/backtest/runtime.py`
+  - `src/quantcraft/integrations/venues/ccxt/market_data.py`
+  - `src/quantcraft/research/parameter_exploration.py`
+  - `src/quantcraft/strategy/config.py`
+  - `src/quantcraft/trading/domain/intents.py`
+  - `src/quantcraft/trading/domain/orders.py`
+  - `src/quantcraft/trading/order_requests.py`
   - `tests/unit/trading/test_contracts.py`
   - Active plan artifacts under `docs/plans/`
 - Out-of-repo scope: none.
@@ -44,7 +44,7 @@
   - check marker: 2026-05-27 thread instruction to enter work phase and proceed
     autonomously inside the documented implementation scope
   - granted scope: behavior-preserving refactors needed to satisfy this C90
-    remediation plan, including `src/quantleet/trading/**` validator extraction
+    remediation plan, including `src/quantcraft/trading/**` validator extraction
   - expiration: end of this C90 remediation implementation slice
   - audit reference: this plan and the 2026-05-27 user instruction in the
     current agent thread
@@ -122,7 +122,7 @@
 
 ## Remediation Queue
 
-### 1. `collect_doc_issues` - `src/quantleet/_repo_tools.py:369` - `60 > 10`
+### 1. `collect_doc_issues` - `src/quantcraft/_repo_tools.py:369` - `60 > 10`
 
 - Classification: true positive, highest priority.
 - Why it is complex: one function validates required docs, README sections,
@@ -152,7 +152,7 @@
 - Expected outcome: `collect_doc_issues` drops below 10; extracted helpers
   should each remain under 10.
 
-### 2. `_run_backtest` - `src/quantleet/backtest/runtime.py:25` - `20 > 10`
+### 2. `_run_backtest` - `src/quantcraft/backtest/runtime.py:25` - `20 > 10`
 
 - Classification: true positive, high risk.
 - Why it is complex: the function initializes runtime state, iterates bars,
@@ -181,7 +181,7 @@
 - Expected outcome: `_run_backtest` drops below 10 with no public result/report
   changes.
 
-### 3. `_crossing_prices_for_segment` - `src/quantleet/backtest/execution_model.py:122` - `14 > 10`
+### 3. `_crossing_prices_for_segment` - `src/quantcraft/backtest/execution_model.py:122` - `14 > 10`
 
 - Classification: true positive.
 - Why it is complex: a single loop handles executable limits, previously
@@ -203,7 +203,7 @@
 - Expected outcome: method drops below 10 while preserving existing conservative
   OHLCV execution semantics.
 
-### 4. `_fetch_ohlcv_range` - `src/quantleet/integrations/venues/ccxt/market_data.py:120` - `14 > 10`
+### 4. `_fetch_ohlcv_range` - `src/quantcraft/integrations/venues/ccxt/market_data.py:120` - `14 > 10`
 
 - Classification: true positive.
 - Why it is complex: pagination, request limit calculation, page fetching,
@@ -226,7 +226,7 @@
 - Expected outcome: `_fetch_ohlcv_range` drops below 10 and pagination behavior
   remains byte-for-byte equivalent at the public `TimeBar` output level.
 
-### 5. `grid_search` - `src/quantleet/research/parameter_exploration.py:243` - `12 > 10`
+### 5. `grid_search` - `src/quantcraft/research/parameter_exploration.py:243` - `12 > 10`
 
 - Classification: true positive, moderate priority.
 - Why it is complex: the method owns grid validation, objective validation,
@@ -248,7 +248,7 @@
 - Expected outcome: `grid_search` drops below 10 and rejection-stage semantics
   remain identical.
 
-### 6. `collect_architecture_issues` - `src/quantleet/_repo_tools.py:746` - `12 > 10`
+### 6. `collect_architecture_issues` - `src/quantcraft/_repo_tools.py:746` - `12 > 10`
 
 - Classification: true positive, low risk.
 - Why it is complex: AST walking, import handling, import-from handling, domain
@@ -266,7 +266,7 @@
   - `uv run ruff check src tests scripts --select C90`
 - Expected outcome: `collect_architecture_issues` drops below 10.
 
-### 7. `OrderIntent.__post_init__` - `src/quantleet/trading/domain/intents.py:25` - `12 > 10`
+### 7. `OrderIntent.__post_init__` - `src/quantcraft/trading/domain/intents.py:25` - `12 > 10`
 
 - Classification: true positive, Tier A.
 - Why it is complex: quantity validation, limit-order shape, stop-family required
@@ -292,7 +292,7 @@
 - Expected outcome: `OrderIntent.__post_init__` drops below 10 while preserving
   construction-time invariant enforcement.
 
-### 8. `Order.__post_init__` - `src/quantleet/trading/domain/orders.py:32` - `15 > 10`
+### 8. `Order.__post_init__` - `src/quantcraft/trading/domain/orders.py:32` - `15 > 10`
 
 - Classification: true positive, Tier A.
 - Why it is complex: it repeats order-shape validation from `OrderIntent` and
@@ -315,7 +315,7 @@
 - Expected outcome: `Order.__post_init__` drops below 10 and shares invariant
   enforcement with `OrderIntent`.
 
-### 9. `PendingOrderRequest.__post_init__` - `src/quantleet/trading/order_requests.py:28` - `16 > 10`
+### 9. `PendingOrderRequest.__post_init__` - `src/quantcraft/trading/order_requests.py:28` - `16 > 10`
 
 - Classification: true positive, Tier A.
 - Why it is complex: request sizing-mode validation, fixed quantity validation,

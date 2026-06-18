@@ -3,12 +3,12 @@
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
 > implement this plan task-by-task.
 
-**Goal:** Build the Stage 1 canonical `quantleet.strategy` contract with
+**Goal:** Build the Stage 1 canonical `quantcraft.strategy` contract with
 `Strategy`, `StrategyConfig`, immutable materialized configs, normalized
-snapshots, and migration-compatible `quantleet.research.Strategy` re-export.
+snapshots, and migration-compatible `quantcraft.research.Strategy` re-export.
 
 **Architecture:** Introduce a new shallow top-level capability package,
-`quantleet.strategy`, as the shared strategy/runtime authoring surface.
+`quantcraft.strategy`, as the shared strategy/runtime authoring surface.
 Move the existing strategy runtime surface out of `research`, keep `research`
 as a compatibility facade, and keep `BacktestEngine` instance execution intact.
 Implement config discovery/materialization through the config object and
@@ -35,13 +35,13 @@ slice.
 
 In scope:
 
-- Create canonical package `quantleet.strategy`.
+- Create canonical package `quantcraft.strategy`.
 - Move or re-home the existing `Strategy` runtime surface from
-  `quantleet.research.strategy` into `quantleet.strategy`.
+  `quantcraft.research.strategy` into `quantcraft.strategy`.
 - Move the strategy data view primitives currently in
-  `quantleet.research.series` into `quantleet.strategy.series` so
-  `quantleet.strategy` does not depend on `research`.
-- Keep `quantleet.research.Strategy` and `quantleet.research.series` as
+  `quantcraft.research.series` into `quantcraft.strategy.series` so
+  `quantcraft.strategy` does not depend on `research`.
+- Keep `quantcraft.research.Strategy` and `quantcraft.research.series` as
   compatibility re-export paths.
 - Add `StrategyConfig` as a dataclass-like framework base.
 - Add public config exception hierarchy:
@@ -86,7 +86,7 @@ In scope:
 - Expose normalized snapshot mapping from the materialized config object.
 - Add tests under the new `tests/unit/strategy` and
   `tests/integration/strategy` taxonomy.
-- Add/update structure and public import tests for `quantleet.strategy`.
+- Add/update structure and public import tests for `quantcraft.strategy`.
 - Update architecture/doc routing tests to recognize `strategy` as a shared
   Tier B capability package.
 
@@ -110,7 +110,7 @@ Out of scope:
 The repository is a Python 3.13 package using `uv`, `poethepoet`, `pytest`,
 `ruff`, `mypy`, and `uv_build`.
 
-Current package roots under `src/quantleet`:
+Current package roots under `src/quantcraft`:
 
 - `data`
 - `trading`
@@ -136,52 +136,52 @@ Default verification is driven through Poe:
 
 ### Relevant Existing Modules
 
-- `src/quantleet/research/strategy.py`
+- `src/quantcraft/research/strategy.py`
   - owns current public `Strategy`
   - contains `PositionView`
   - initializes `_pending_order_requests`, causal `data`, and `position`
   - exposes `init`, `display_name`, `parameters`, `on_bar`, `buy`, `sell`
-  - imports `OHLCVDataView` and `SeriesView` from `quantleet.research.series`
-  - imports trading events/intents/state/order requests from `quantleet.trading`
+  - imports `OHLCVDataView` and `SeriesView` from `quantcraft.research.series`
+  - imports trading events/intents/state/order requests from `quantcraft.trading`
 
-- `src/quantleet/research/series.py`
+- `src/quantcraft/research/series.py`
   - owns `SeriesView`, `_SeriesBuffer`, `OHLCVDataView`
   - used by `Strategy`, `ta`, indicator runtime, tests, and docs
 
-- `src/quantleet/research/__init__.py`
+- `src/quantcraft/research/__init__.py`
   - lazy public facade for `Strategy`, `ParameterStudy`, `GridSearchResult`,
     `GridSearchRow`, `qc`, `ta`
   - must keep `Strategy` as a compatibility re-export
 
-- `src/quantleet/backtest/strategy_runtime.py`
+- `src/quantcraft/backtest/strategy_runtime.py`
   - uses `StrategyLike` protocol rather than concrete `Strategy`
   - `_StrategyDriver` calls `_reset_runtime_state`, `init`, `_handle_bar`,
     and reads `_pending_order_requests`
   - this path should remain protocol-based and should not require
     `BacktestEngine` to construct strategy classes in Stage 1
 
-- `src/quantleet/backtest/engine.py`
+- `src/quantcraft/backtest/engine.py`
   - `BacktestEngine.run(...)` accepts a strategy instance
   - validates exactly one of `bars` or `source`
   - calls `_run_backtest(...)`
   - must remain unchanged in behavior for Stage 1
 
-- `src/quantleet/backtest/reporting.py`
+- `src/quantcraft/backtest/reporting.py`
   - `RunManifest.strategy_parameters` still comes from
     `_strategy_parameters(strategy)`
   - Stage 3 owns this migration; do not change it in Stage 1
 
-- `src/quantleet/research/parameter_exploration.py`
+- `src/quantcraft/research/parameter_exploration.py`
   - `ParameterStudy` currently requires `strategy_factory`
   - grid validation already contains reusable JSON-scalar and deterministic
     grid-shape logic
   - Stage 2 owns migration to `strategy=StrategyClass`; do not change this in
     Stage 1 except imports if needed
 
-- `src/quantleet/_repo_tools.py`
+- `src/quantcraft/_repo_tools.py`
   - defines architecture/domain rules used by `uv run poe repo-check`
   - currently does not know about a `strategy` top-level package
-  - must be updated when `src/quantleet/strategy` is added
+  - must be updated when `src/quantcraft/strategy` is added
 
 ### Existing Architecture Constraints
 
@@ -196,7 +196,7 @@ From `ARCHITECTURE.md` and `docs/design-docs/package-topology-and-naming.md`:
 - Product surfaces must not own engine semantics.
 
 Implication: `Strategy` and `StrategyConfig` should not stay under `research`
-as canonical owner. The new top-level `quantleet.strategy` package is the
+as canonical owner. The new top-level `quantcraft.strategy` package is the
 correct capability package.
 
 ### Existing Canonical Paths To Preserve
@@ -206,9 +206,9 @@ correct capability package.
   direct-run paths.
 - `ParameterStudy(..., strategy_factory=...).grid_search(...)` remains current
   implemented behavior until Stage 2.
-- `quantleet.research.Strategy` remains importable as a migration/re-export
+- `quantcraft.research.Strategy` remains importable as a migration/re-export
   path.
-- `quantleet.research.series.SeriesView` remains importable as a
+- `quantcraft.research.series.SeriesView` remains importable as a
   migration/re-export path.
 - `result.report.run.strategy_parameters` remains current reporting behavior
   until Stage 3.
@@ -221,7 +221,7 @@ Reuse:
   mapping snapshots where useful.
 - Existing JSON-scalar semantics from `parameter_exploration.py`, but do not
   import private research helpers into `strategy`. Reimplement the small
-  primitive validation locally in `quantleet.strategy.config` to avoid a
+  primitive validation locally in `quantcraft.strategy.config` to avoid a
   `strategy -> research` dependency.
 - Existing `Strategy` order intake and runtime state methods.
 - Existing `_StrategyDriver` protocol boundary in backtest.
@@ -231,32 +231,32 @@ Reuse:
 
 Do not reuse by importing:
 
-- private `quantleet.research.parameter_exploration._validate_json_scalar`
-  from `quantleet.strategy`
-- private backtest runtime helpers from `quantleet.strategy`
-- `quantleet.research.series` from `quantleet.strategy`
+- private `quantcraft.research.parameter_exploration._validate_json_scalar`
+  from `quantcraft.strategy`
+- private backtest runtime helpers from `quantcraft.strategy`
+- `quantcraft.research.series` from `quantcraft.strategy`
 
 ### Affected Areas
 
 Directly affected:
 
-- new `src/quantleet/strategy/*`
-- `src/quantleet/research/strategy.py`
-- `src/quantleet/research/series.py`
-- `src/quantleet/research/__init__.py`
+- new `src/quantcraft/strategy/*`
+- `src/quantcraft/research/strategy.py`
+- `src/quantcraft/research/series.py`
+- `src/quantcraft/research/__init__.py`
 - imports in research indicator code if they should point at canonical
-  `quantleet.strategy.series`
+  `quantcraft.strategy.series`
 - architecture repo tools and structure tests
 - strategy/config unit and integration tests
 - public import smoke/build tests
 
 Indirectly affected:
 
-- Many tests import `Strategy` from `quantleet.research`; these should continue
+- Many tests import `Strategy` from `quantcraft.research`; these should continue
   passing through re-export.
-- Some tests import `Strategy` from `quantleet.research.strategy`; this module
+- Some tests import `Strategy` from `quantcraft.research.strategy`; this module
   should remain a re-export compatibility path.
-- Some tests import `SeriesView` from `quantleet.research.series`; this module
+- Some tests import `SeriesView` from `quantcraft.research.series`; this module
   should remain a re-export compatibility path.
 - Coverage gate covers new source files, so tests must cover the new package
   well enough to keep global coverage above 90%.
@@ -268,7 +268,7 @@ Indirectly affected:
 Create a new package:
 
 ```text
-src/quantleet/strategy/
+src/quantcraft/strategy/
   __init__.py
   config.py
   series.py
@@ -309,24 +309,24 @@ Do not export public discovery/materialization helper functions.
 
 ### Compatibility Re-Exports
 
-Replace `src/quantleet/research/strategy.py` with a compatibility re-export:
+Replace `src/quantcraft/research/strategy.py` with a compatibility re-export:
 
 ```python
-from quantleet.strategy import Strategy
+from quantcraft.strategy import Strategy
 
 __all__ = ["Strategy"]
 ```
 
-Replace `src/quantleet/research/series.py` with compatibility re-exports:
+Replace `src/quantcraft/research/series.py` with compatibility re-exports:
 
 ```python
-from quantleet.strategy.series import OHLCVDataView, SeriesView
+from quantcraft.strategy.series import OHLCVDataView, SeriesView
 
 __all__ = ["OHLCVDataView", "SeriesView"]
 ```
 
-Update `src/quantleet/research/__init__.py` so `Strategy` is loaded from
-`quantleet.strategy`, while `ParameterStudy`, `qc`, and `ta` remain under
+Update `src/quantcraft/research/__init__.py` so `Strategy` is loaded from
+`quantcraft.strategy`, while `ParameterStudy`, `qc`, and `ta` remain under
 `research`.
 
 ### StrategyConfig Mechanics
@@ -479,8 +479,8 @@ capability:
   - `strategy -> execution`
   - `strategy -> integrations`
 
-`quantleet.strategy` should depend only on standard library and
-`quantleet.trading`.
+`quantcraft.strategy` should depend only on standard library and
+`quantcraft.trading`.
 
 ## Data And Control Flow
 
@@ -538,20 +538,20 @@ does not wire it into `ParameterStudy` or `BacktestReport`.
 
 ### Create
 
-- `src/quantleet/strategy/__init__.py`
+- `src/quantcraft/strategy/__init__.py`
   - canonical public exports
 
-- `src/quantleet/strategy/config.py`
+- `src/quantcraft/strategy/config.py`
   - `StrategyConfig`
   - exception hierarchy
   - field metadata
   - primitive/optional validation
   - `to_mapping()`
 
-- `src/quantleet/strategy/series.py`
+- `src/quantcraft/strategy/series.py`
   - move existing `SeriesView`, `_SeriesBuffer`, `OHLCVDataView`
 
-- `src/quantleet/strategy/strategy.py`
+- `src/quantcraft/strategy/strategy.py`
   - move existing `Strategy` and `PositionView`
   - add generic/config behavior
   - keep existing order-intake methods intact
@@ -580,42 +580,42 @@ does not wire it into `ParameterStudy` or `BacktestReport`.
 
 ### Modify
 
-- `src/quantleet/research/strategy.py`
-  - convert to re-export from `quantleet.strategy`
+- `src/quantcraft/research/strategy.py`
+  - convert to re-export from `quantcraft.strategy`
 
-- `src/quantleet/research/series.py`
-  - convert to re-export from `quantleet.strategy.series`
+- `src/quantcraft/research/series.py`
+  - convert to re-export from `quantcraft.strategy.series`
 
-- `src/quantleet/research/__init__.py`
-  - load `Strategy` from `quantleet.strategy`
+- `src/quantcraft/research/__init__.py`
+  - load `Strategy` from `quantcraft.strategy`
 
-- `src/quantleet/research/indicators/runtime/factory.py`
-  - import `SeriesView` from canonical `quantleet.strategy.series`
+- `src/quantcraft/research/indicators/runtime/factory.py`
+  - import `SeriesView` from canonical `quantcraft.strategy.series`
   - or keep compatibility import temporarily if the diff is smaller, but avoid
-    any `quantleet.strategy -> quantleet.research` dependency
+    any `quantcraft.strategy -> quantcraft.research` dependency
 
 - `tests/smoke/local/test_public_imports.py`
-  - assert `quantleet.strategy` exposes `Strategy`, `StrategyConfig`, and
+  - assert `quantcraft.strategy` exposes `Strategy`, `StrategyConfig`, and
     public config errors
-  - assert `quantleet.research.Strategy` remains available
+  - assert `quantcraft.research.Strategy` remains available
 
 - `tests/integration/commands/test_built_artifact_imports.py`
-  - assert built wheel exposes `quantleet.strategy`
+  - assert built wheel exposes `quantcraft.strategy`
 
 - `tests/structure/architecture/test_capability_package_roots.py`
-  - add `src/quantleet/strategy/__init__.py`
+  - add `src/quantcraft/strategy/__init__.py`
 
 - `tests/structure/architecture/test_domain_boundaries.py`
   - assert strategy dependency rules
 
-- `src/quantleet/_repo_tools.py`
+- `src/quantcraft/_repo_tools.py`
   - add `strategy` to known Tier B domains and allowed dependency edges
 
 - `ARCHITECTURE.md`
   - add `strategy` to top-level contexts and dependency rules
 
 - `docs/design-docs/package-topology-and-naming.md`
-  - include `quantleet.strategy.api` only if choosing facade wording; otherwise
+  - include `quantcraft.strategy.api` only if choosing facade wording; otherwise
     note `strategy` as a capability package in the topology guidance
 
 - `README.md`, `docs/site/quickstart.md`,
@@ -624,8 +624,8 @@ does not wire it into `ParameterStudy` or `BacktestReport`.
   - update canonical strategy import examples to use:
 
     ```python
-    from quantleet.strategy import Strategy
-    from quantleet.research import qc, ta
+    from quantcraft.strategy import Strategy
+    from quantcraft.research import qc, ta
     ```
 
   - do not migrate `ParameterStudy` examples to `strategy=...` in this stage
@@ -704,19 +704,19 @@ Keep this test narrow. Do not assert optimizer or reporting migration behavior.
 
 `tests/structure/architecture/test_strategy_config_boundaries.py`:
 
-- `src/quantleet/strategy/__init__.py` exists
+- `src/quantcraft/strategy/__init__.py` exists
 - `strategy` is recognized by architecture checks
-- `quantleet.strategy` does not import `research`, `backtest`, or `execution`
+- `quantcraft.strategy` does not import `research`, `backtest`, or `execution`
 - `research`, `backtest`, and `execution` may import `strategy` under the
   architecture rules
 
 `tests/smoke/local/test_public_imports.py`:
 
-- `import quantleet.strategy`
-- `quantleet.strategy.Strategy`
-- `quantleet.strategy.StrategyConfig`
+- `import quantcraft.strategy`
+- `quantcraft.strategy.Strategy`
+- `quantcraft.strategy.StrategyConfig`
 - public exception types
-- `quantleet.research.Strategy` still exists as migration path
+- `quantcraft.research.Strategy` still exists as migration path
 
 `tests/integration/commands/test_built_artifact_imports.py`:
 
@@ -724,8 +724,8 @@ Keep this test narrow. Do not assert optimizer or reporting migration behavior.
 
 ### Regression Tests To Preserve
 
-Existing tests that use `quantleet.research.Strategy` or
-`quantleet.research.strategy.Strategy` should continue passing through
+Existing tests that use `quantcraft.research.Strategy` or
+`quantcraft.research.strategy.Strategy` should continue passing through
 re-exports. Do not mass-rewrite all tests unless needed for canonical docs or
 new package assertions.
 
@@ -747,7 +747,7 @@ replace `strategy_parameters` in Stage 1.
 
 **Steps:**
 
-1. Add failing tests that expect `src/quantleet/strategy/__init__.py`.
+1. Add failing tests that expect `src/quantcraft/strategy/__init__.py`.
 2. Add failing tests that `strategy` can depend on `trading`.
 3. Add failing tests that `research`, `backtest`, and `execution` can depend on
    `strategy`.
@@ -766,7 +766,7 @@ yet.
 
 **Files:**
 
-- Modify: `src/quantleet/_repo_tools.py`
+- Modify: `src/quantcraft/_repo_tools.py`
 - Modify: `ARCHITECTURE.md`
 - Modify: `docs/design-docs/package-topology-and-naming.md`
 
@@ -790,20 +790,20 @@ Expected: structure tests still fail until package exists, but architecture
 rule assertions for dependency validation should pass after package creation in
 the next task.
 
-### Task 3: Create `quantleet.strategy` Package And Move Series Surface
+### Task 3: Create `quantcraft.strategy` Package And Move Series Surface
 
 **Files:**
 
-- Create: `src/quantleet/strategy/__init__.py`
-- Create: `src/quantleet/strategy/series.py`
-- Modify: `src/quantleet/research/series.py`
-- Modify: `src/quantleet/research/indicators/runtime/factory.py`
+- Create: `src/quantcraft/strategy/__init__.py`
+- Create: `src/quantcraft/strategy/series.py`
+- Modify: `src/quantcraft/research/series.py`
+- Modify: `src/quantcraft/research/indicators/runtime/factory.py`
 
 **Steps:**
 
 1. Move the contents of `research/series.py` into `strategy/series.py`.
 2. Turn `research/series.py` into a re-export shim.
-3. Update indicator runtime imports to the canonical `quantleet.strategy.series`
+3. Update indicator runtime imports to the canonical `quantcraft.strategy.series`
    path where practical.
 4. Keep `SeriesView` behavior unchanged.
 5. Run:
@@ -839,8 +839,8 @@ Expected: fails because `StrategyConfig` is not implemented yet.
 
 **Files:**
 
-- Create: `src/quantleet/strategy/config.py`
-- Modify: `src/quantleet/strategy/__init__.py`
+- Create: `src/quantcraft/strategy/config.py`
+- Modify: `src/quantcraft/strategy/__init__.py`
 
 **Steps:**
 
@@ -852,7 +852,7 @@ Expected: fails because `StrategyConfig` is not implemented yet.
 6. Implement `__getattribute__` for field reads.
 7. Implement `__setattr__` mutation guard.
 8. Implement `to_mapping()`.
-9. Export public types from `quantleet.strategy`.
+9. Export public types from `quantcraft.strategy`.
 10. Run:
 
     ```bash
@@ -866,16 +866,16 @@ Expected: new config tests and typing pass.
 
 **Files:**
 
-- Create: `src/quantleet/strategy/strategy.py`
-- Modify: `src/quantleet/research/strategy.py`
-- Modify: `src/quantleet/research/__init__.py`
-- Modify: `src/quantleet/strategy/__init__.py`
+- Create: `src/quantcraft/strategy/strategy.py`
+- Modify: `src/quantcraft/research/strategy.py`
+- Modify: `src/quantcraft/research/__init__.py`
+- Modify: `src/quantcraft/strategy/__init__.py`
 
 **Steps:**
 
 1. Move existing `PositionView` and `Strategy` implementation into
    `strategy/strategy.py`.
-2. Update imports to use `quantleet.strategy.series`.
+2. Update imports to use `quantcraft.strategy.series`.
 3. Make `Strategy` generic over `StrategyConfig`.
 4. Add config declaration resolution in `__init_subclass__`.
 5. Add `config_type` fallback handling.
@@ -933,10 +933,10 @@ Expected: passes.
 
 **Steps:**
 
-1. Assert `quantleet.strategy` imports cleanly.
+1. Assert `quantcraft.strategy` imports cleanly.
 2. Assert canonical exports exist.
-3. Assert `quantleet.research.Strategy` still exists.
-4. Assert root `quantleet` still does not export direct symbols unless a later
+3. Assert `quantcraft.research.Strategy` still exists.
+4. Assert root `quantcraft` still does not export direct symbols unless a later
    public API spec changes that.
 5. Run:
 
@@ -962,12 +962,12 @@ Expected: passes.
 1. Replace canonical strategy imports with:
 
    ```python
-   from quantleet.strategy import Strategy
-   from quantleet.research import qc, ta
+   from quantcraft.strategy import Strategy
+   from quantcraft.research import qc, ta
    ```
 
 2. Do not change `ParameterStudy` examples to `strategy=...`.
-3. Mention `quantleet.research.Strategy` only as a migration-compatible
+3. Mention `quantcraft.research.Strategy` only as a migration-compatible
    re-export if public docs need to explain it.
 4. Run:
 
@@ -1004,9 +1004,9 @@ verification plus the performance gate.
 
 Compatibility preserved:
 
-- `from quantleet.research import Strategy`
-- `from quantleet.research.strategy import Strategy`
-- `from quantleet.research.series import SeriesView, OHLCVDataView`
+- `from quantcraft.research import Strategy`
+- `from quantcraft.research.strategy import Strategy`
+- `from quantcraft.research.series import SeriesView, OHLCVDataView`
 - existing direct `BacktestEngine.run(..., strategy=StrategyInstance)` behavior
 - existing `ParameterStudy(..., strategy_factory=...)` behavior
 - existing `Strategy.parameters()` behavior for report metadata until Stage 3
@@ -1014,7 +1014,7 @@ Compatibility preserved:
 Intentional new canonical path:
 
 ```python
-from quantleet.strategy import Strategy, StrategyConfig
+from quantcraft.strategy import Strategy, StrategyConfig
 ```
 
 Avoid:
@@ -1022,7 +1022,7 @@ Avoid:
 - deleting old imports in this stage
 - updating `ParameterStudy` constructor signatures
 - changing report dataclasses
-- changing public root package `quantleet.__all__`
+- changing public root package `quantcraft.__all__`
 
 ## Risks And Mitigations
 
@@ -1038,7 +1038,7 @@ Mitigation:
 
 Mitigation:
 
-- keep `quantleet.research.series` as a re-export shim
+- keep `quantcraft.research.series` as a re-export shim
 - run existing `test_series.py`, `test_indicator_surface.py`, and indicator
   runtime tests
 
@@ -1088,10 +1088,10 @@ Mitigation:
 
 Implementation is successful when:
 
-- `quantleet.strategy` is importable from source and built wheel.
+- `quantcraft.strategy` is importable from source and built wheel.
 - `Strategy` and `StrategyConfig` are canonical exports from
-  `quantleet.strategy`.
-- `quantleet.research.Strategy` still imports as a compatibility re-export.
+  `quantcraft.strategy`.
+- `quantcraft.research.Strategy` still imports as a compatibility re-export.
 - Existing strategy/backtest/parameter-study tests still pass.
 - `StrategyConfig` validates fields/defaults according to the Stage 1 contract.
 - `Strategy[Config]` and `config_type` fallback work as specified.
@@ -1143,7 +1143,7 @@ implementation:
 ### Scope
 
 After Stage 1 implementation, user-facing docs, concept docs, example docs, and
-notebooks must teach `quantleet.strategy.Strategy` as the canonical strategy
+notebooks must teach `quantcraft.strategy.Strategy` as the canonical strategy
 authoring path. Historical execution plans remain audit records and are not
 rewritten.
 
@@ -1175,9 +1175,9 @@ legacy path look canonical and increases the cost of later shim removal.
 ### Acceptance Contract
 
 - Non-historical docs and notebooks no longer teach
-  `from quantleet.research import Strategy`.
-- Compatibility references to `quantleet.research.Strategy` remain only where
+  `from quantcraft.research import Strategy`.
+- Compatibility references to `quantcraft.research.Strategy` remain only where
   they explicitly describe the migration/re-export path.
-- `ParameterStudy`, `ta`, and `qc` remain under `quantleet.research`.
+- `ParameterStudy`, `ta`, and `qc` remain under `quantcraft.research`.
 - No Stage 2 API such as `ParameterStudy(strategy=...)` is introduced.
 - Targeted structure/smoke/notebook validation passes.

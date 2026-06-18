@@ -1,6 +1,6 @@
 # Research
 
-Use this directory for time-scoped competitive research, ecosystem scans, and comparative studies that inform `quantleet` planning.
+Use this directory for time-scoped competitive research, ecosystem scans, and comparative studies that inform `quantcraft` planning.
 
 ## Metadata
 
@@ -16,13 +16,13 @@ Use this directory for time-scoped competitive research, ecosystem scans, and co
 | [`2026-04-19-order-domain-architecture-comparison.md`](2026-04-19-order-domain-architecture-comparison.md) | current | no | order-domain boundary evidence and cross-library comparison | Before changing the `OrderIntent`/runtime `Order` seam, planning stop-order support, or drafting the first runtime Order implementation slice. | Advisory evidence note for the Order-domain split across research, design, and implementation planning. |
 | [`2026-04-20-order-runtime-model-comparison.md`](2026-04-20-order-runtime-model-comparison.md) | current | no | runtime `Order` responsibility, lifecycle depth, and event-boundary evidence | Before deepening the runtime `Order` aggregate, introducing order statuses, or deciding whether state transitions belong on `Order` versus matcher/runtime orchestration. | English advisory comparison focused on runtime Order responsibilities rather than the original `OrderIntent` split itself. |
 | [`2026-04-20-order-lifecycle-and-sizing-comparison.md`](2026-04-20-order-lifecycle-and-sizing-comparison.md) | current | no | lifecycle/FSM and sizing-intent evidence for the next order-model slice | Before designing stop-family lifecycle semantics or percentage-based sizing intent for the shared trading kernel. | Advisory evidence note for the next hard seams after the initial runtime `Order` promotion. |
-| [`2026-05-16-github-actions-ci-cd-research.md`](2026-05-16-github-actions-ci-cd-research.md) | current | no | GitHub Actions CI/CD and PyPI release workflow research | Before implementing first-beta CI, release workflows, Trusted Publishing, or GitHub Actions hardening. | Advisory report covering official docs and 10 locally cloned OSS workflow comparisons for Quantleet's Python 3.12, uv, poe, and PyPI release stack. |
+| [`2026-05-16-github-actions-ci-cd-research.md`](2026-05-16-github-actions-ci-cd-research.md) | current | no | GitHub Actions CI/CD and PyPI release workflow research | Before implementing first-beta CI, release workflows, Trusted Publishing, or GitHub Actions hardening. | Advisory report covering official docs and 10 locally cloned OSS workflow comparisons for Quantcraft's Python 3.12, uv, poe, and PyPI release stack. |
 
 ## Library Dossiers
 
 | Document | Status | Canonical | Applicability | Read When | Notes |
 | --- | --- | --- | --- | --- | --- |
-| [`libraries/backtesting-py.md`](libraries/backtesting-py.md) | current | no | library-specific research | Before copying the ergonomics or reporting patterns of `backtesting.py` into `quantleet`. | Advisory dossier for the bar-native, single-asset research tool with a strong imperative strategy API. |
+| [`libraries/backtesting-py.md`](libraries/backtesting-py.md) | current | no | library-specific research | Before copying the ergonomics or reporting patterns of `backtesting.py` into `quantcraft`. | Advisory dossier for the bar-native, single-asset research tool with a strong imperative strategy API. |
 | [`libraries/backtrader.md`](libraries/backtrader.md) | current | no | library-specific research | Before evaluating multi-data, multi-timeframe, analyzer, or broker-adapter surface ideas. | Advisory dossier for the broad classic Python backtesting framework. |
 | [`libraries/vectorbt.md`](libraries/vectorbt.md) | current | no | library-specific research | Before planning vectorized research UX, parameter sweeps, or notebook-first analytics. | Advisory dossier for the dataframe- and portfolio-centric research stack. |
 | [`libraries/nautilustrader.md`](libraries/nautilustrader.md) | current | no | library-specific research | Before planning shared-kernel backtest, paper, and live parity or higher-realism execution semantics. | Advisory dossier for the closest current architectural north-star in the comparison set. |

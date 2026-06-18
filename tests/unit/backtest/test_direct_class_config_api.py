@@ -4,13 +4,13 @@ from typing import ClassVar
 
 import pytest
 
-from quantleet.backtest import BacktestEngine
-from quantleet.backtest.engine import _BacktestStrategyConstructionError
-from quantleet.data import BarSeries, TimeBar
-from quantleet.data.sources import HistoricalDataSource
-from quantleet.strategy import Strategy, StrategyConfig
-from quantleet.trading.domain.costs import CostConfig
-from quantleet.trading.domain.events import BarEvent
+from quantcraft.backtest import BacktestEngine
+from quantcraft.backtest.engine import _BacktestStrategyConstructionError
+from quantcraft.data import BarSeries, TimeBar
+from quantcraft.data.sources import HistoricalDataSource
+from quantcraft.strategy import Strategy, StrategyConfig
+from quantcraft.trading.domain.costs import CostConfig
+from quantcraft.trading.domain.events import BarEvent
 
 
 class FastSlowConfig(StrategyConfig):

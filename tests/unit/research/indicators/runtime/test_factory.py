@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quantleet.research.indicators.runtime.factory import (
+from quantcraft.research.indicators.runtime.factory import (
     bind_indicator,
     bind_indicator_from_pure,
     bind_multi_output_indicator,
     bind_multi_output_indicator_from_pure,
 )
-from quantleet.research.series import SeriesView
+from quantcraft.research.series import SeriesView
 from tests.support_indicator_runtime import MutableSeries
 
 

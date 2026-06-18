@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from quantleet.research import WalkForwardStudy
+from quantcraft.research import WalkForwardStudy
 from tests.integration.research.support_parameter_studies import (
     WfaRoundTripStrategy,
     walk_forward_bars,

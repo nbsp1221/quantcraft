@@ -10,12 +10,12 @@
 
 Related documents:
 
-- [quantleet-architecture.md](quantleet-architecture.md)
+- [quantcraft-architecture.md](quantcraft-architecture.md)
 - [architecture-governance.md](architecture-governance.md)
 
 ## Why This Document Exists
 
-`quantleet` needs a durable answer to a different question than bounded-context
+`quantcraft` needs a durable answer to a different question than bounded-context
 ownership alone:
 
 - what should the package tree look like
@@ -38,18 +38,18 @@ repo/
   docs/
   apps/
   src/
-    quantleet/
+    quantcraft/
   tests/
   examples/
   notebooks/
 ```
 
-Within `src/quantleet`, use the capability contexts defined in
-[quantleet-architecture.md](quantleet-architecture.md).
+Within `src/quantcraft`, use the capability contexts defined in
+[quantcraft-architecture.md](quantcraft-architecture.md).
 This document governs how those contexts should be named and packaged, not
 their business ownership.
 
-`quantleet.strategy` is the shared strategy authoring and configuration
+`quantcraft.strategy` is the shared strategy authoring and configuration
 capability. It is not owned by `research`; research, backtest, and future
 execution workflows compose it through the engine package boundary.
 
@@ -64,7 +64,7 @@ Rules:
 
 ## Engine Package Versus Product Surfaces
 
-`src/quantleet` is the installable engine and library package.
+`src/quantcraft` is the installable engine and library package.
 
 `apps/*` are product surfaces that compose the engine package for deployment.
 
@@ -72,7 +72,7 @@ Default interpretation:
 
 - `apps/api` is an external product surface
 - future `apps/web` is also an external product surface when it exists
-- `src/quantleet/cli` stays inside the package because CLI is a distributed
+- `src/quantcraft/cli` stays inside the package because CLI is a distributed
   package surface, not a separately deployed product
 
 Do not let product surfaces become the owner of business semantics.
@@ -84,11 +84,11 @@ stability and keeps internal refactors local.
 
 Allowed examples:
 
-- `quantleet.data.api`
-- `quantleet.trading.api`
-- `quantleet.backtest.api`
-- `quantleet.research.api`
-- `quantleet.execution.api`
+- `quantcraft.data.api`
+- `quantcraft.trading.api`
+- `quantcraft.backtest.api`
+- `quantcraft.research.api`
+- `quantcraft.execution.api`
 
 Rules:
 

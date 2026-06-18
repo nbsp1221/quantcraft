@@ -9,7 +9,7 @@ recommendation, paper-trading loop, live-trading loop, or continuous account
 simulation.
 
 ```python
-from quantleet.research import WalkForwardStudy
+from quantcraft.research import WalkForwardStudy
 
 
 study = WalkForwardStudy(

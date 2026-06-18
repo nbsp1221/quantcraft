@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from quantleet.backtest import (
+from quantcraft.backtest import (
     BacktestReport,
     BacktestResult,
     BacktestSummary,
     ExposureSummary,
 )
-from quantleet.trading.domain.events import FillEvent
-from quantleet.trading.domain.state import TradingState
+from quantcraft.trading.domain.events import FillEvent
+from quantcraft.trading.domain.state import TradingState
 from tests.integration.research.support_backtest_runner import (
     BuyAndHoldStrategy,
     DeterministicEntryExitStrategy,

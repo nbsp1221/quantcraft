@@ -107,7 +107,7 @@
     `uv run poe coverage`.
   - Standard policy now lives in `pyproject.toml`:
     - `[tool.coverage.run].branch = true`
-    - `[tool.coverage.run].source = ["quantleet"]`
+    - `[tool.coverage.run].source = ["quantcraft"]`
     - `[tool.coverage.report].fail_under = 90`
     - `[tool.coverage.report].show_missing = true`
   - Follow-up simplification:

@@ -4,14 +4,14 @@ from inspect import signature
 
 import pytest
 
-from quantleet.backtest.strategy_runtime import _StrategyDriver
-from quantleet.strategy import (
+from quantcraft.backtest.strategy_runtime import _StrategyDriver
+from quantcraft.strategy import (
     Strategy,
     StrategyConfig,
     StrategyConfigMutationError,
     StrategyConfigValidationError,
 )
-from quantleet.trading.domain.events import BarEvent
+from quantcraft.trading.domain.events import BarEvent
 
 
 class ThresholdConfig(StrategyConfig):

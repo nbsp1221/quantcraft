@@ -15,7 +15,7 @@ Related documents:
 - [backtest-plotting.md](backtest-plotting.md)
 - [data-ingestion.md](data-ingestion.md)
 - [../design-docs/package-topology-and-naming.md](../design-docs/package-topology-and-naming.md)
-- [../design-docs/quantleet-architecture.md](../design-docs/quantleet-architecture.md)
+- [../design-docs/quantcraft-architecture.md](../design-docs/quantcraft-architecture.md)
 - [../research/2026-03-23-python-quant-library-landscape.md](../research/2026-03-23-python-quant-library-landscape.md)
 - [../research/libraries/backtesting-py.md](../research/libraries/backtesting-py.md)
 
@@ -32,7 +32,7 @@ test scenario and technical implementation plans.
 
 The first-beta user-facing model is a research-level study object:
 
-- `quantleet.research.ParameterStudy` owns the parameter exploration UX.
+- `quantcraft.research.ParameterStudy` owns the parameter exploration UX.
 - `ParameterStudy(...).grid_search(...)` is the first search method.
 - `ParameterStudy` receives materialized `bars: BarSeries`; it does not accept
   `source=` in the first beta.
@@ -223,10 +223,10 @@ They are asking the library to make honest comparison easy.
 The first-beta workflow starts by materializing historical data once:
 
 ```python
-from quantleet.backtest import BacktestEngine
-from quantleet.data import DataFrameDataSource
-from quantleet.research import ParameterStudy, ta
-from quantleet.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
+from quantcraft.backtest import BacktestEngine
+from quantcraft.data import DataFrameDataSource
+from quantcraft.research import ParameterStudy, ta
+from quantcraft.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
 
 
 class SmaConfig(StrategyConfig):
@@ -818,15 +818,15 @@ A user wants to run exploration from a historical data source. The user calls
 Parameter exploration depends on, and must not redefine, these existing
 contracts:
 
-- `quantleet.strategy.Strategy` is the canonical user-facing strategy subclass
+- `quantcraft.strategy.Strategy` is the canonical user-facing strategy subclass
   surface.
-- `quantleet.research.Strategy` remains a compatibility re-export until the
+- `quantcraft.research.Strategy` remains a compatibility re-export until the
   migration path is removed by a later spec.
 - `Strategy.display_name` is human-readable strategy identity metadata.
 - Reportable execution config comes from the materialized `StrategyConfig`
   snapshot.
 - `BacktestEngine.run(...)` is the current historical execution entry point.
-- `bars` must be a `quantleet.data.BarSeries`.
+- `bars` must be a `quantcraft.data.BarSeries`.
 - `source.load()` returns a `BarSeries`, but `ParameterStudy` itself receives
   `bars`, not `source`, in the first beta.
 - Engine-produced `BacktestResult` exposes structured `result.report`.
@@ -846,7 +846,7 @@ contracts:
   implementation can be treated as approved.
 
 The new planned public contract introduced by this spec is
-`quantleet.research.ParameterStudy` as the first-beta parameter exploration
+`quantcraft.research.ParameterStudy` as the first-beta parameter exploration
 study container.
 
 ## Success Conditions
@@ -889,7 +889,7 @@ The product feature is beta-ready when:
 ## Implementation Status
 
 The first-beta parameter exploration surface is implemented in
-`quantleet.research.ParameterStudy`. Grid results are research diagnostics, not
+`quantcraft.research.ParameterStudy`. Grid results are research diagnostics, not
 trading recommendations.
 
 ## Follow-Up Product Artifacts

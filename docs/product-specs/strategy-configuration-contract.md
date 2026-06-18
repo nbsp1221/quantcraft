@@ -36,7 +36,7 @@ Functional requirements in this document have two roles:
 
 ## Background And Problem Definition
 
-Quantleet currently has a useful first-beta research loop:
+Quantcraft currently has a useful first-beta research loop:
 
 - users subclass `Strategy`
 - `BacktestEngine.run(...)` executes a `Strategy` class with an optional
@@ -62,10 +62,10 @@ repeat the following pattern across train and test folds:
 7. report fold-level out-of-sample outcomes without confusing selected values,
    defaults, and runtime metadata
 
-If Quantleet builds WFA directly on the current legacy callable construction API public API,
+If Quantcraft builds WFA directly on the current legacy callable construction API public API,
 the product risks turning a transitional implementation adapter into a durable
 user-facing contract. The issue is not the WFA algorithm itself. The issue is
-that Quantleet does not yet have a canonical strategy configuration contract.
+that Quantcraft does not yet have a canonical strategy configuration contract.
 
 The current `Strategy.parameters()` hook also creates a source-of-truth problem.
 It asks the strategy instance to self-report metadata, but it does not guarantee
@@ -76,7 +76,7 @@ This spec solves the product-contract problem before implementation continues.
 
 ## Goals
 
-- Define Quantleet's canonical strategy configuration model.
+- Define Quantcraft's canonical strategy configuration model.
 - Make strategy configuration explicit enough for the framework to discover,
   validate at a basic level, materialize, record, and later serialize.
 - Keep ordinary strategy authoring lightweight enough for a Pine Script-like
@@ -132,15 +132,15 @@ They want to:
 - use custom strategy constructors only when they preserve the framework config
   contract
 
-They are not asking Quantleet to infer profitable strategies or hide
-overfitting risk. They are asking Quantleet to make the strategy configuration
+They are not asking Quantcraft to infer profitable strategies or hide
+overfitting risk. They are asking Quantcraft to make the strategy configuration
 contract clear enough that validation studies can be trusted.
 
 ## Core Requirements
 
 ### Canonical Contract
 
-Quantleet's canonical strategy contract is a `Strategy` class paired with an
+Quantcraft's canonical strategy contract is a `Strategy` class paired with an
 explicit, framework-recognizable strategy configuration schema.
 
 In the first version, the product expression for this schema is `StrategyConfig`.
@@ -171,13 +171,13 @@ intentionally avoided.
 escape hatch. The canonical docs and examples should teach `Strategy[Config]`,
 but advanced users may declare `config_type` directly. If `Strategy[Config]`
 and `config_type = Config` both declare the same config type, the declaration is
-accepted as redundant. If they declare different config types, Quantleet must
+accepted as redundant. If they declare different config types, Quantcraft must
 fail config-contract validation immediately.
 
 `Strategy[Config]` is the canonical user-facing declaration. The technical plan
 may decide whether the implementation derives the effective schema through
 generic introspection, subclass registration, or another internal mechanism.
-What must be observable is that Quantleet can discover exactly one effective
+What must be observable is that Quantcraft can discover exactly one effective
 `StrategyConfig` schema for a canonical strategy class.
 
 Stage 1 does not expose `discover_config_schema(...)` or
@@ -301,7 +301,7 @@ ordinary base-class construction path must remain valid.
 ### Config-Less Strategies
 
 Strategies may omit an explicit config declaration when they do not expose
-configurable fields. Quantleet treats them as having an empty config.
+configurable fields. Quantcraft treats them as having an empty config.
 
 Any study-level search space with non-empty `parameters` requires a declared
 config schema containing those keys.
@@ -321,17 +321,17 @@ The strategy configuration contract is shared product surface for backtesting,
 research, paper trading, and future live trading. It must not be modeled as a
 research-only concept.
 
-The chosen package path is `quantleet.strategy`.
+The chosen package path is `quantcraft.strategy`.
 
 Canonical imports are:
 
 ```python
-from quantleet.strategy import Strategy, StrategyConfig
+from quantcraft.strategy import Strategy, StrategyConfig
 ```
 
-`quantleet.research.Strategy` may remain as a migration/re-export path, but it
+`quantcraft.research.Strategy` may remain as a migration/re-export path, but it
 is not the canonical owner. `research`, `backtest`, and future `execution` may
-depend on `quantleet.strategy`; `quantleet.strategy` must not depend on
+depend on `quantcraft.strategy`; `quantcraft.strategy` must not depend on
 `research`, `backtest`, or `execution`.
 
 ## Functional Requirements
@@ -357,7 +357,7 @@ range metadata, or search-space generation from the config class.
 `StrategyConfig` is a dataclass-like framework base. Users declare annotations
 and default class fields; they do not need to apply `@dataclass`,
 `frozen=True`, pydantic models, or another implementation-specific decorator.
-Quantleet is responsible for creating materialized immutable config instances,
+Quantcraft is responsible for creating materialized immutable config instances,
 validating supported fields, and producing normalized snapshots.
 
 ### Search-Space Validation Contract
@@ -568,7 +568,7 @@ empty-parameter study workflows treat it as empty config. Non-empty
 ### Scenario 5: Unsupported Legacy Construction Path
 
 An advanced user attempts to supply the legacy callable construction path for
-custom construction. Quantleet rejects that path in active study workflows
+custom construction. Quantcraft rejects that path in active study workflows
 because config-backed strategy classes are the canonical portability and
 reporting guarantee path.
 
@@ -621,7 +621,7 @@ test specs and implementation plans:
 
 Stage 1:
 
-- canonical shared owner is `quantleet.strategy`
+- canonical shared owner is `quantcraft.strategy`
 - canonical strategies declare config through `Strategy[MyConfig]`
 - `config_type = MyConfig` is a public advanced fallback; same-type redundant
   declarations are allowed and conflicting declarations fail
@@ -752,7 +752,7 @@ This product spec is successful when:
   `strategy_config`.
 - Stage 3 resolved that `strategy_parameters` is removed immediately rather
   than kept as a compatibility alias.
-- When should Quantleet introduce range/choice validators or descriptor-style
+- When should Quantcraft introduce range/choice validators or descriptor-style
   parameter declarations?
 - Should `search_space` become an alias for study-level `parameters` after the
   current migration is stable?

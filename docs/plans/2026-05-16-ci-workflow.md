@@ -175,8 +175,8 @@
   - `uv run poe lint` -> `All checks passed!`.
   - `uv run poe typecheck` -> `Success: no issues found in 61 source files`.
   - `uv run poe test` -> `739 passed, 4 skipped`.
-  - `uv run poe build` -> built `dist/quantleet-0.1.0b1.tar.gz` and
-    `dist/quantleet-0.1.0b1-py3-none-any.whl`.
+  - `uv run poe build` -> built `dist/quantcraft-0.1.0b1.tar.gz` and
+    `dist/quantcraft-0.1.0b1-py3-none-any.whl`.
   - `uvx twine check --strict dist/*` -> wheel and sdist `PASSED`.
   - `uv run poe repo-check` -> `repository checks passed`.
   - `git ls-remote --tags` confirmed `actions/checkout@v6`,

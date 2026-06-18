@@ -1,6 +1,6 @@
 # Core Beliefs
 
-`quantleet` follows these agent-first repository beliefs:
+`quantcraft` follows these agent-first repository beliefs:
 
 - repository docs are the system of record
 - the repo entry contract must be self-contained and executable without knowing
