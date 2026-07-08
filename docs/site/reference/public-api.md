@@ -18,6 +18,10 @@ This curated reference lists the first-beta imports users should prefer.
 - `BacktestResult.report`
 - `BacktestResult.plot()`
 
+`BacktestEngine.run(...)` accepts a strategy class plus an optional
+`StrategyConfig` instance through `config=...`; plain dictionaries are not a
+supported direct-run config input.
+
 ## Research
 
 - `quantcraft.strategy.Strategy`

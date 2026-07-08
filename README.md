@@ -18,8 +18,8 @@ Current first-beta scope:
 - `DataFrameDataSource`, `CSVDataSource`, `CCXTDataSource`, `TimeBar`, and
   `BarSeries`
 - `Strategy`, `ta`, `qc`, `ParameterStudy`, and `WalkForwardStudy`
-- `BacktestEngine.run(source=..., strategy=StrategyClass, config=...)`
-- `BacktestEngine.run(bars=..., strategy=StrategyClass, config=...)`
+- `BacktestEngine.run(source=..., strategy=StrategyClass, config=StrategyConfigInstance)`
+- `BacktestEngine.run(bars=..., strategy=StrategyClass, config=StrategyConfigInstance)`
 - market, limit, stop-market, and stop-limit orders
 - fixed quantity and `qty_percent` sizing
 - conservative reservation, fills, positions, reporting, plotting, finite grid
