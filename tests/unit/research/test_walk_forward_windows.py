@@ -35,3 +35,19 @@ def test_rolling_split_policy_rejects_non_chronological_bars() -> None:
 
     with pytest.raises(ValueError, match="strictly increasing"):
         RollingSplitPolicy(train_size=1, test_size=1).split(bars)
+
+
+def test_rolling_split_policy_rejects_duplicate_timestamps() -> None:
+    bars = BarSeries(
+        symbol="TEST",
+        timeframe="1m",
+        bar_type="time",
+        rows=(
+            TimeBar(timestamp=1, open=1, high=1, low=1, close=1, volume=1),
+            TimeBar(timestamp=1, open=1, high=1, low=1, close=1, volume=1),
+            TimeBar(timestamp=2, open=1, high=1, low=1, close=1, volume=1),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="strictly increasing"):
+        RollingSplitPolicy(train_size=1, test_size=1).split(bars)

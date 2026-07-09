@@ -75,6 +75,7 @@ class ValidationPipeline:
         )
         return ValidationReport(
             status=_report_status(tuple(step_results)),
+            summary=_report_summary(tuple(step_results)),
             step_results=tuple(step_results),
             diagnostics=diagnostics,
             artifacts=artifacts,
@@ -104,6 +105,17 @@ def _report_status(results: tuple[ValidationStepResult, ...]) -> ValidationStatu
     if "inconclusive" in statuses:
         return "inconclusive"
     return "success"
+
+
+def _report_summary(results: tuple[ValidationStepResult, ...]) -> Mapping[str, object]:
+    return {
+        "step_count": len(results),
+        "successful_step_count": sum(1 for result in results if result.status == "success"),
+        "inconclusive_step_count": sum(1 for result in results if result.status == "inconclusive"),
+        "failed_step_count": sum(1 for result in results if result.status == "failed"),
+        "rejected_step_count": sum(1 for result in results if result.status == "rejected"),
+        "skipped_step_count": sum(1 for result in results if result.status == "skipped"),
+    }
 
 
 def _skipped_result(name: str) -> ValidationStepResult:

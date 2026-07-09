@@ -55,5 +55,18 @@ paper trading, optimizer-guarantee, or continuous-account reporting surface.
 `MetricSelectionPolicy` is not public in the first validation slice. Users pass
 objective tuples directly to `WalkForwardValidation`.
 
+Supported first-slice objective metric paths are:
+
+- `equity.final`
+- `returns.total_return`
+- `risk.max_drawdown`
+- `risk.sharpe_ratio`
+- `trades.closed_count`
+- `trades.win_rate`
+- `trades.profit_factor`
+- `costs.total_fees`
+- `exposure.ratio`
+- `execution.order_rejection_count`
+
 Lower-level trading-domain objects are supporting implementation contracts, not
 the primary first-beta import surface for user documentation.

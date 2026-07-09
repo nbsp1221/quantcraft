@@ -76,6 +76,11 @@
   - Compatibility is intentionally not a constraint.
   - Private selection internals may be named freely as long as public API stays clean.
 - Blockers or scope changes: none.
+  - PR role-agent review triage accepted the findings around WFA all-candidate
+    rejection status, result summaries, reserved record metadata, WFA artifact
+    surfacing, objective metric docs, WFA status validation, split timestamp
+    wording, and duplicate timestamp coverage. No critical findings were found;
+    all accepted findings are in-scope hardening for the approved first slice.
 
 ## Evaluator Review
 

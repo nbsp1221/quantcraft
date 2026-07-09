@@ -4,6 +4,7 @@ import pytest
 
 from quantcraft.data import BarSeries
 from quantcraft.research import RollingSplitPolicy, WalkForwardValidation
+from quantcraft.research.validation.walk_forward import _candidate_record
 from tests.integration.research.support_parameter_studies import (
     WfaRoundTripStrategy,
     engine,
@@ -84,7 +85,7 @@ def test_walk_forward_validation_rejects_bad_run_limits_and_windows() -> None:
         no_window.run(parameters={"fast": [2], "slow": [3]})
 
 
-def test_walk_forward_validation_records_failed_selection_fold() -> None:
+def test_walk_forward_validation_records_ineligible_selection_fold_as_rejected() -> None:
     result = WalkForwardValidation(
         engine=engine(),
         bars=walk_forward_bars(8),
@@ -93,9 +94,30 @@ def test_walk_forward_validation_records_failed_selection_fold() -> None:
         objective=("trades.win_rate", "max"),
     ).run(parameters={"x": [1]})
 
-    assert result.status == "failed"
-    assert result.folds[0].status == "failed"
+    assert result.status == "rejected"
+    assert result.folds[0].status == "rejected"
     assert result.folds[0].diagnostics
+
+
+def test_walk_forward_validation_reports_all_rejected_candidates_as_rejected() -> None:
+    result = WalkForwardValidation(
+        engine=engine(),
+        bars=walk_forward_bars(8),
+        strategy=WfaRoundTripStrategy,
+        split_policy=RollingSplitPolicy(train_size=4, test_size=2),
+        objective=("returns.total_return", "max"),
+    ).run(
+        parameters={"fast": [2, 3], "slow": [3]},
+        constraint=lambda _candidate: False,
+    )
+
+    assert result.status == "rejected"
+    assert result.summary["rejected_fold_count"] == len(result.folds)
+    assert result.folds[0].status == "rejected"
+    assert result.folds[0].train_result is not None
+    assert result.folds[0].train_result.status == "rejected"
+    assert result.folds[0].oos_test_run_label is None
+    assert any(diagnostic.code == "fold_selection_rejected" for diagnostic in result.diagnostics)
 
 
 def test_walk_forward_validation_preserves_failed_oos_selection_provenance() -> None:
@@ -146,6 +168,26 @@ def test_walk_forward_validation_aggregates_candidate_diagnostics() -> None:
 
     assert result.status == "success"
     assert any(diagnostic.code == "candidate_rejected" for diagnostic in result.diagnostics)
+
+
+def test_walk_forward_validation_exposes_fold_oos_artifacts_at_top_level() -> None:
+    result = WalkForwardValidation(
+        engine=engine(),
+        bars=walk_forward_bars(8),
+        strategy=WfaRoundTripStrategy,
+        split_policy=RollingSplitPolicy(train_size=4, test_size=2),
+        objective=("returns.total_return", "max"),
+    ).run(parameters={"fast": [2], "slow": [3]})
+
+    assert "walk_forward_fold_0_oos_backtest" in result.folds[0].artifacts
+    assert "walk_forward_fold_0_oos_backtest" in result.artifacts
+
+
+def test_walk_forward_candidate_records_reject_reserved_fold_metadata() -> None:
+    window = RollingSplitPolicy(train_size=4, test_size=2).split(walk_forward_bars(8))[0]
+
+    with pytest.raises(ValueError, match="reserved fold metadata keys"):
+        _candidate_record(0, window, {"fold_index": 99})
 
 
 def test_rolling_split_policy_validation_edges() -> None:

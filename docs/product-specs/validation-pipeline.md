@@ -35,6 +35,19 @@ The current first-slice public research validation surface is:
 `MetricSelectionPolicy` is intentionally not public. Users configure WFA
 selection by passing an objective tuple directly to `WalkForwardValidation`.
 
+Supported first-slice objective metric paths are:
+
+- `equity.final`
+- `returns.total_return`
+- `risk.max_drawdown`
+- `risk.sharpe_ratio`
+- `trades.closed_count`
+- `trades.win_rate`
+- `trades.profit_factor`
+- `costs.total_fees`
+- `exposure.ratio`
+- `execution.order_rejection_count`
+
 ## Non-Goals
 
 This first slice does not include:
@@ -111,10 +124,16 @@ result = validation.run(
 
 `RollingSplitPolicy` produces start-inclusive/end-exclusive train/test windows.
 The default `step_size` is `test_size`.
+Window index fields are start-inclusive/end-exclusive. Timestamp end fields
+(`train_end_timestamp`, `test_end_timestamp`) name the last included bar in
+that window, not the exclusive end boundary.
 
 `WalkForwardValidationResult.to_records()` returns fold records.
 `WalkForwardValidationResult.to_candidate_records()` returns train-candidate
 records enriched with fold window fields.
+Successful fold OOS `BacktestResult` artifacts are available both under the
+owning fold's `artifacts` map and under the top-level result `artifacts` map
+using names such as `walk_forward_fold_0_oos_backtest`.
 Candidate search remains a research diagnostic, not an optimizer guarantee or a trading recommendation.
 
 ## Public Documentation Requirements

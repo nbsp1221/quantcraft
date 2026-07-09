@@ -3,13 +3,19 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Literal
+from typing import Literal, cast
 
 ValidationStatus = Literal["success", "inconclusive", "failed", "rejected", "skipped"]
 
 _ALLOWED_VALIDATION_STATUSES = frozenset(
     ("success", "inconclusive", "failed", "rejected", "skipped")
 )
+
+
+def validate_validation_status(value: object) -> ValidationStatus:
+    if value not in _ALLOWED_VALIDATION_STATUSES:
+        raise ValueError(f"unsupported validation status {value!r}")
+    return cast(ValidationStatus, value)
 
 
 def _copy_mapping(value: Mapping[str, object]) -> Mapping[str, object]:
@@ -61,8 +67,7 @@ class ValidationStepResult:
     provenance: ValidationProvenance
 
     def __post_init__(self) -> None:
-        if self.status not in _ALLOWED_VALIDATION_STATUSES:
-            raise ValueError(f"unsupported validation status {self.status!r}")
+        object.__setattr__(self, "status", validate_validation_status(self.status))
         object.__setattr__(self, "summary", _copy_mapping(self.summary))
         object.__setattr__(self, "records", tuple(_copy_mapping(record) for record in self.records))
         object.__setattr__(self, "diagnostics", tuple(self.diagnostics))
@@ -72,14 +77,15 @@ class ValidationStepResult:
 @dataclass(frozen=True, slots=True)
 class ValidationReport:
     status: ValidationStatus
+    summary: Mapping[str, object]
     step_results: tuple[ValidationStepResult, ...]
     diagnostics: tuple[ValidationDiagnostic, ...]
     artifacts: Mapping[str, ValidationArtifact]
     provenance: ValidationProvenance
 
     def __post_init__(self) -> None:
-        if self.status not in _ALLOWED_VALIDATION_STATUSES:
-            raise ValueError(f"unsupported validation status {self.status!r}")
+        object.__setattr__(self, "status", validate_validation_status(self.status))
+        object.__setattr__(self, "summary", _copy_mapping(self.summary))
         object.__setattr__(self, "step_results", tuple(self.step_results))
         object.__setattr__(self, "diagnostics", tuple(self.diagnostics))
         object.__setattr__(self, "artifacts", MappingProxyType(dict(self.artifacts)))
@@ -88,6 +94,13 @@ class ValidationReport:
         records: list[dict[str, object]] = []
         for result in self.step_results:
             for record in result.records:
+                reserved_keys = {"step_name", "step_status"}
+                collisions = reserved_keys.intersection(record)
+                if collisions:
+                    raise ValueError(
+                        "validation record uses reserved metadata keys "
+                        f"{tuple(sorted(collisions))!r}"
+                    )
                 enriched: dict[str, object] = {
                     "step_name": result.name,
                     "step_status": result.status,

@@ -55,6 +55,15 @@ def test_pipeline_continues_after_success_and_inconclusive() -> None:
     assert report.status == "inconclusive"
     assert [result.name for result in report.step_results] == ["a", "b", "c"]
 
+    assert report.summary == {
+        "step_count": 3,
+        "successful_step_count": 2,
+        "inconclusive_step_count": 1,
+        "failed_step_count": 0,
+        "rejected_step_count": 0,
+        "skipped_step_count": 0,
+    }
+
 
 def test_pipeline_stops_after_failed_and_skips_remaining() -> None:
     report = run_pipeline(Step("a", "failed"), Step("b", "success"))
@@ -87,6 +96,30 @@ def test_validation_step_result_rejects_unknown_status() -> None:
             artifacts={},
             provenance=ValidationProvenance(),
         )
+
+
+def test_validation_report_rejects_reserved_record_metadata_collisions() -> None:
+    report = run_pipeline(Step("a", "success"))
+    colliding_result = ValidationStepResult(
+        name="bad",
+        status="success",
+        summary={},
+        records=({"step_name": "spoofed"},),
+        diagnostics=(),
+        artifacts={},
+        provenance=ValidationProvenance(),
+    )
+    colliding_report = type(report)(
+        status="success",
+        summary={},
+        step_results=(colliding_result,),
+        diagnostics=(),
+        artifacts={},
+        provenance=ValidationProvenance(),
+    )
+
+    with pytest.raises(ValueError, match="reserved metadata keys"):
+        colliding_report.to_records()
 
 
 class ConsumingStep:

@@ -4,7 +4,7 @@ import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Literal, cast
+from typing import Literal
 
 from quantcraft.backtest import BacktestStrategyConstructionError
 from quantcraft.data import BarSeries
@@ -31,6 +31,7 @@ from quantcraft.research.validation.results import (
     ValidationProvenance,
     ValidationStatus,
     ValidationStepResult,
+    validate_validation_status,
 )
 from quantcraft.research.validation.splits import RollingSplitPolicy, SplitWindow
 from quantcraft.strategy import Strategy, StrategyConfig
@@ -53,6 +54,7 @@ class WalkForwardFoldResult:
     provenance: ValidationProvenance
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "status", validate_validation_status(self.status))
         if self.selected_config is not None:
             object.__setattr__(
                 self, "selected_config", MappingProxyType(dict(self.selected_config))
@@ -74,6 +76,7 @@ class WalkForwardValidationResult:
     provenance: ValidationProvenance
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "status", validate_validation_status(self.status))
         object.__setattr__(self, "folds", tuple(self.folds))
         object.__setattr__(self, "step_results", tuple(self.step_results))
         object.__setattr__(self, "summary", MappingProxyType(dict(self.summary)))
@@ -157,30 +160,20 @@ class WalkForwardValidation:
                 + (fold.train_result.diagnostics if fold.train_result is not None else ())
             )
         )
-        artifacts = {
-            "walk_forward_fold_records": ValidationArtifact(
-                name="walk_forward_fold_records",
-                kind="fold_records",
-                value=[_fold_record(f) for f in folds],
-            ),
-            "walk_forward_candidate_records": ValidationArtifact(
-                name="walk_forward_candidate_records",
-                kind="candidate_records",
-                value=[dict(r) for step in step_results for r in step.records],
-            ),
-        }
-        status = "failed" if any(fold.status == "failed" for fold in folds) else "success"
+        artifacts = _result_artifacts(folds, step_results)
+        status = _result_status(folds)
         summary = {
             "fold_count": len(folds),
             "successful_fold_count": sum(1 for fold in folds if fold.status == "success"),
             "failed_fold_count": sum(1 for fold in folds if fold.status == "failed"),
+            "rejected_fold_count": sum(1 for fold in folds if fold.status == "rejected"),
             "objective_metric_path": self.objective[0],
             "objective_direction": self.objective[1],
             "raw_candidate_count_per_fold": raw_count,
             "planned_total_runs": planned_total,
         }
         return WalkForwardValidationResult(
-            status=cast(ValidationStatus, status),
+            status=status,
             folds=folds,
             step_results=step_results,
             summary=summary,
@@ -218,6 +211,13 @@ class WalkForwardValidation:
                 max_candidates=max_candidates,
                 fail_fast=False,
             )
+            if train_result.eligible_count == 0:
+                return self._rejected_fold(
+                    window=window,
+                    train_result=train_result,
+                    max_candidates=max_candidates,
+                    provenance_bars=train_bars,
+                )
             selected = train_result.best(self.objective)
             selected_config = self.strategy.config_type(**dict(selected.candidate_parameters))
             selected_config_mapping = MappingProxyType(selected_config.to_mapping())
@@ -305,6 +305,54 @@ class WalkForwardValidation:
                 )
             },
             provenance=provenance,
+        )
+
+    def _rejected_fold(
+        self,
+        *,
+        window: SplitWindow,
+        train_result: _GridSearchResult,
+        max_candidates: int | None,
+        provenance_bars: BarSeries,
+    ) -> WalkForwardFoldResult:
+        diagnostic = ValidationDiagnostic(
+            severity="warning",
+            code="fold_selection_rejected",
+            message="No train candidate was eligible for the objective.",
+            fold_index=window.fold_index,
+        )
+        step = _grid_step_result(
+            fold_index=window.fold_index,
+            window=window,
+            result=train_result,
+            objective=self.objective,
+            strategy=self.strategy,
+            bars=_slice_bars(self.bars, window.train_start_index, window.train_end_index),
+            max_candidates=max_candidates,
+        )
+        return WalkForwardFoldResult(
+            fold_index=window.fold_index,
+            status="rejected",
+            window=window,
+            train_result=step,
+            selected_candidate_index=None,
+            selected_config=None,
+            selected_train_run_label=None,
+            oos_test_run_label=None,
+            train_metrics={},
+            test_metrics={},
+            diagnostics=(diagnostic,),
+            artifacts={},
+            provenance=_fold_provenance(
+                self.strategy,
+                provenance_bars,
+                self.objective,
+                window,
+                train_result,
+                None,
+                None,
+                max_candidates,
+            ),
         )
 
     def _failed_fold(
@@ -497,6 +545,18 @@ def _fold_provenance(
 def _candidate_record(
     fold_index: int, window: SplitWindow, record: Mapping[str, object]
 ) -> Mapping[str, object]:
+    reserved_keys = {
+        "fold_index",
+        "train_start_index",
+        "train_end_index",
+        "test_start_index",
+        "test_end_index",
+    }
+    collisions = reserved_keys.intersection(record)
+    if collisions:
+        raise ValueError(
+            f"candidate record uses reserved fold metadata keys {tuple(sorted(collisions))!r}"
+        )
     enriched: dict[str, object] = {
         "fold_index": fold_index,
         "train_start_index": window.train_start_index,
@@ -527,6 +587,45 @@ def _record_value(value: object) -> object:
     if isinstance(value, float) and not math.isfinite(value):
         return None
     return value
+
+
+def _result_status(folds: tuple[WalkForwardFoldResult, ...]) -> ValidationStatus:
+    statuses = {fold.status for fold in folds}
+    if "failed" in statuses:
+        return "failed"
+    if "rejected" in statuses:
+        return "rejected"
+    if "inconclusive" in statuses:
+        return "inconclusive"
+    return "success"
+
+
+def _result_artifacts(
+    folds: tuple[WalkForwardFoldResult, ...],
+    step_results: tuple[ValidationStepResult, ...],
+) -> dict[str, ValidationArtifact]:
+    artifacts = {
+        "walk_forward_fold_records": ValidationArtifact(
+            name="walk_forward_fold_records",
+            kind="fold_records",
+            value=[_fold_record(f) for f in folds],
+        ),
+        "walk_forward_candidate_records": ValidationArtifact(
+            name="walk_forward_candidate_records",
+            kind="candidate_records",
+            value=[dict(r) for step in step_results for r in step.records],
+        ),
+    }
+    for fold in folds:
+        for name, artifact in fold.artifacts.items():
+            if name in artifacts:
+                raise ValueError(f"duplicate validation artifact name {name!r}")
+            if artifact.name != name:
+                raise ValueError(
+                    f"artifact mapping key {name!r} does not match artifact name {artifact.name!r}"
+                )
+            artifacts[name] = artifact
+    return artifacts
 
 
 def _data_provenance(bars: BarSeries) -> Mapping[str, object]:
