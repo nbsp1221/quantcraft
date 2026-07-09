@@ -6,6 +6,10 @@
 - Class: `product-spec`
 - Scope: superseded baseline product target for the single-symbol
   walk-forward validation-study workflow
+- Superseded by:
+  [validation-pipeline.md](validation-pipeline.md). This document is historical
+  baseline context only. Current WFA public API is `WalkForwardValidation` under
+  `quantcraft.research.validation`; `WalkForwardStudy` is retired.
 
 Related documents:
 

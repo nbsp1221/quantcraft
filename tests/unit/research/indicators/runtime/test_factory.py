@@ -8,7 +8,7 @@ from quantcraft.research.indicators.runtime.factory import (
     bind_multi_output_indicator,
     bind_multi_output_indicator_from_pure,
 )
-from quantcraft.research.series import SeriesView
+from quantcraft.strategy.series import SeriesView
 from tests.support_indicator_runtime import MutableSeries
 
 

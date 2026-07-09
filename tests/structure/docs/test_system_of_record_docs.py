@@ -48,8 +48,11 @@ def test_product_specs_are_discoverable_from_routing_index() -> None:
     assert duplicates == []
     assert entries_by_target["backtest-mvp.md"]["role"] == "Governing"
     assert entries_by_target["backtest-mvp.md"]["scope"] == "current implemented scope"
-    assert entries_by_target["research-ergonomics.md"]["role"] == "Governing"
-    assert entries_by_target["research-ergonomics.md"]["scope"] == "current implemented scope"
+    assert entries_by_target["validation-pipeline.md"]["role"] == "Governing"
+    assert (
+        entries_by_target["validation-pipeline.md"]["scope"]
+        == "current first-slice validation substrate and WFA public flow"
+    )
     assert entries_by_target["order-sizing.md"]["role"] == "Governing"
     assert entries_by_target["order-sizing.md"]["scope"] == "current implemented scope"
 

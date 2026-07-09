@@ -7,7 +7,7 @@ matplotlib.use("Agg")
 
 from quantcraft.backtest import BacktestEngine, CostConfig
 from quantcraft.data import BarSeries, DataFrameDataSource, TimeBar
-from quantcraft.research import ParameterStudy, qc, ta
+from quantcraft.research import RollingSplitPolicy, WalkForwardValidation, qc, ta
 from quantcraft.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
 
 
@@ -89,7 +89,7 @@ def test_public_orders_and_sizing_example_runs() -> None:
     assert result.report.fills
 
 
-def test_public_parameter_exploration_example_runs() -> None:
+def test_public_walk_forward_validation_example_runs() -> None:
     class SmaConfig(StrategyConfig):
         fast: int = 2
         slow: int = 3
@@ -111,23 +111,23 @@ def test_public_parameter_exploration_example_runs() -> None:
             elif self.position.is_open and qc.crossunder(self.fast, self.slow):
                 self.sell(quantity=1.0, tag="exit")
 
-    result = ParameterStudy(
+    result = WalkForwardValidation(
         engine=_engine(),
-        bars=_bars((10.0, 9.0, 8.0, 11.0, 12.0, 10.0, 8.0)),
+        bars=_bars((10.0, 9.0, 8.0, 11.0, 12.0, 10.0, 8.0, 13.0, 14.0)),
         strategy=ParameterizedSmaStrategy,
-    ).grid_search(
+        split_policy=RollingSplitPolicy(train_size=4, test_size=2),
+        objective=("returns.total_return", "max"),
+    ).run(
         parameters={"fast": [2, 3], "slow": [3, 4]},
         constraint=lambda parameters: parameters["fast"] < parameters["slow"],
-        objective=("returns.total_return", "max"),
     )
 
-    assert result.candidate_count == 4
-    assert result.rejected_count == 1
-    assert result.successful_count == 3
-    best = result.best()
-    assert best.backtest is not None
-    assert best.backtest.report.run.strategy_config == dict(best.strategy_config)
-    assert len(result.to_records()) == 4
+    assert len(result.to_records()) == len(result.folds)
+    assert result.to_candidate_records()
+    assert result.provenance.objective == {
+        "metric_path": "returns.total_return",
+        "direction": "max",
+    }
 
 
 def _engine() -> BacktestEngine:

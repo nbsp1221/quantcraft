@@ -5,7 +5,7 @@
 - Status: `implemented`
 - Class: `product-spec`
 - Scope: current implemented Stage 3 reporting provenance cleanup after the
-  `ParameterStudy` strategy API migration and before walk-forward analysis
+  internal validation candidate search strategy API migration and before walk-forward analysis
   resumes
 
 Related documents:
@@ -41,7 +41,7 @@ configuration model:
   `Strategy[MyConfig]`
 - `StrategyConfig` defines schema, defaults, validation, and immutable
   materialized config snapshots
-- `ParameterStudy` expands study-level `parameters={...}` into
+- internal validation candidate search expands study-level `parameters={...}` into
   `candidate_parameters` plus full row-level `strategy_config`
 - selected study rows expose `best.strategy_config` as the selected execution
   snapshot
@@ -77,7 +77,7 @@ of the canonical strategy surface.
   configuration in reports.
 - Replace report-facing `strategy_parameters` with `strategy_config`.
 - Remove `Strategy.parameters()` from the canonical strategy surface.
-- Ensure `ParameterStudy` rows and their successful backtest reports cannot
+- Ensure internal validation candidate search rows and their successful backtest reports cannot
   silently disagree about the selected full config snapshot.
 - Preserve lightweight config-less strategies by representing them as
   `strategy_config == {}`.
@@ -148,7 +148,7 @@ Reports must not expose the old field as a current or compatibility alias:
 - `report.run.strategy_parameters`
 
 The old name is removed because `parameters` now has a specific study-level
-meaning: the search-space input passed to `ParameterStudy.grid_search(...)`.
+meaning: the search-space input passed to `internal candidate search`.
 Row-level study results already distinguish partial `candidate_parameters` from
 full `strategy_config`; reports must use the same vocabulary.
 
@@ -239,9 +239,9 @@ result.report.run.strategy_config
 
 The report does not expose `strategy_parameters`.
 
-### ParameterStudy Reporting Alignment
+### internal validation candidate search Reporting Alignment
 
-For every successful `ParameterStudy` row:
+For every successful internal validation candidate search row:
 
 - `row.strategy_config` is the selected or attempted full config snapshot
 - `row.backtest.report.run.strategy_config` matches that same full snapshot
@@ -327,7 +327,7 @@ A user writes a minimal strategy without tunable settings.
 
 The direct backtest remains valid and the report records `strategy_config == {}`.
 
-### Scenario 3: ParameterStudy Selected Row Inspection
+### Scenario 3: internal validation candidate search Selected Row Inspection
 
 A user runs a grid search, calls `best()`, and inspects the selected run.
 
@@ -367,7 +367,7 @@ current guidance.
   example is stale and must be migrated.
 - A report fixture still includes `strategy_parameters`: the fixture represents
   the old contract and must be updated.
-- A `ParameterStudy` successful row has a `strategy_config` that differs from
+- A internal validation candidate search successful row has a `strategy_config` that differs from
   its `backtest.report.run.strategy_config`: this is a product-contract
   failure.
 - A strategy stores tunable execution settings only in constructor attributes:
@@ -424,7 +424,7 @@ can use it to verify that:
 - `Strategy.parameters()` no longer affects reports or managed current docs
 - `strategy_parameters` is absent from current report contracts and managed
   current surfaces
-- `strategy_config` appears consistently across `ParameterStudy` rows and
+- `strategy_config` appears consistently across internal validation candidate search rows and
   backtest reports
 - config-less strategies remain simple and report `{}` cleanly
 - tunable managed examples use `StrategyConfig`

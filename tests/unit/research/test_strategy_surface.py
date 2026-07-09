@@ -9,8 +9,8 @@ import pytest
 from quantcraft.backtest import BacktestEngine
 from quantcraft.backtest.strategy_runtime import _StrategyDriver
 from quantcraft.data import BarSeries, TimeBar
-from quantcraft.research import Strategy as PublicStrategy
-from quantcraft.research.strategy import Strategy
+from quantcraft.strategy import Strategy
+from quantcraft.strategy import Strategy as PublicStrategy
 from quantcraft.trading.domain.costs import CostConfig
 from quantcraft.trading.domain.events import BarEvent
 from quantcraft.trading.order_requests import PendingOrderRequest

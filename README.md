@@ -5,9 +5,8 @@ polished first-beta single-symbol historical backtesting workflow.
 
 The first public beta target is `0.1.0b1`. It is built for users who want to
 load OHLCV history, author a compact strategy, run a deterministic backtest,
-inspect `result.report`, visualize `result.plot()`, compare a small finite
-parameter grid, and run rolling walk-forward validation without learning the
-internal repository workflow first.
+inspect `result.report`, visualize `result.plot()`, and run validation-first
+walk-forward checks without learning the internal repository workflow first.
 
 ## Beta Scope
 
@@ -17,13 +16,14 @@ Current first-beta scope:
 - long-or-flat strategy workflows
 - `DataFrameDataSource`, `CSVDataSource`, `CCXTDataSource`, `TimeBar`, and
   `BarSeries`
-- `Strategy`, `ta`, `qc`, `ParameterStudy`, and `WalkForwardStudy`
+- `Strategy`, `ta`, `qc`, `ValidationPipeline`, `RollingSplitPolicy`, and
+  `WalkForwardValidation`
 - `BacktestEngine.run(source=..., strategy=StrategyClass, config=StrategyConfigInstance)`
 - `BacktestEngine.run(bars=..., strategy=StrategyClass, config=StrategyConfigInstance)`
 - market, limit, stop-market, and stop-limit orders
 - fixed quantity and `qty_percent` sizing
-- conservative reservation, fills, positions, reporting, plotting, finite grid
-  parameter exploration, and rolling walk-forward validation
+- conservative reservation, fills, positions, reporting, plotting, validation
+  pipeline records, and rolling walk-forward validation
 
 Unsupported in the first public beta:
 
@@ -123,7 +123,7 @@ The first public beta has exactly three canonical examples:
 
 - SMA crossover quickstart
 - Orders and sizing
-- Parameter exploration
+- Walk-forward validation
 
 See [docs/site/examples.md](docs/site/examples.md).
 

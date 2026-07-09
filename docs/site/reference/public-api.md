@@ -22,30 +22,38 @@ This curated reference lists the first-beta imports users should prefer.
 `StrategyConfig` instance through `config=...`; plain dictionaries are not a
 supported direct-run config input.
 
-## Research
+## Strategy Authoring
 
 - `quantcraft.strategy.Strategy`
 - `quantcraft.strategy.StrategyConfig`
 - `Strategy.buy(...)`
 - `Strategy.sell(...)`
-- `quantcraft.research.ParameterStudy`
-- `ParameterStudy.grid_search(...)`
-- `quantcraft.research.WalkForwardStudy`
-- `WalkForwardStudy.run(...)`
-- `quantcraft.research.WalkForwardResult`
-- `quantcraft.research.WalkForwardFold`
-- `quantcraft.research.WalkForwardDiagnostic`
-- `quantcraft.research.WalkForwardOosSummary`
-- `quantcraft.research.WalkForwardExecutionScale`
+
+## Research Validation
+
+- `quantcraft.research.ValidationPipeline`
+- `quantcraft.research.ValidationStep`
+- `quantcraft.research.ValidationContext`
+- `quantcraft.research.ValidationReport`
+- `quantcraft.research.ValidationStepResult`
+- `quantcraft.research.ValidationDiagnostic`
+- `quantcraft.research.ValidationProvenance`
+- `quantcraft.research.ValidationArtifact`
+- `quantcraft.research.ValidationStatus`
+- `quantcraft.research.SplitWindow`
+- `quantcraft.research.RollingSplitPolicy`
+- `quantcraft.research.WalkForwardValidation`
+- `quantcraft.research.WalkForwardValidationResult`
+- `quantcraft.research.WalkForwardFoldResult`
 - `quantcraft.research.ta`
 - `quantcraft.research.qc`
 
-`quantcraft.research.Strategy` remains available as a migration-compatible
-re-export.
-
-`WalkForwardStudy` is a research validation workflow. It uses rolling
+`WalkForwardValidation` is a research validation workflow. It uses rolling
 train/test folds over one materialized `BarSeries`; it is not a live trading,
 paper trading, optimizer-guarantee, or continuous-account reporting surface.
+
+`MetricSelectionPolicy` is not public in the first validation slice. Users pass
+objective tuples directly to `WalkForwardValidation`.
 
 Lower-level trading-domain objects are supporting implementation contracts, not
 the primary first-beta import surface for user documentation.

@@ -13,8 +13,8 @@ Use [Orders and sizing](guides/orders-and-sizing.md) to compare fixed
 `quantity`, `qty_percent`, market, limit, stop-market, and stop-limit behavior
 in the current single-symbol historical backtest workflow.
 
-## Example 3: Parameter Exploration
+## Example 3: Walk-Forward Validation
 
-Use [Parameter exploration](guides/parameter-exploration.md) to run
-`ParameterStudy(...).grid_search(...)` over a small SMA grid with a `fast <
-slow` constraint, inspect records, and open the selected run.
+Use [Walk-forward validation](guides/walk-forward-analysis.md) to select strategy
+configuration candidates on rolling train windows and challenge them on unseen
+OOS windows with structured records, diagnostics, artifacts, and provenance.

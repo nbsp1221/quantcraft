@@ -2,10 +2,15 @@
 
 ## Status
 
-- Status: `implemented`
+- Status: `superseded`
 - Class: `product-spec`
-- Scope: the current implemented `research` usability surface on top of the backtest MVP
+- Scope: superseded pre-validation-pipeline `research` usability surface
 
+- Superseded by:
+  [validation-pipeline.md](validation-pipeline.md). This document is retained as
+  historical context only. Current research public API routes through
+  `ValidationPipeline`, `RollingSplitPolicy`, `WalkForwardValidation`, `ta`, and
+  `qc`; public `ParameterStudy` and `WalkForwardStudy` are retired.
 Related documents:
 
 - [../design-docs/quantcraft-architecture.md](../design-docs/quantcraft-architecture.md)
@@ -59,28 +64,23 @@ reference for paper/live parity, not the beta feature checklist.
 - a small official helper surface
 - a small official indicator baseline
 - an expanded backtest result surface
-- constrained first-beta parameter exploration through `ParameterStudy`
+- validation-pipeline research flows through `WalkForwardValidation`
 - official examples
 - a canonical quickstart document and notebook
 
 ### Remaining Deferred Scope
 
-The current implemented slice now includes readable result reporting, a basic
-`result.plot()` workflow, and constrained first-beta parameter exploration. It
-still does not include:
+The current implemented validation-pipeline reset includes validation core types,
+rolling split policy, and a WFA-oriented public flow. It still does not include:
 
-- walk-forward tooling
 - dedicated anti-bias diagnostics tooling
 - paper trading
 - live trading
 - guaranteed fallback behavior when `TA-Lib` is unavailable
 
-These items are not all equally deferred. For the first beta, richer examples,
-fresh install guidance, and release metadata/documentation cleanup remain product
-gaps to close before broad public positioning. The first-beta parameter
-exploration contract is governed by
-[parameter-exploration.md](parameter-exploration.md). Paper trading and live
-trading stay outside the first beta.
+These items are not all equally deferred. Current research validation scope is
+governed by [validation-pipeline.md](validation-pipeline.md). Paper trading and
+live trading stay outside the first beta.
 
 ## Official Import Surface
 
@@ -92,7 +92,7 @@ Recommended import:
 
 ```python
 from quantcraft.backtest import BacktestEngine
-from quantcraft.research import ParameterStudy, ta, qc
+from quantcraft.research import RollingSplitPolicy, WalkForwardValidation, qc, ta
 from quantcraft.strategy import Strategy
 ```
 

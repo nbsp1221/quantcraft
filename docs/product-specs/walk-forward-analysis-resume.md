@@ -2,10 +2,16 @@
 
 ## Status
 
-- Status: `implemented`
+- Status: `superseded`
 - Class: `product-spec`
-- Scope: Stage 4 product contract for resuming the first single-symbol
-  walk-forward validation slice after WFA prerequisites
+- Scope: superseded Stage 4 product contract for the earlier
+  `WalkForwardStudy`-based WFA slice
+
+- Superseded by:
+  [validation-pipeline.md](validation-pipeline.md). This document is retained as
+  historical context only. Current WFA public API is `WalkForwardValidation`
+  under `quantcraft.research.validation`; public `WalkForwardStudy` and public
+  `ParameterStudy` composition are retired.
 
 Related documents:
 

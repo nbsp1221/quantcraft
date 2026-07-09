@@ -4,9 +4,8 @@
 
 - Status: `draft`
 - Class: `product-spec`
-- Scope: Stage 1 unified strategy configuration contract before
-  `ParameterStudy` migration, reporting metadata changes, and walk-forward
-  analysis resume
+- Scope: Stage 1 unified strategy configuration contract for backtest and
+  validation-pipeline research flows
 
 Related documents:
 
@@ -21,17 +20,17 @@ Related documents:
 - [../design-docs/package-topology-and-naming.md](../design-docs/package-topology-and-naming.md)
 
 This document defines the product contract for strategy configuration. It is not
-an implementation plan and does not resume WFA implementation. It intentionally
-records several downstream decisions for `ParameterStudy` and reporting so those
-stages do not rediscover or contradict the Stage 1 contract.
+an implementation plan and does not resume WFA implementation. Downstream
+candidate-search and reporting notes are historical context unless restated by
+the validation-pipeline contract.
 
 Functional requirements in this document have two roles:
 
 - Stage 1 defines the shared strategy configuration contract and any
   contract-level discovery, materialization, and validation behavior needed to
   make that contract observable.
-- Stage 2 and Stage 3 apply the contract to `ParameterStudy` and reporting.
-  Requirements labeled as downstream are not required to ship in the first
+- Stage 2 and Stage 3 apply the contract to internal validation candidate search
+  and reporting.
   Stage 1 implementation slice.
 
 ## Background And Problem Definition
@@ -41,8 +40,8 @@ Quantcraft currently has a useful first-beta research loop:
 - users subclass `Strategy`
 - `BacktestEngine.run(...)` executes a `Strategy` class with an optional
   `StrategyConfig` instance after Stage 3.5 alignment
-- `ParameterStudy(...).grid_search(...)` runs finite parameter grids through a
-  user-provided legacy callable construction API
+- internal validation candidate search runs finite candidate grids through the
+  strategy class plus config execution API
 - `BacktestReport.run.strategy_parameters` is populated from
   `Strategy.parameters()`
 
@@ -89,7 +88,7 @@ This spec solves the product-contract problem before implementation continues.
   workflows.
 - Remove the old callable construction path from active study workflows so the
   config-backed `strategy=StrategyClass` contract is the only public study UX.
-- Record downstream decisions needed for `ParameterStudy` migration and
+- Record downstream decisions needed for internal validation candidate search migration and
   reporting metadata cleanup without requiring all downstream migrations in one
   implementation slice.
 - Keep WFA paused until the prerequisite strategy configuration and reporting
@@ -217,11 +216,11 @@ class RSIStrategyConfig(StrategyConfig):
 ```
 
 ```python
-result = ParameterStudy(
+result = internal validation candidate search(
     engine=engine,
     bars=bars,
     strategy=RSIStrategy,
-).grid_search(
+).candidate_search(
     parameters={
         "rsi_period": [7, 14, 21],
         "oversold": [20.0, 30.0, 40.0],
@@ -310,7 +309,7 @@ config schema containing those keys.
 
 legacy callable construction API is not the canonical strategy configuration contract.
 
-It is not part of the active `ParameterStudy` public API. Custom construction
+It is not part of the active internal validation candidate search public API. Custom construction
 needs must be expressed through `Strategy` classes that still preserve the
 framework-owned config materialization, reporting, validation, and portability
 guarantees.
@@ -329,9 +328,9 @@ Canonical imports are:
 from quantcraft.strategy import Strategy, StrategyConfig
 ```
 
-`quantcraft.research.Strategy` may remain as a migration/re-export path, but it
-is not the canonical owner. `research`, `backtest`, and future `execution` may
-depend on `quantcraft.strategy`; `quantcraft.strategy` must not depend on
+`quantcraft.research.Strategy` is not a migration/re-export path after the
+validation-pipeline beta reset. `research`, `backtest`, and future `execution`
+may depend on `quantcraft.strategy`; `quantcraft.strategy` must not depend on
 `research`, `backtest`, or `execution`.
 
 ## Functional Requirements
@@ -363,7 +362,7 @@ validating supported fields, and producing normalized snapshots.
 ### Search-Space Validation Contract
 
 Stage 1 defines the validation semantics for config-aware study search spaces.
-Stage 2 wires those semantics into `ParameterStudy`.
+Stage 2 wires those semantics into internal validation candidate search.
 
 Study-level search-space/schema mismatches must fail during preflight before
 any backtest starts.
@@ -382,10 +381,9 @@ An empty study search space is valid and materializes exactly one candidate: the
 default `StrategyConfig` snapshot. This supports fixed-config validation and
 degenerate study cases.
 
-This supersedes the current first-beta `ParameterStudy` behavior for future
-canonical config-aware study workflows. Until Stage 2 migrates `ParameterStudy`,
-the existing implemented parameter-exploration contract remains the current
-runtime behavior.
+This section is historical downstream context after the validation-pipeline beta
+reset. New research validation work must use the validation-pipeline contract,
+not the retired public internal validation candidate search contract.
 
 Existing deterministic grid-shape protections should carry forward unless a
 later Stage 2 spec deliberately changes them. In particular, malformed grids
@@ -475,11 +473,11 @@ the source of truth for canonical study configuration. Canonical study result
 objects carry their own materialized `strategy_config` snapshots, and Stage 3
 aligns reports to the same source.
 
-### ParameterStudy Downstream Contract
+### internal validation candidate search Downstream Contract
 
-Stage 2 should migrate `ParameterStudy` so that:
+Stage 2 should migrate internal validation candidate search so that:
 
-- `ParameterStudy(..., strategy=StrategyClass)` is the canonical construction
+- `internal candidate search with strategy=StrategyClass` is the canonical construction
   path
 - the old callable construction path is not accepted in the active public API
 - new documentation and tests center `strategy=...`
@@ -500,7 +498,7 @@ This row-level `strategy_config` guarantee applies to canonical
 `strategy=StrategyClass` workflows. The old callable construction path is not
 part of the active row contract.
 
-`GridSearchResult.best()` should continue returning the best eligible row. The
+candidate-search selection should continue returning the best eligible row. The
 canonical selected execution settings are exposed as `best.strategy_config`;
 `best.candidate_parameters` remains an audit trail of the partial override that
 produced it.
@@ -678,27 +676,26 @@ configuration contract:
 - removal of the old callable construction path from active study workflows
 - shared strategy/runtime ownership, not research-only ownership
 
-Stage 1 does not have to migrate `ParameterStudy`. If Stage 1 ships helper
-behavior, acceptance should be framed around observable config schema discovery,
-full config materialization from defaults plus overrides, and validation failure
-before any user callback or execution hook is invoked by that contract-level
-path.
+Stage 1 does not have to migrate retired public study APIs. If Stage 1 ships
+helper behavior, acceptance should be framed around observable config schema
+discovery, full config materialization from defaults plus overrides, and
+validation failure before any user callback or execution hook is invoked by that
+contract-level path.
 
-### Downstream Stage 2 Requirements
+### Downstream Internal Candidate-Search Requirements
 
-Stage 2 should specify and implement the `ParameterStudy` migration:
+Future internal candidate-search work should specify:
 
 - canonical `strategy=StrategyClass`
-- `ParameterStudy(engine=..., bars=..., strategy=StrategyClass)` as the only
-  active study construction path
+- internal candidate execution through `BacktestEngine.run(..., config=...)`
 - `candidate_parameters`
 - row-level `strategy_config`
-- best-row UX centered on `best.strategy_config`
+- selection UX centered on materialized `strategy_config`
 - empty `parameters={}` producing one default-config candidate in canonical
   config-aware workflows
 - preflight error types and messages for schema/search-space mistakes
 - constraints receive full `strategy_config` mappings
-- the config-backed row representation for current research workflows
+- the config-backed row representation for current validation workflows
 - deterministic malformed-grid behavior for unordered candidate containers,
   empty value lists, duplicate or duplicate-equivalent values, non-finite
   floats, unsupported containers, and candidate-limit violations
@@ -728,7 +725,7 @@ This product spec is successful when:
 
 - implementation plans can build Stage 1 without reopening the canonical
   strategy configuration decision
-- `ParameterStudy` migration planning can cite a clear distinction between
+- internal validation candidate search migration planning can cite a clear distinction between
   `parameters`, `candidate_parameters`, and `strategy_config`
 - reporting planning can cite a clear rule that materialized config snapshots
   are the source of truth
@@ -741,7 +738,7 @@ This product spec is successful when:
 
 ## Open Questions
 
-- Should a future `config=` base override be added to `ParameterStudy`,
+- Should a future `config=` base override be added to internal validation candidate search,
   `BacktestEngine`, both, or neither?
 - Stage 2 resolved that constraints receive full `strategy_config` mappings.
 - Stage 2 resolved that the old callable construction path has no active row

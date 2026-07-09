@@ -2,9 +2,15 @@
 
 ## Status
 
-- Status: `planned`
+- Status: `superseded`
 - Class: `product-spec`
-- Scope: first-beta `ParameterStudy(...).grid_search(...)` test scenarios
+- Scope: superseded first-beta `ParameterStudy(...).grid_search(...)` test
+  scenarios retained as historical context only
+
+- Superseded by:
+  [validation-pipeline.md](validation-pipeline.md). Current tests must cover the
+  validation-pipeline reset surface, not public `ParameterStudy`,
+  `GridSearchResult`, or `WalkForwardStudy` APIs.
 
 Related documents:
 

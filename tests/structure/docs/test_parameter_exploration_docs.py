@@ -7,19 +7,21 @@ def _read(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
-def test_parameter_exploration_docs_route_to_research_public_path() -> None:
-    product_spec = _read("docs/product-specs/parameter-exploration.md")
+def test_validation_pipeline_docs_route_to_current_research_public_path() -> None:
+    product_spec = _read("docs/product-specs/validation-pipeline.md")
 
-    assert "from quantcraft.research import ParameterStudy, ta" in product_spec
-    assert "from quantcraft.strategy import Strategy" in product_spec
-    assert "ParameterStudy(...).grid_search(...)" in product_spec
+    assert "WalkForwardValidation" in product_spec
+    assert "RollingSplitPolicy" in product_spec
+    assert "MetricSelectionPolicy` is intentionally not public" in product_spec
 
 
 def test_public_docs_do_not_promote_deferred_beta_controls() -> None:
     docs = "\n".join(
         (
             _read("README.md"),
-            _read("docs/product-specs/research-ergonomics.md"),
+            _read("docs/product-specs/validation-pipeline.md"),
+            _read("docs/site/guides/parameter-exploration.md"),
+            _read("docs/site/guides/walk-forward-analysis.md"),
             _read("docs/references/research-ergonomics-quickstart.md"),
         )
     )
@@ -33,13 +35,16 @@ def test_public_docs_do_not_promote_deferred_beta_controls() -> None:
         "executor=",
         "GridSearchResult.heatmap",
         "resume=",
+        "from quantcraft.research import ParameterStudy",
+        "`Strategy`, `ParameterStudy`",
+        "`ParameterStudy`,\n  `ta`, `qc`",
     )
     for fragment in forbidden_fragments:
         assert fragment not in docs
 
 
-def test_docs_keep_grid_results_as_research_diagnostics_not_recommendations() -> None:
-    product_spec = _read("docs/product-specs/parameter-exploration.md")
+def test_docs_keep_candidate_search_as_research_diagnostic_not_recommendation() -> None:
+    product_spec = _read("docs/product-specs/validation-pipeline.md")
     normalized_spec = " ".join(product_spec.split())
 
-    assert "research diagnostics, not trading recommendations" in normalized_spec
+    assert "not an optimizer guarantee or a trading recommendation" in normalized_spec

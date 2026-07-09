@@ -75,7 +75,7 @@ def test_readme_presents_public_beta_docs_surface() -> None:
         "result.plot()",
         "SMA crossover quickstart",
         "Orders and sizing",
-        "Parameter exploration",
+        "Walk-forward validation",
         "docs/site",
         "CONTRIBUTING.md",
         "SECURITY.md",
@@ -186,7 +186,7 @@ def test_current_docs_describe_summary_terms_and_engine_surface() -> None:
     assert 'self.buy(quantity=1, tag="rsi-entry")' in data_ingestion_spec
     assert 'self.sell(quantity=1, tag="rsi-exit")' in data_ingestion_spec
     assert "from quantcraft.backtest import BacktestEngine" in quickstart
-    assert "from quantcraft.research import ParameterStudy, ta, qc" in quickstart
+    assert "from quantcraft.research import qc, ta" in quickstart
     assert "from quantcraft.strategy import Strategy" in quickstart
     assert (
         "from quantcraft.research import BacktestEngine, Strategy, ta, qc, run_backtest"

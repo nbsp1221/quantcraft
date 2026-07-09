@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from quantcraft.data import BarSeries, TimeBar
-from quantcraft.research import Strategy
+from quantcraft.strategy import Strategy
 from quantcraft.trading.domain.costs import CostConfig
 from tests.integration.research.support_backtest_runner import (
     BuyStopLimitStrategy,

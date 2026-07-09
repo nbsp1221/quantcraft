@@ -2,10 +2,15 @@
 
 ## Status
 
-- Status: `implemented`
+- Status: `superseded`
 - Class: `product-spec`
 - Scope: first-beta constrained parameter exploration for single-symbol
   research backtests
+- Superseded by:
+  [validation-pipeline.md](validation-pipeline.md). This document is retained as
+  historical beta context only. It does not define current public research API.
+  Current research validation docs must route users to `ValidationPipeline`,
+  `RollingSplitPolicy`, and `WalkForwardValidation`.
 
 Related documents:
 

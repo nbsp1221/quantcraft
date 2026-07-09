@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from quantcraft.backtest.strategy_runtime import _StrategyDriver
 from quantcraft.data import BarSeries, TimeBar
-from quantcraft.research.strategy import Strategy
+from quantcraft.strategy import Strategy
 from quantcraft.trading.domain.events import BarEvent
 
 

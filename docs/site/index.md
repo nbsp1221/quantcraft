@@ -23,7 +23,7 @@ walk-forward validation.
 - [Strategy authoring](guides/strategy-authoring.md)
 - [Data sources](guides/data-sources.md)
 - [Orders and sizing](guides/orders-and-sizing.md)
-- [Parameter exploration](guides/parameter-exploration.md)
+- [Candidate search in validation](guides/parameter-exploration.md)
 - [Walk-forward analysis](guides/walk-forward-analysis.md)
 
 ## Financial Disclaimer

@@ -6,7 +6,7 @@ This quickstart is the canonical first-run path for the current implemented `Res
 
 ```python
 from quantcraft.backtest import BacktestEngine
-from quantcraft.research import ParameterStudy, ta, qc
+from quantcraft.research import qc, ta
 from quantcraft.strategy import Strategy
 ```
 
@@ -30,7 +30,8 @@ They are not automatically all strict merge gates.
 
 - starting state: a fresh environment with the package installed
 - user intent: verify that the documented public imports actually work
-- success artifact: importing `BacktestEngine`, `Strategy`, `ParameterStudy`,
+- success artifact: importing `BacktestEngine`, `Strategy`, validation research
+  types (`ValidationPipeline`, `RollingSplitPolicy`, `WalkForwardValidation`),
   `ta`, `qc`, `BarSeries`, `TimeBar`, and the documented data sources from their
   documented capability paths works without hidden setup
 - superficially passing but still bad: the package installs, but the documented imports or import paths drift
@@ -62,7 +63,7 @@ They are not automatically all strict merge gates.
 
 ```python
 from quantcraft.backtest import BacktestEngine
-from quantcraft.research import ParameterStudy, ta, qc
+from quantcraft.research import qc, ta
 from quantcraft.strategy import Strategy
 from quantcraft.data import BarSeries, DataFrameDataSource, TimeBar
 from quantcraft.trading.domain.costs import CostConfig

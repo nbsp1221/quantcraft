@@ -43,7 +43,7 @@ Good tests are:
   data loading or backtest execution
 - **provenance-aware**: they assert `report.run.strategy_config` records the
   materialized config snapshot used for execution
-- **composition-focused**: they prove `ParameterStudy` uses the same direct
+- **composition-focused**: they prove internal validation candidate search uses the same direct
   class-plus-config API instead of a parallel construction path
 - **documentation-aware**: they keep current public examples aligned with the
   new API while avoiding permanent brittle grep gates for transition-only
@@ -88,7 +88,7 @@ Likely location:
 
 - `tests/integration/research/test_backtest_engine_entrypoints.py`
 - `tests/integration/research/test_backtest_result_reporting_contract.py`
-- `tests/integration/research/test_parameter_study_grid_search.py`
+- `tests/integration/research/test_parameter_study_candidate_search.py`
 - `tests/integration/strategy/test_strategy_config_construction.py`
 
 ### Public Example And Smoke Tests
@@ -417,34 +417,26 @@ Then:
 
 This confirms Stage 3.5 changes strategy construction, not data input rules.
 
-### I4: ParameterStudy Uses The Direct Class+Config API
+### I4: Internal Candidate Search Uses The Direct Class+Config API
 
 Given:
 
-- a small parameter grid
+- a small candidate grid inside a validation flow
 - a test engine or spy engine that records its `run(...)` call arguments
 
-When:
-
-```python
-ParameterStudy(
-    engine=engine,
-    bars=bars,
-    strategy=ConfiguredStrategy,
-).grid_search(parameters={...})
-```
+When internal candidate search executes one candidate for validation
 
 Then:
 
 - the engine receives `strategy=ConfiguredStrategy`
 - the engine receives `config=prepared_config`
-- the study does not pass a preconstructed strategy instance
+- candidate search does not pass a preconstructed strategy instance
 - row `strategy_config` and row backtest report `strategy_config` agree
 
 Use a focused spy test for call shape and an integration test for real
 `BacktestEngine` behavior.
 
-### I5: ParameterStudy Failure Stages Remain Distinguishable
+### I5: Internal Candidate-Search Failure Stages Remain Distinguishable
 
 Given:
 
@@ -452,21 +444,17 @@ Given:
 - one candidate that fails strategy construction
 - one candidate whose backtest fails
 
-When:
-
-```python
-result = study.grid_search(parameters=..., fail_fast=False)
-```
+When internal candidate search runs inside a validation flow with fail-fast disabled
 
 Then:
 
-- config failures remain rejected or failed according to the existing
-  `ParameterStudy` contract
+- config failures remain rejected or failed according to the internal candidate
+  search contract
 - strategy construction failures remain attributed to
   `"strategy_construction"`
 - backtest failures remain attributed to `"backtest"`
 
-Stage 3.5 must not collapse nested-study failure diagnostics.
+Stage 3.5 must not collapse nested validation failure diagnostics.
 
 ## Reporting Scenarios
 
@@ -668,7 +656,7 @@ The Stage 3.5 test target is complete when:
   instance input fail before execution
 - at least one test proves invalid config does not load a source
 - report config snapshots are tested for explicit and default configs
-- `ParameterStudy` is tested to call the new direct API
+- internal validation candidate search is tested to call the new direct API
 - public smoke examples execute with the new API
 - current public docs/examples are cleaned during implementation
 - temporary old-API text checks are removed or explicitly not promoted after

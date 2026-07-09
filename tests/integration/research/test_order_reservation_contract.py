@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from quantcraft.data import TimeBar
-from quantcraft.research import Strategy
+from quantcraft.strategy import Strategy
 from quantcraft.trading.domain.costs import CostConfig
 from quantcraft.trading.domain.events import OrderRejectedEvent
 from tests.integration.research.support_backtest_runner import make_bar_series, run_engine_backtest

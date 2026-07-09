@@ -5,7 +5,8 @@
 - Status: `planned`
 - Class: `product-test-spec`
 - Scope: Stage 1 test scenarios for the unified strategy configuration contract
-  plus downstream test hooks for `ParameterStudy` and reporting migration
+  plus downstream test hooks for internal validation candidate search and
+  reporting migration
 
 Related documents:
 
@@ -29,7 +30,7 @@ internals.
 ## Testing Basis
 
 The feature exists because Quantcraft needs a shared, framework-recognizable
-strategy configuration contract before `ParameterStudy` migration, reporting
+strategy configuration contract before internal validation candidate search migration, reporting
 metadata changes, and WFA resume can safely proceed.
 
 The core product contract is:
@@ -59,7 +60,7 @@ The core product contract is:
 - `None` is accepted only for explicitly optional fields
 - primitive compatibility rejects Python `bool`/`int` ambiguity
 - public config errors use the `StrategyConfigError` hierarchy
-- Stage 2 applies the contract to `ParameterStudy`
+- Stage 2 applies the contract to internal validation candidate search
 - Stage 3 applies the contract to reporting as `strategy_config`
 
 Tests must validate these contracts as user-visible behavior and migration
@@ -130,7 +131,7 @@ In scope for Stage 1:
 
 In scope as downstream Stage 2/3 test hooks:
 
-- `ParameterStudy(..., strategy=StrategyClass)` canonical construction
+- `internal candidate search with strategy=StrategyClass` canonical construction
 - old callable construction keyword rejected by the active public API
 - `candidate_parameters` row naming
 - row-level `strategy_config`
@@ -164,15 +165,15 @@ Out of scope:
 | Integration | `tests/integration/strategy/test_strategy_config_construction.py` | Fresh canonical strategy construction with real `Strategy` subclasses and a contract-shaped execution harness. |
 | Structure | `tests/structure/architecture/test_strategy_config_boundaries.py` | The shared strategy config surface is not owned by a product surface and does not force future `execution` to depend on `research`. |
 | Docs | `tests/structure/docs/test_strategy_configuration_contract_docs.py` | Product docs route strategy config work to the product spec and test spec, and WFA does not resume on the old callable construction path. |
-| Downstream integration | later Stage 2 `tests/integration/research/test_parameter_study_strategy_config_migration.py` | `ParameterStudy(strategy=...)`, `candidate_parameters`, row-level `strategy_config`, and empty-search-space behavior. |
+| Downstream integration | later Stage 2 `tests/integration/research/test_parameter_study_strategy_config_migration.py` | `internal validation candidate search(strategy=...)`, `candidate_parameters`, row-level `strategy_config`, and empty-search-space behavior. |
 | Downstream integration | later Stage 3 reporting tests | `report.run.strategy_config`, removal of `strategy_parameters`, and config snapshot source-of-truth. |
 
 No browser-style E2E tests are required. This is a Python library contract with
 no UI. Full workflow confidence belongs in targeted integration tests once
-Stage 2 and Stage 3 wire the contract into `ParameterStudy` and reporting.
+Stage 2 and Stage 3 wire the contract into internal validation candidate search and reporting.
 
 The Stage 1 shared strategy/runtime contract lives under `quantcraft.strategy`.
-`research` placement remains appropriate for Stage 2 `ParameterStudy` migration
+`research` placement remains appropriate for Stage 2 internal validation candidate search migration
 tests, not for the canonical Stage 1 strategy configuration surface.
 
 ## Fixture And Test Data Strategy
@@ -219,7 +220,7 @@ Allowed fakes:
 
 - `CountingEngine`/`NoRunEngine` for no-execution validation checks
 - a contract-shaped construction/normalization harness if the Stage 1
-  implementation exposes framework-owned behavior before `ParameterStudy`
+  implementation exposes framework-owned behavior before internal validation candidate search
   migration
 - a minimal report/run manifest fake only in Stage 3 tests if a reporting
   boundary cannot be reached cheaply through real backtests
@@ -426,7 +427,7 @@ Purpose: prove user mistakes fail fast before expensive or misleading execution.
 Use counting callbacks or a contract-shaped fake execution hook. Stage 1 tests
 should prove the config validation/materialization path does not invoke user
 callbacks when validation fails. Stage 2 tests should separately prove
-`ParameterStudy` preflight prevents engine runs.
+internal validation candidate search preflight prevents engine runs.
 
 Scenarios:
 
@@ -461,12 +462,12 @@ backtest metrics.
 ## Downstream Stage 2 Test Hooks
 
 These are not Stage 1 completion gates. They should be copied or refined into
-the Stage 2 `ParameterStudy` migration test spec.
+the Stage 2 internal validation candidate search migration test spec.
 
-### S2-1: Canonical ParameterStudy Construction
+### S2-1: Canonical internal validation candidate search Construction
 
 ```python
-ParameterStudy(
+internal validation candidate search(
     engine=engine,
     bars=bars,
     strategy=RSIStrategy,
@@ -497,18 +498,18 @@ Expected future canonical behavior:
 - `best().strategy_config` returns the same default snapshot when an objective is
   available
 
-This supersedes current `ParameterStudy` behavior only after Stage 2 migration.
+This supersedes current internal validation candidate search behavior only after Stage 2 migration.
 
 ### S2-2a: Config-Less Empty Search Space
 
 Input:
 
 ```python
-ParameterStudy(
+internal validation candidate search(
     engine=engine,
     bars=bars,
     strategy=ConfigLessStrategy,
-).grid_search(parameters={})
+).candidate_search(parameters={})
 ```
 
 Expected future canonical behavior:
@@ -524,7 +525,7 @@ Expected future canonical behavior:
 
 - rows expose `candidate_parameters`, not row-level `parameters`
 - rows expose full `strategy_config`
-- `GridSearchResult.best()` returns the row, not only the config
+- candidate-search selection returns the row, not only the config
 - `best.strategy_config` is the selected execution snapshot
 
 ### S2-4: Constraint Input
@@ -622,7 +623,7 @@ Assertions after relevant stages:
 - `Strategy.parameters()` is not used as canonical execution-config source of
   truth
 - old callable construction examples are removed from active docs/examples
-- tests no longer teach `GridSearchRow.parameters` as the canonical row field
+- tests no longer teach `candidate_parameters` as the canonical row field
   after Stage 2 migration
 
 ## Test Level Priorities

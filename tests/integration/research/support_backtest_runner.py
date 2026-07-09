@@ -7,8 +7,7 @@ from typing import ClassVar
 
 from quantcraft.backtest import BacktestEngine, BacktestResult
 from quantcraft.data import BarSeries, TimeBar
-from quantcraft.research import Strategy
-from quantcraft.strategy import StrategyConfig
+from quantcraft.strategy import Strategy, StrategyConfig
 from quantcraft.trading.domain.costs import CostConfig
 
 

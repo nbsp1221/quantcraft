@@ -72,11 +72,14 @@ def test_built_wheel_exposes_documented_public_imports() -> None:
         assert getattr(strategy_module, "StrategyConfigDeclarationError", None) is not None
         assert getattr(strategy_module, "StrategyConfigValidationError", None) is not None
         assert getattr(strategy_module, "StrategyConfigMutationError", None) is not None
-        assert getattr(research_module, "Strategy", None) is not None
-        assert getattr(research_module, "Strategy") is getattr(strategy_module, "Strategy")
-        assert getattr(research_module, "ParameterStudy", None) is not None
-        assert getattr(research_module, "GridSearchResult", None) is not None
-        assert getattr(research_module, "GridSearchRow", None) is not None
+        assert getattr(research_module, "ValidationPipeline", None) is not None
+        assert getattr(research_module, "ValidationStep", None) is not None
+        assert getattr(research_module, "RollingSplitPolicy", None) is not None
+        assert getattr(research_module, "WalkForwardValidation", None) is not None
+        assert not hasattr(research_module, "Strategy")
+        assert not hasattr(research_module, "ParameterStudy")
+        assert not hasattr(research_module, "GridSearchResult")
+        assert not hasattr(research_module, "GridSearchRow")
         assert getattr(research_module, "ta", None) is not None
         assert getattr(research_module, "qc", None) is not None
         assert not hasattr(research_module, "BacktestEngine")

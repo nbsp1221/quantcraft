@@ -32,7 +32,7 @@ Python backtesting experience for users who want to test a strategy on
 historical OHLCV data. The implemented beta surface already includes strategy
 authoring ergonomics, data sources, market/limit/stop-family order behavior,
 explicit quantity and percent sizing, typed result reporting, result plotting,
-and constrained parameter exploration.
+and validation-first walk-forward candidate search.
 
 The remaining beta gap is no longer primarily runtime functionality. It is
 public comprehension and trust:
@@ -40,7 +40,7 @@ public comprehension and trust:
 - a new user needs to understand what the project does in the first minute
 - a Python user needs a fresh install path and a first backtest path
 - a quant user needs examples that show reporting, plotting, sizing, stop
-  orders, and parameter exploration without implying unsupported scope
+  orders, and walk-forward validation without implying unsupported scope
 - a contributor needs contribution, security, and release-facing documents
 - an agent needs the existing internal workflow authority to remain intact
 
@@ -106,8 +106,8 @@ architecture first.
 
 ### Research User
 
-The user wants to compare a small finite parameter grid, inspect the best or
-selected run, and understand that grid results are research diagnostics rather
+The user wants to compare a small finite candidate grid inside validation,
+inspect selected fold candidates, and understand that validation results are research diagnostics rather
 than trading recommendations.
 
 ### GitHub Visitor
@@ -184,8 +184,8 @@ The first beta public docs must cover:
 - data source guide
 - result reporting guide
 - plotting guide
-- parameter exploration guide
-- walk-forward analysis guide
+- candidate search inside validation guide
+- walk-forward validation guide
 - order sizing guide
 - stop-order guide
 - beta safety/scope notes
@@ -284,12 +284,12 @@ The first public beta must include exactly three canonical examples:
    - market, limit, stop-market, and stop-limit order families
    - reservation, fills, and positions inspection
 
-3. Parameter exploration
-   - `ParameterStudy(...).grid_search(...)`
-   - small SMA grid
+3. Walk-forward validation
+   - `WalkForwardValidation(...)`
+   - `RollingSplitPolicy`
+   - small SMA candidate grid inside the validation flow
    - `fast < slow` style constraint
-   - parameter result comparison
-   - selected or best run inspection
+   - validation records, diagnostics, artifacts, and provenance
 
 Examples must not imply support for unsupported beta scope. Examples must
 prefer documented public imports.
@@ -351,19 +351,19 @@ are expected to import or interact with directly, including:
 
 - `BacktestEngine`
 - `Strategy`
-- `Bar`
-- `Order`
-- `OrderType`
-- `OrderSide`
-- `TimeInForce`
 - `BacktestResult`
 - `result.report`
 - `result.plot()`
-- `ParameterStudy`
-- `ParameterStudy.grid_search`
-- `WalkForwardStudy`
-- `WalkForwardResult`
-- walk-forward fold, diagnostic, summary, and execution-scale objects
+- `ValidationPipeline`
+- `ValidationStep`
+- `ValidationReport`
+- `ValidationStepResult`
+- `ValidationDiagnostic`
+- `ValidationProvenance`
+- `RollingSplitPolicy`
+- `WalkForwardValidation`
+- `WalkForwardValidationResult`
+- `WalkForwardFoldResult`
 - public data loading helpers or built-in data source entry points
 - public `ta` helpers
 - public `qc` helpers
@@ -414,12 +414,12 @@ A user opens the public docs site, follows installation and quickstart pages,
 understands the public imports, runs the `DataFrameDataSource` path, and reaches
 a readable backtest result without reading internal architecture docs.
 
-### 3. Parameter Exploration Example
+### 3. Walk-Forward Validation Example
 
-A research user opens the parameter exploration guide, materializes one
-`BarSeries`, runs `ParameterStudy(...).grid_search(...)` over a small SMA grid,
-filters invalid combinations with a constraint, reads structured records, and
-inspects the selected run's report and plot.
+A research user opens the walk-forward validation guide, materializes one
+`BarSeries`, runs `WalkForwardValidation(...)` over a small SMA candidate grid,
+filters invalid combinations with a constraint, reads validation records and
+diagnostics, and inspects provenance for the selected fold candidates.
 
 ### 4. Orders And Sizing Example
 
@@ -498,8 +498,8 @@ commitment.
 - `docs/plans/` remains the active planning and evaluator artifact location for
   non-trivial work.
 - Public beta behavior remains governed by the existing product specs for
-  data ingestion, backtesting, research ergonomics, result plotting, parameter
-  exploration, order sizing, order reservation, and stop-limit behavior.
+  data ingestion, backtesting, validation-pipeline research, result plotting,
+  order sizing, order reservation, and stop-limit behavior.
 - The public beta scope remains single-symbol, single-timeframe, historical,
   long-or-flat, and non-live unless later product specs explicitly expand it.
 - Tier A `trading` and `execution` work still requires explicit human approval
@@ -530,11 +530,12 @@ The public beta documentation product is ready when:
 - Public docs show `result.report` and `result.plot()` as normal inspection
   paths.
 - Public docs include exactly three canonical examples: SMA crossover
-  quickstart, orders and sizing, and parameter exploration.
-- Public docs include a canonical constrained-grid `ParameterStudy` example.
-- Public docs describe `WalkForwardStudy` as rolling out-of-sample research
-  validation evidence, not as an optimizer guarantee, recommendation engine,
-  paper/live workflow, or continuous-account report.
+  quickstart, orders and sizing, and walk-forward validation.
+- Public docs include a canonical `WalkForwardValidation` example with
+  validation records, diagnostics, artifacts, and provenance.
+- Public docs describe candidate search as internal validation behavior, not as
+  a standalone optimizer guarantee, recommendation engine, paper/live workflow,
+  or continuous-account report.
 - Public docs include explicit fixed `qty`, `qty_percent`, reservation, fills,
   positions, and stop-family examples.
 - Public docs state unsupported beta scope plainly.

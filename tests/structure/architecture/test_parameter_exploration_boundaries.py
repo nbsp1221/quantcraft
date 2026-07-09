@@ -1,59 +1,40 @@
 from __future__ import annotations
 
 import ast
-import inspect
 from pathlib import Path
 
-from quantcraft.backtest import BacktestEngine
-from quantcraft.research import ParameterStudy
 from tests.support import ROOT
 
-DEFERRED_CONTROLS = {"source", "n_jobs", "workers", "parallel", "executor"}
+VALIDATION_IMPORT = "quantcraft.research.validation"
 
 
-def _imports_parameter_exploration(path: Path) -> bool:
+def _imports_validation(path: Path) -> bool:
     tree = ast.parse(path.read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
-            if any(
-                alias.name == "quantcraft.research.parameter_exploration" for alias in node.names
-            ):
+            if any(alias.name.startswith(VALIDATION_IMPORT) for alias in node.names):
                 return True
-        elif (
-            isinstance(node, ast.ImportFrom)
-            and node.module == "quantcraft.research.parameter_exploration"
-        ):
+        elif isinstance(node, ast.ImportFrom) and (node.module or "").startswith(VALIDATION_IMPORT):
             return True
     return False
 
 
-def test_parameter_exploration_lives_under_research_boundary() -> None:
-    assert (ROOT / "src" / "quantcraft" / "research" / "parameter_exploration.py").exists()
+def test_validation_subpackage_lives_under_research_boundary() -> None:
+    assert (ROOT / "src" / "quantcraft" / "research" / "validation").is_dir()
 
 
-def test_backtest_trading_and_execution_do_not_import_parameter_exploration() -> None:
+def test_backtest_trading_and_execution_do_not_import_validation_layer() -> None:
     for package_name in ("backtest", "trading", "execution"):
         package_root = ROOT / "src" / "quantcraft" / package_name
-        offenders = [
-            path for path in package_root.rglob("*.py") if _imports_parameter_exploration(path)
-        ]
+        offenders = [path for path in package_root.rglob("*.py") if _imports_validation(path)]
         assert offenders == []
 
 
-def test_backtest_surface_does_not_gain_optimizer_or_study_exports() -> None:
+def test_backtest_surface_does_not_gain_validation_exports() -> None:
     import quantcraft.backtest as backtest
 
-    assert not hasattr(BacktestEngine, "optimize")
-    for name in ("ParameterStudy", "GridSearchResult", "GridSearchRow"):
+    for name in ("ValidationPipeline", "WalkForwardValidation", "RollingSplitPolicy"):
         assert not hasattr(backtest, name)
-
-
-def test_parameter_study_public_signatures_omit_deferred_controls() -> None:
-    study_signature = inspect.signature(ParameterStudy)
-    search_signature = inspect.signature(ParameterStudy.grid_search)
-
-    assert DEFERRED_CONTROLS.isdisjoint(study_signature.parameters)
-    assert DEFERRED_CONTROLS.isdisjoint(search_signature.parameters)
 
 
 def test_no_heavy_optimizer_dependency_is_added_for_beta() -> None:
