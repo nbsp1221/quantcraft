@@ -14,7 +14,7 @@ def test_product_index_routes_strategy_configuration_and_wfa_prerequisites() -> 
     assert "strategy-configuration-contract-test-scenarios.md" in index
     assert "walk-forward-analysis-readiness.md" in index
     assert "wfa-prerequisite-roadmap.md" in index
-    assert "current implemented Stage 4 first-slice WFA contract" in index
+    assert "current first-slice validation substrate and WFA public flow" in index
 
 
 def test_strategy_configuration_contract_keeps_stage_boundaries_explicit() -> None:
@@ -23,7 +23,7 @@ def test_strategy_configuration_contract_keeps_stage_boundaries_explicit() -> No
     assert "The chosen package path is `quantcraft.strategy`." in spec
     assert "from quantcraft.strategy import Strategy, StrategyConfig" in spec
     assert "`Strategy[Config]` is the canonical user-facing declaration" in spec
-    assert "Stage 1 does not have to migrate `ParameterStudy`" in spec
+    assert "Stage 1 does not have to migrate retired public study APIs" in spec
     assert "replace report-facing `strategy_parameters` with `strategy_config`" in spec
     assert "WFA must not resume on a public contract that hardens" in spec
 

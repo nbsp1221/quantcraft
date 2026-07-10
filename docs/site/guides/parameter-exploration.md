@@ -1,51 +1,32 @@
-# Parameter Exploration
+# Candidate Search In Validation
 
-`ParameterStudy` runs a finite grid of strategy parameters against a
-materialized series.
+Standalone `ParameterStudy` is no longer the current public research API.
+Quantcraft's beta research layer now treats finite parameter search as an
+internal part of validation flows such as `WalkForwardValidation`.
+
+Use `WalkForwardValidation` when a small parameter grid should be selected on
+train windows and challenged on unseen OOS windows:
 
 ```python
-from quantcraft.research import ParameterStudy, qc, ta
-from quantcraft.strategy import Strategy, StrategyConfig, StrategyConfigValidationError
+from quantcraft.research import RollingSplitPolicy, WalkForwardValidation
 
-
-class SmaConfig(StrategyConfig):
-    fast: int = 2
-    slow: int = 3
-
-    def validate(self) -> None:
-        if self.fast >= self.slow:
-            raise StrategyConfigValidationError("fast must be less than slow")
-
-
-class ParameterizedSmaStrategy(Strategy[SmaConfig]):
-    def init(self) -> None:
-        self.fast = ta.sma(self.data.close, length=self.config.fast)
-        self.slow = ta.sma(self.data.close, length=self.config.slow)
-
-    def on_bar(self, bar) -> None:
-        if qc.is_na(self.fast[0]) or qc.is_na(self.slow[0]):
-            return
-        if qc.crossover(self.fast, self.slow):
-            self.buy(quantity=1.0)
-        elif self.position.is_open and qc.crossunder(self.fast, self.slow):
-            self.sell(quantity=1.0)
-
-
-grid = ParameterStudy(
+validation = WalkForwardValidation(
     engine=engine,
     bars=bars,
     strategy=ParameterizedSmaStrategy,
-).grid_search(
-    parameters={"fast": [2, 3], "slow": [3, 4]},
-    constraint=lambda config: config["fast"] < config["slow"],
+    split_policy=RollingSplitPolicy(train_size=120, test_size=30),
     objective=("returns.total_return", "max"),
 )
 
-records = grid.to_records()
-best = grid.best()
-selected_config = best.strategy_config
-selected_report = best.backtest.report if best.backtest is not None else None
+result = validation.run(
+    parameters={"fast": [2, 3], "slow": [3, 4]},
+    constraint=lambda config: config["fast"] < config["slow"],
+)
+
+candidate_records = result.to_candidate_records()
+fold_records = result.to_records()
 ```
 
-Grid search is a research diagnostic. It is not an optimizer guarantee or a
-trading recommendation.
+Candidate search remains a research diagnostic. It is not an optimizer guarantee
+or a trading recommendation. The public contract is the validation result,
+including records, diagnostics, artifacts, and provenance.

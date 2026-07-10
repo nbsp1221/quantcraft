@@ -21,7 +21,7 @@ def test_research_ergonomics_quickstart_doc_covers_canonical_usage_path() -> Non
     )
 
     assert "from quantcraft.backtest import BacktestEngine" in quickstart_doc
-    assert "from quantcraft.research import ParameterStudy, ta, qc" in quickstart_doc
+    assert "from quantcraft.research import qc, ta" in quickstart_doc
     assert "from quantcraft.strategy import Strategy" in quickstart_doc
     assert "from quantcraft.data import BarSeries, DataFrameDataSource, TimeBar" in quickstart_doc
     assert "quantity=1" in quickstart_doc

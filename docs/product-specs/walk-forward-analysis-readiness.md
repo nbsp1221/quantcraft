@@ -19,34 +19,30 @@ Related documents:
 - [../design-docs/unified-strategy-runtime-design.md](../design-docs/unified-strategy-runtime-design.md)
 - [../design-docs/package-topology-and-naming.md](../design-docs/package-topology-and-naming.md)
 
-This document is not a refactoring spec and not an implementation plan. It is
-the historical analysis queue created when WFA planning exposed deeper
-product-contract questions. Its job was to list the issues that could block or
-distort WFA, then provide a way to prioritize which prerequisite problem should
-be solved first. Current implemented WFA behavior is governed by
-[walk-forward-analysis-resume.md](walk-forward-analysis-resume.md).
+This document is not a refactoring spec and not an implementation plan. It is a
+historical analysis queue created when WFA planning exposed deeper
+product-contract questions. Current WFA validation behavior is governed by
+[validation-pipeline.md](validation-pipeline.md).
 
-The ordered prerequisite sequence is recorded separately in
-[wfa-prerequisite-roadmap.md](wfa-prerequisite-roadmap.md). Read that roadmap
-before writing the next product spec so the project does not solve the first
-strategy-configuration problem and lose the later `ParameterStudy`, reporting,
-and WFA-resume steps.
+The ordered historical prerequisite sequence is recorded separately in
+[wfa-prerequisite-roadmap.md](wfa-prerequisite-roadmap.md). Current WFA behavior
+routes to [validation-pipeline.md](validation-pipeline.md).
 
 ## Why This Document Exists
 
 The original next feature was walk-forward analysis. During product-spec
 discussion, the project reached a stable WFA product position:
 
-- WFA should be a Validation Study.
-- The public name should be `WalkForwardStudy`.
-- The user-facing product should avoid `WalkForwardOptimizer`.
+- WFA should be a validation study.
+- The historical public name candidate was `WalkForwardValidation`; the current
+  public name is `WalkForwardValidation`.
 - MVP output should emphasize `oos_summary`, not `best_params`.
 - Advanced splitter/CV toolkit concepts should stay internal or delayed.
 
 The discussion also revealed a deeper concern: WFA depends on a strategy
-parameter contract that must not harden ad hoc construction. Stage 2 resolves
-the active parameter exploration surface around `strategy=StrategyClass` plus
-`StrategyConfig`, which is the contract future WFA work should build on.
+parameter contract that must not harden ad hoc construction. Current validation
+work builds on `strategy=StrategyClass` plus `StrategyConfig` through the
+validation-pipeline contract.
 
 Pausing WFA prevented an expedient implementation path from becoming an
 accidental long-lived API. That pause has been superseded for the implemented
@@ -58,7 +54,7 @@ Stage 4 first slice.
   research layer.
 - `BacktestEngine.run(...)` now receives a `Strategy` class plus optional
   `StrategyConfig` instance after Stage 3.5 alignment.
-- `ParameterStudy(...).grid_search(...)` receives a `Strategy` class,
+- internal validation candidate search receives a `Strategy` class,
   materializes `StrategyConfig` snapshots, and constructs a fresh strategy
   instance for each admissible candidate.
 - `BacktestResult.report` records the framework-owned
@@ -123,20 +119,20 @@ Initial assessment:
 - Reversibility: medium
 - Suggested priority: P0 candidate
 
-### B3. ParameterStudy Migration Strategy
+### B3. internal validation candidate search Migration Strategy
 
 Question:
 
-- How should WFA compose the config-backed `ParameterStudy` contract without
+- How should WFA compose the config-backed internal validation candidate search contract without
   expanding the public API prematurely?
 
 Why it matters for WFA:
 
-- WFA should compose `ParameterStudy` or the same underlying parameter
+- WFA should compose internal validation candidate search or the same underlying parameter
   exploration primitive.
-- If `ParameterStudy` and WFA expose different strategy construction models,
+- If internal validation candidate search and WFA expose different strategy construction models,
   the research layer will feel incoherent.
-- If `ParameterStudy` changes abruptly, existing tests, docs, and examples may
+- If internal validation candidate search changes abruptly, existing tests, docs, and examples may
   churn heavily.
 
 Initial assessment:
@@ -180,7 +176,7 @@ Why it matters for WFA:
 
 - WFA will need fresh configured strategy instances for train candidates and
   selected test runs.
-- `ParameterStudy` already uses a strategy class plus materialized
+- internal validation candidate search already uses a strategy class plus materialized
   `StrategyConfig` snapshots.
 - Direct backtests now use the same strategy class plus materialized
   `StrategyConfig` model.
@@ -196,7 +192,7 @@ Current planning position:
   [direct-backtest-class-config-api.md](direct-backtest-class-config-api.md):
   direct backtests use `strategy=StrategyClass` plus optional
   `config=StrategyConfig(...)`, direct strategy instances are removed from the
-  current public API, and `ParameterStudy` should use the same direct API.
+  current public API, and internal validation candidate search should use the same direct API.
 
 Initial assessment:
 
@@ -231,7 +227,7 @@ Initial assessment:
 
 Question:
 
-- Should WFA and `ParameterStudy` share one public objective alias registry,
+- Should WFA and internal validation candidate search share one public objective alias registry,
   and how should aliases map to report metric paths and directions?
 
 Why it matters for WFA:
@@ -299,7 +295,7 @@ Question:
 
 Why it matters for WFA:
 
-- `ParameterStudy` already records failed and rejected candidate rows.
+- internal validation candidate search already records failed and rejected candidate rows.
 - WFA adds another layer of failure: fold generation, train search, selection,
   and OOS backtest.
 - Inconsistent failure policy will make notebooks and agents hard to reason
@@ -340,7 +336,7 @@ new product spec is written:
 
 - User-facing contract risk: Will this decision appear in examples, notebooks,
   public imports, or result records?
-- Cross-workflow leverage: Does this help backtest, `ParameterStudy`, WFA,
+- Cross-workflow leverage: Does this help backtest, internal validation candidate search, WFA,
   paper, and live rather than only one feature?
 - Refactoring cost if delayed: How much implemented code, docs, and examples
   would need to be rewritten if the decision is postponed?
@@ -362,7 +358,7 @@ WFA pause.
 | --- | --- | --- | --- | --- |
 | Canonical strategy configuration contract | high | high | high | P0 |
 | Config schema vs study search-space ownership | high | high | high | P0 |
-| `ParameterStudy` migration strategy | high | high | high | P0 |
+| internal validation candidate search migration strategy | high | high | high | P0 |
 | Backtest/paper/live strategy portability boundary | medium | high | high | P1 |
 | Strategy metadata and reporting contract | medium | high | medium | P1 |
 | Fresh strategy state and dependency injection | medium | high | medium | P1 |
@@ -376,7 +372,7 @@ WFA pause.
 1. Analyze the canonical strategy configuration contract.
 2. Decide whether config schema and experiment search space are separate
    product concepts.
-3. Analyze how `ParameterStudy` can migrate or adapt without breaking the
+3. Analyze how internal validation candidate search can migrate or adapt without breaking the
    implemented beta surface unnecessarily.
 4. Close the reporting config source-of-truth stage.
 5. Decide the direct backtest class-plus-config API alignment slice.
@@ -388,7 +384,7 @@ The next document should be a product spec for the first roadmap stage:
 `Unified Strategy Configuration Contract`. That spec should stay focused on the
 strategy configuration contract itself while preserving the later roadmap stages:
 
-1. `ParameterStudy` Strategy API Migration.
+1. internal validation candidate search Strategy API Migration.
 2. Reporting Config Source Of Truth.
 3. Direct Backtest Class+Config API Alignment.
 4. WFA Resume Spec.
@@ -412,7 +408,7 @@ dedicated product spec for the selected prerequisite.
 Resolved since this readiness review was first written:
 
 - Stage 1 selected the explicit `StrategyConfig` model.
-- Stage 2 resolved that `ParameterStudy` uses `strategy=StrategyClass` only.
+- Stage 2 resolved that internal validation candidate search uses `strategy=StrategyClass` only.
 - Stage 3 resolved that reports expose the framework-owned
   `run.strategy_config` snapshot.
 - Stage 3.5 resolved that direct backtests teach strategy classes plus optional

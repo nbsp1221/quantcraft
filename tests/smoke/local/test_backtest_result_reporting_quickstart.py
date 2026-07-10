@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from quantcraft.backtest import BacktestEngine, CostConfig
 from quantcraft.data import DataFrameDataSource
-from quantcraft.research import Strategy
+from quantcraft.strategy import Strategy
 
 
 class QuickstartStrategy(Strategy):

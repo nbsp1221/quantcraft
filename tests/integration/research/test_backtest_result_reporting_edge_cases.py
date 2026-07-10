@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from quantcraft.backtest import BacktestEngine
 from quantcraft.data import BarSeries, TimeBar
-from quantcraft.research import Strategy
+from quantcraft.strategy import Strategy
 from quantcraft.trading.domain.costs import CostConfig
 from quantcraft.trading.domain.events import BarEvent
 

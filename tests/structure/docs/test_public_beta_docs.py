@@ -66,7 +66,7 @@ def test_public_docs_list_exactly_three_canonical_examples() -> None:
     for marker in [
         "## Example 1: SMA Crossover Quickstart",
         "## Example 2: Orders And Sizing",
-        "## Example 3: Parameter Exploration",
+        "## Example 3: Walk-Forward Validation",
     ]:
         assert marker in examples
 
@@ -105,18 +105,22 @@ def test_public_api_reference_uses_current_public_imports_only() -> None:
         "BacktestResult.plot()",
         "quantcraft.strategy.Strategy",
         "quantcraft.strategy.StrategyConfig",
-        "quantcraft.research.Strategy",
         "Strategy.buy(...)",
         "Strategy.sell(...)",
-        "quantcraft.research.ParameterStudy",
-        "ParameterStudy.grid_search(...)",
-        "quantcraft.research.WalkForwardStudy",
-        "WalkForwardStudy.run(...)",
-        "quantcraft.research.WalkForwardResult",
-        "quantcraft.research.WalkForwardFold",
-        "quantcraft.research.WalkForwardDiagnostic",
-        "quantcraft.research.WalkForwardOosSummary",
-        "quantcraft.research.WalkForwardExecutionScale",
+        "quantcraft.research.ValidationPipeline",
+        "quantcraft.research.ValidationStep",
+        "quantcraft.research.ValidationContext",
+        "quantcraft.research.ValidationReport",
+        "quantcraft.research.ValidationStepResult",
+        "quantcraft.research.ValidationDiagnostic",
+        "quantcraft.research.ValidationProvenance",
+        "quantcraft.research.ValidationArtifact",
+        "quantcraft.research.ValidationStatus",
+        "quantcraft.research.SplitWindow",
+        "quantcraft.research.RollingSplitPolicy",
+        "quantcraft.research.WalkForwardValidation",
+        "quantcraft.research.WalkForwardValidationResult",
+        "quantcraft.research.WalkForwardFoldResult",
         "quantcraft.research.ta",
         "quantcraft.research.qc",
     ]:
@@ -144,15 +148,15 @@ def test_public_walk_forward_docs_describe_validation_not_trading_claims() -> No
     guide_lower = guide.lower()
 
     for marker in [
-        "WalkForwardStudy",
+        "WalkForwardValidation",
         "validation evidence",
         "not an optimizer guarantee",
         "paper-trading loop",
         "live-trading loop",
         "one materialized `BarSeries`",
-        "rolling only",
-        "independent test folds",
-        "Do not read `oos_summary` as a stitched portfolio",
+        "mode is rolling only",
+        "unseen OOS windows",
+        "Do not read fold summaries as a stitched portfolio",
     ]:
         assert marker.lower() in guide_lower
 

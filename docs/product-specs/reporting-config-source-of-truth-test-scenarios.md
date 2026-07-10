@@ -5,7 +5,7 @@
 - Status: `implemented`
 - Class: `product-test-spec`
 - Scope: current implemented Stage 3 test scenarios for reporting provenance
-  cleanup after the `ParameterStudy` strategy API migration and before
+  cleanup after the internal validation candidate search strategy API migration and before
   walk-forward analysis resumes
 
 Related documents:
@@ -54,7 +54,7 @@ The core test contract is:
 - config-less strategies report `{}`
 - `Strategy.display_name` and run `label` remain human-readable identity
   metadata, not execution config
-- successful `ParameterStudy` rows and their backtest reports expose matching
+- successful internal validation candidate search rows and their backtest reports expose matching
   full `strategy_config` snapshots
 - managed current docs, examples, tests, fixtures, notebooks, and report
   snapshots teach the new contract only
@@ -118,7 +118,7 @@ In scope:
 - normalized plain mapping shape for `strategy_config`
 - distinction between `strategy_config`, `candidate_parameters`,
   `display_name`, and run `label`
-- `ParameterStudy` row/report alignment for successful rows
+- internal validation candidate search row/report alignment for successful rows
 - visible failure for invalid direct strategy/config input at the reporting
   boundary
 - current managed docs, examples, notebooks, fixtures, and canonical report
@@ -147,7 +147,7 @@ Out of scope:
 | Unit | `tests/unit/backtest/test_report_strategy_config_snapshot.py` | Snapshot timing: defaults plus overrides are copied at run start and do not change because strategy runtime state mutates later. |
 | Unit | `tests/unit/backtest/test_direct_class_config_api.py` | Invalid direct strategy/config inputs fail visibly instead of silently reporting `{}`. |
 | Integration | `tests/integration/backtest/test_backtest_report_strategy_config.py` | Real `BacktestEngine.run(...)` with configured and config-less strategy classes produces the expected report contract. |
-| Integration | `tests/integration/research/test_parameter_study_report_strategy_config.py` | Real `ParameterStudy` successful rows and retained backtest reports expose identical full `strategy_config` snapshots while preserving partial `candidate_parameters`. |
+| Integration | `tests/integration/research/test_parameter_study_report_strategy_config.py` | Real internal validation candidate search successful rows and retained backtest reports expose identical full `strategy_config` snapshots while preserving partial `candidate_parameters`. |
 | Regression | `tests/regression/backtest/test_strategy_parameters_removed_from_reports.py` | A strategy that still defines `parameters()` cannot influence reports, and stale `strategy_parameters` access is absent from current report objects/records. |
 | Structure | `tests/structure/docs/test_reporting_config_source_of_truth_docs.py` | Current docs, examples, notebooks, and canonical snapshots do not teach or serialize the old current contract. |
 | Structure | `tests/structure/architecture/test_reporting_config_boundaries.py` | `strategy` owns config semantics, `backtest` owns report generation, and `research` composes both without moving source-of-truth ownership. |
@@ -282,14 +282,14 @@ Expected behavior:
 - there is no `strategy_parameters`
 - the test does not require constructor-argument inference
 
-### I3: ParameterStudy Row And Report Alignment
+### I3: internal validation candidate search Row And Report Alignment
 
 Purpose: prove cross-module source-of-truth alignment.
 
 Scenario:
 
 1. Define a configured strategy with defaults.
-2. Run a small `ParameterStudy` grid.
+2. Run a small internal validation candidate search grid.
 3. Select a successful row.
 4. Compare `row.strategy_config`,
    `row.backtest.report.run.strategy_config`, and
@@ -302,7 +302,7 @@ Expected behavior:
 - `row.candidate_parameters` remains only the partial override audit trail
 - no assertion treats the report as the selection source of truth
 
-### I4: ParameterStudy Config-Less Default Candidate
+### I4: internal validation candidate search Config-Less Default Candidate
 
 Purpose: prove the empty-config path composes with study/report inspection.
 
@@ -393,7 +393,7 @@ Scenarios:
 
 - configured direct backtest records full `strategy_config`
 - config-less direct backtest records `{}`
-- configured `ParameterStudy` row and retained report agree on full config
+- configured internal validation candidate search row and retained report agree on full config
 - display name and label remain available as readable identity metadata
 - managed tunable examples use `StrategyConfig` and `self.config`
 
@@ -447,7 +447,7 @@ Fixture rules:
 - Do not hide expected snapshots behind helper functions that reimplement
   production normalization.
 - Use market data only when crossing the real `BacktestEngine` or
-  `ParameterStudy` boundary.
+  internal validation candidate search boundary.
 - Keep notebook/example validation in the existing repository validation lane.
 
 ## Mock, Stub, And Fake Use Criteria
@@ -457,7 +457,7 @@ Prefer real Quantcraft objects for product-contract tests:
 - real `StrategyConfig` subclasses
 - real `Strategy` subclasses
 - real `BacktestEngine.run(...)` integration paths
-- real `ParameterStudy` workflows for row/report alignment
+- real internal validation candidate search workflows for row/report alignment
 - real report objects and current record/export shapes
 
 Allowed fakes:
@@ -493,7 +493,7 @@ Tests must verify:
 - user-defined `parameters()` methods are ignored rather than forbidden by
   Stage 3
 - `display_name` and `label` remain separate from execution config
-- successful `ParameterStudy` rows and retained reports agree on full
+- successful internal validation candidate search rows and retained reports agree on full
   `strategy_config`
 - `candidate_parameters` remains distinct from full `strategy_config`
 - invalid custom strategy-like config metadata fails visibly
@@ -522,7 +522,7 @@ Tests must not verify:
 
 | Priority | Level | Required before Stage 3 implementation is complete | Reason |
 | --- | --- | --- | --- |
-| P0 | Integration | Yes | Proves real direct backtest reports and `ParameterStudy` reports agree with the product contract. |
+| P0 | Integration | Yes | Proves real direct backtest reports and internal validation candidate search reports agree with the product contract. |
 | P0 | Regression | Yes | Prevents old `strategy_parameters` and `Strategy.parameters()` reporting paths from surviving. |
 | P0 | Unit | Yes | Localizes snapshot shape, empty-config, stale-hook, and invalid-strategy-like failures. |
 | P1 | Structure/docs | Yes for managed current surfaces touched by Stage 3 | Prevents public/current docs and fixtures from teaching stale contracts. |
@@ -539,7 +539,7 @@ that prove:
 - `Strategy.parameters()` no longer affects report output
 - config-less strategies remain valid and report `{}`
 - direct backtest reports expose full config snapshots
-- `ParameterStudy` rows and retained reports expose the same full snapshot
+- internal validation candidate search rows and retained reports expose the same full snapshot
 - partial `candidate_parameters` and full `strategy_config` remain distinct
 - human-readable identity metadata stays separate from execution config
 - invalid custom strategy-like objects do not silently produce misleading

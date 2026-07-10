@@ -9,7 +9,7 @@ def test_local_owner_files_exist() -> None:
     expected_paths = (
         Path("src/quantcraft/data/bars.py"),
         Path("src/quantcraft/data/sources.py"),
-        Path("src/quantcraft/research/series.py"),
+        Path("src/quantcraft/strategy/series.py"),
     )
 
     for relative_path in expected_paths:

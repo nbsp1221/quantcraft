@@ -53,7 +53,7 @@ class _GridSearchEngine(Protocol):
 
 
 @dataclass(frozen=True, slots=True)
-class GridSearchRow:
+class _GridSearchRow:
     run_index: int
     status: RowStatus
     candidate_parameters: Mapping[str, JSONScalar]
@@ -85,7 +85,7 @@ class GridSearchRow:
         strategy_config: Mapping[str, JSONScalar],
         backtest: BacktestResult,
         metrics: Mapping[str, MetricValue],
-    ) -> GridSearchRow:
+    ) -> _GridSearchRow:
         normalized_metrics, metric_states = normalize_metrics(metrics)
         return cls(
             run_index=run_index,
@@ -110,7 +110,7 @@ class GridSearchRow:
         strategy_config: Mapping[str, JSONScalar],
         rejection_stage: RejectionStage,
         error: BaseException | None = None,
-    ) -> GridSearchRow:
+    ) -> _GridSearchRow:
         return cls(
             run_index=run_index,
             status="rejected",
@@ -134,7 +134,7 @@ class GridSearchRow:
         strategy_config: Mapping[str, JSONScalar],
         failure_stage: FailureStage,
         error: BaseException,
-    ) -> GridSearchRow:
+    ) -> _GridSearchRow:
         return cls(
             run_index=run_index,
             status="failed",
@@ -151,8 +151,8 @@ class GridSearchRow:
 
 
 @dataclass(frozen=True, slots=True)
-class GridSearchResult:
-    rows: tuple[GridSearchRow, ...]
+class _GridSearchResult:
+    rows: tuple[_GridSearchRow, ...]
     objective: Objective | None = None
 
     def __post_init__(self) -> None:
@@ -182,22 +182,22 @@ class GridSearchResult:
             return 0
         return len(self._eligible_rows(self.objective))
 
-    def successful(self) -> tuple[GridSearchRow, ...]:
+    def successful(self) -> tuple[_GridSearchRow, ...]:
         return tuple(row for row in self.rows if row.status == "success")
 
-    def rejected(self) -> tuple[GridSearchRow, ...]:
+    def rejected(self) -> tuple[_GridSearchRow, ...]:
         return tuple(row for row in self.rows if row.status == "rejected")
 
-    def failed(self) -> tuple[GridSearchRow, ...]:
+    def failed(self) -> tuple[_GridSearchRow, ...]:
         return tuple(row for row in self.rows if row.status == "failed")
 
-    def best(self, objective: Objective | None = None) -> GridSearchRow:
+    def best(self, objective: Objective | None = None) -> _GridSearchRow:
         top_row = self.top(1, objective=objective)
         if not top_row:
             raise ValueError("no eligible rows for objective")
         return top_row[0]
 
-    def top(self, n: int, objective: Objective | None = None) -> tuple[GridSearchRow, ...]:
+    def top(self, n: int, objective: Objective | None = None) -> tuple[_GridSearchRow, ...]:
         if not isinstance(n, int) or isinstance(n, bool):
             raise TypeError("n must be a positive integer")
         if n <= 0:
@@ -220,9 +220,9 @@ class GridSearchResult:
     def to_records(self) -> list[dict[str, object]]:
         return [_row_to_record(row) for row in self.rows]
 
-    def _eligible_rows(self, objective: Objective) -> tuple[GridSearchRow, ...]:
+    def _eligible_rows(self, objective: Objective) -> tuple[_GridSearchRow, ...]:
         metric_path, _direction = objective
-        rows: list[GridSearchRow] = []
+        rows: list[_GridSearchRow] = []
         for row in self.successful():
             value = row.metrics.get(metric_path)
             state = row.metric_states.get(metric_path)
@@ -231,7 +231,7 @@ class GridSearchResult:
         return tuple(rows)
 
 
-class ParameterStudy:
+class _ParameterSearch:
     __slots__ = ("engine", "bars", "strategy")
 
     def __init__(
@@ -259,7 +259,7 @@ class ParameterStudy:
         objective: Objective | None = None,
         max_candidates: int | None = 1000,
         fail_fast: bool = False,
-    ) -> GridSearchResult:
+    ) -> _GridSearchResult:
         grid = _validate_parameter_grid(parameters)
         limit = _validate_max_candidates(max_candidates)
         resolved_objective = validate_objective(objective) if objective is not None else None
@@ -272,9 +272,9 @@ class ParameterStudy:
 
         prepared_candidates = _prepare_grid_candidates(grid, self.strategy.config_type)
 
-        rows: list[GridSearchRow] = []
+        rows: list[_GridSearchRow] = []
         for prepared in prepared_candidates:
-            if isinstance(prepared, GridSearchRow):
+            if isinstance(prepared, _GridSearchRow):
                 rows.append(prepared)
                 continue
 
@@ -295,13 +295,13 @@ class ParameterStudy:
             if not _extract_candidate_metrics(prepared, backtest, rows, fail_fast):
                 continue
 
-        return GridSearchResult(rows=tuple(rows), objective=resolved_objective)
+        return _GridSearchResult(rows=tuple(rows), objective=resolved_objective)
 
 
 def _prepare_grid_candidates(
     grid: Mapping[str, Sequence[JSONScalar]],
     config_type: type[StrategyConfig],
-) -> list[_RunnableCandidate | GridSearchRow]:
+) -> list[_RunnableCandidate | _GridSearchRow]:
     return [
         _prepare_candidate(
             run_index=run_index,
@@ -315,7 +315,7 @@ def _prepare_grid_candidates(
 def _evaluate_constraint(
     prepared: _RunnableCandidate,
     constraint: Constraint | None,
-    rows: list[GridSearchRow],
+    rows: list[_GridSearchRow],
     fail_fast: bool,
 ) -> bool:
     if constraint is None:
@@ -339,7 +339,7 @@ def _evaluate_constraint(
         return True
 
     rows.append(
-        GridSearchRow.rejected(
+        _GridSearchRow.rejected(
             run_index=prepared.run_index,
             candidate_parameters=prepared.candidate_parameters,
             strategy_config=prepared.strategy_config,
@@ -355,7 +355,7 @@ def _run_grid_candidate(
     engine: _GridSearchEngine,
     bars: BarSeries,
     strategy: type[Strategy[StrategyConfig]],
-    rows: list[GridSearchRow],
+    rows: list[_GridSearchRow],
     fail_fast: bool,
 ) -> BacktestResult | None:
     try:
@@ -363,7 +363,7 @@ def _run_grid_candidate(
             bars=bars,
             strategy=strategy,
             config=prepared.config,
-            label=f"grid-search-{prepared.run_index}",
+            label=f"candidate-search-{prepared.run_index}",
         )
     except BacktestStrategyConstructionError as error:
         _raise_or_record_prepared(
@@ -387,7 +387,7 @@ def _run_grid_candidate(
 def _extract_candidate_metrics(
     prepared: _RunnableCandidate,
     backtest: BacktestResult,
-    rows: list[GridSearchRow],
+    rows: list[_GridSearchRow],
     fail_fast: bool,
 ) -> bool:
     try:
@@ -403,7 +403,7 @@ def _extract_candidate_metrics(
         return False
 
     rows.append(
-        GridSearchRow.success(
+        _GridSearchRow.success(
             run_index=prepared.run_index,
             candidate_parameters=prepared.candidate_parameters,
             strategy_config=prepared.strategy_config,
@@ -462,7 +462,7 @@ def _prepare_candidate(
     run_index: int,
     candidate: Mapping[str, JSONScalar],
     config_type: type[StrategyConfig],
-) -> _RunnableCandidate | GridSearchRow:
+) -> _RunnableCandidate | _GridSearchRow:
     candidate_parameters: Mapping[str, JSONScalar] = MappingProxyType(dict(candidate))
     try:
         config = config_type(**candidate)
@@ -471,7 +471,7 @@ def _prepare_candidate(
             config_type,
             candidate,
         )
-        return GridSearchRow.rejected(
+        return _GridSearchRow.rejected(
             run_index=run_index,
             candidate_parameters=candidate_parameters,
             strategy_config=rejected_strategy_config,
@@ -530,7 +530,7 @@ def _validate_max_candidates(value: int | None) -> int | None:
     return value
 
 
-def _row_to_record(row: GridSearchRow) -> dict[str, object]:
+def _row_to_record(row: _GridSearchRow) -> dict[str, object]:
     report = row.backtest.report if row.backtest is not None else None
     record: dict[str, object] = {
         "run_index": row.run_index,
@@ -561,7 +561,7 @@ def _row_to_record(row: GridSearchRow) -> dict[str, object]:
 
 def _raise_or_record(
     *,
-    rows: list[GridSearchRow],
+    rows: list[_GridSearchRow],
     fail_fast: bool,
     error: BaseException,
     stage: FailureStage,
@@ -575,7 +575,7 @@ def _raise_or_record(
         error.add_note(f"strategy_config={dict(strategy_config)!r}")
         raise error
     rows.append(
-        GridSearchRow.failed(
+        _GridSearchRow.failed(
             run_index=run_index,
             candidate_parameters=candidate_parameters,
             strategy_config=strategy_config,
@@ -587,7 +587,7 @@ def _raise_or_record(
 
 def _raise_or_record_prepared(
     *,
-    rows: list[GridSearchRow],
+    rows: list[_GridSearchRow],
     fail_fast: bool,
     error: BaseException,
     stage: FailureStage,
@@ -602,6 +602,3 @@ def _raise_or_record_prepared(
         candidate_parameters=prepared.candidate_parameters,
         strategy_config=prepared.strategy_config,
     )
-
-
-__all__ = ["GridSearchResult", "GridSearchRow", "ParameterStudy"]

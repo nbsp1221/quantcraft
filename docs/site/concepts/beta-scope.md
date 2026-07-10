@@ -11,7 +11,7 @@ The first public beta supports:
 - market, limit, stop-market, and stop-limit orders
 - fixed quantity and `qty_percent` sizing
 - conservative reservation, fills, positions, reports, and plots
-- finite grid parameter exploration
+- finite candidate search inside walk-forward validation
 - rolling walk-forward validation on one materialized `BarSeries`
 
 ## Unsupported

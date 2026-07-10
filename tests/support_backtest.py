@@ -14,7 +14,8 @@ import pytest
 
 from quantcraft.backtest import BacktestEngine, BacktestReport
 from quantcraft.data import BarSeries, DataFrameDataSource, TimeBar
-from quantcraft.research import Strategy, qc, ta
+from quantcraft.research import qc, ta
+from quantcraft.strategy import Strategy
 from quantcraft.trading.domain.costs import CostConfig
 from quantcraft.trading.domain.events import FillEvent
 

@@ -13,7 +13,7 @@ from matplotlib.figure import Figure
 
 from quantcraft.backtest import BacktestEngine
 from quantcraft.data import BarSeries, DataFrameDataSource, HistoricalDataSource, TimeBar
-from quantcraft.research import Strategy
+from quantcraft.strategy import Strategy
 from quantcraft.trading.domain.costs import CostConfig
 from quantcraft.trading.domain.events import BarEvent
 

@@ -23,23 +23,23 @@ Related documents:
 - [../design-docs/package-topology-and-naming.md](../design-docs/package-topology-and-naming.md)
 
 This document is not an implementation plan and not the product spec for
-`StrategyConfig`. It records the agreed prerequisite sequence that unblocked
-the Stage 4 WFA implementation. Current implemented WFA behavior is governed by
-[walk-forward-analysis-resume.md](walk-forward-analysis-resume.md).
+`StrategyConfig`. It records a historical prerequisite sequence. Current WFA
+validation behavior is governed by
+[validation-pipeline.md](validation-pipeline.md).
 
 ## Decision
 
 Walk-forward analysis was paused until the prerequisite sequence below closed
 enough of the strategy construction and reporting contract risk.
 
-The next product-spec focus is not WFA itself. The next product-spec focus is
-the strategy configuration contract that WFA, `ParameterStudy`, reporting, paper
-trading, and future live trading should be able to share.
+The historical next product-spec focus was the strategy configuration contract
+that WFA, internal candidate search, reporting, paper trading, and future live
+trading should be able to share.
 
 The agreed sequence is:
 
 1. Unified Strategy Configuration Contract
-2. ParameterStudy Strategy API Migration
+2. Internal Candidate-Search Strategy API Alignment
 3. Reporting Config Source Of Truth
 3.5. Direct Backtest Class+Config API Alignment
 4. WFA Resume Spec
@@ -60,7 +60,7 @@ only focuses on the first `StrategyConfig` discussion, it may forget why that
 work was started:
 
 - WFA needs fresh strategy creation for train candidates and selected test runs.
-- `ParameterStudy` now teaches `strategy=StrategyClass` plus `StrategyConfig`
+- internal validation candidate search now teaches `strategy=StrategyClass` plus `StrategyConfig`
   as the canonical public path.
 - Stage 3 replaced report-authored `strategy_parameters` with
   `BacktestReport.run.strategy_config`, using the framework-owned execution
@@ -112,17 +112,17 @@ Non-goals for this stage:
 - Objective alias policy.
 - OOS summary/report semantics.
 
-## Roadmap Stage 2: ParameterStudy Strategy API Migration
+## Roadmap Stage 2: Internal Candidate-Search Strategy API Alignment
 
 Purpose:
 
-- Align `ParameterStudy` with the canonical strategy configuration contract so
+- Align internal validation candidate search with the canonical strategy configuration contract so
   WFA and existing parameter exploration do not teach different strategy
   construction models.
 
 Primary questions:
 
-- Should `ParameterStudy(..., strategy=StrategyClass)` become the canonical
+- Should `internal validation candidate search(..., strategy=StrategyClass)` become the canonical
   public path?
 - Stage 2 resolved this as a breaking migration: the old callable construction
   keyword is not supported in active public API.
@@ -133,7 +133,7 @@ Primary questions:
 
 Required product outcome:
 
-- A migration product spec that defines the new `ParameterStudy` public input
+- A migration product spec that defines the new internal validation candidate search public input
   surface.
 - A clear breaking-migration policy for old callable construction examples.
 - A decision that the migration is breaking before public beta release.
@@ -192,14 +192,14 @@ Purpose:
 - Track the Stage 3.5 decision that direct `BacktestEngine.run(...)` accepts a
   strategy class and optional `StrategyConfig` before Stage 4 WFA resumed.
 - Align normal direct backtests with the strategy-construction model already
-  used by `ParameterStudy`.
+  used by internal validation candidate search.
 - Prevent WFA from becoming the first public surface that must bridge direct
   strategy instances and framework-created configured strategy instances.
 
 Plain-language summary:
 
 - Direct backtests receive a strategy class and optional config.
-- `ParameterStudy` already receives a strategy class and creates fresh
+- internal validation candidate search already receives a strategy class and creates fresh
   configured strategy instances for each run.
 - WFA will need the same fresh-instance behavior many times across folds.
 - Stage 3.5 makes direct backtests teach `strategy=StrategyClass` plus
@@ -214,7 +214,7 @@ Resolved product decisions:
 - `config` accepts `StrategyConfig` instances only; plain dict config input is
   rejected.
 - Omitted `config` means the engine materializes `StrategyClass.config_type()`.
-- `ParameterStudy` should call the direct class-plus-config API instead of
+- internal validation candidate search should call the direct class-plus-config API instead of
   constructing strategy instances internally.
 
 Required product outcome:
@@ -244,7 +244,7 @@ Purpose:
 
 Primary questions:
 
-- What exact public constructor does `WalkForwardStudy` use after the strategy
+- What exact public constructor does `WalkForwardValidation` use after the strategy
   config migration?
 - How does each fold create train candidate strategies and selected test
   strategies?
@@ -292,7 +292,7 @@ scope drift is not acceptable.
 | Stage | Urgency | Impact | Delay Cost | Current Priority |
 | --- | --- | --- | --- | --- |
 | Unified Strategy Configuration Contract | high | high | high | P0 |
-| ParameterStudy Strategy API Migration | high | high | high | P0 |
+| Internal Candidate-Search Strategy API Alignment | high | high | high | P0 |
 | Reporting Config Source Of Truth | medium | high | medium-high | Completed |
 | Direct Backtest Class+Config API Alignment | medium-high | high | high | Spec decisions closed; implementation planning next |
 | WFA Resume Spec | medium | high | high after prerequisites | Implemented first slice |

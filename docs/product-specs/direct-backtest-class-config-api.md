@@ -25,7 +25,7 @@ Related documents:
 This document defines Stage 3.5 in the WFA prerequisite sequence.
 
 Stage 3.5 is not WFA implementation. It is the direct-backtest API cleanup that
-lets direct backtests, `ParameterStudy`, and later WFA share one strategy
+lets direct backtests, internal validation candidate search, and later WFA share one strategy
 construction model.
 
 ## Plain-Language Summary
@@ -91,7 +91,7 @@ a fresh strategy instance for every `run(...)` call.
 
 ## Why This Stage Exists
 
-`ParameterStudy` already receives a strategy class, materializes
+internal validation candidate search already receives a strategy class, materializes
 `StrategyConfig` snapshots, and creates fresh configured strategy instances for
 each candidate.
 
@@ -121,7 +121,7 @@ while preserving Quantcraft's existing `StrategyConfig` contract.
 ## Goals
 
 - Make direct backtesting use the same strategy-construction vocabulary as
-  `ParameterStudy` and future WFA.
+  internal validation candidate search and future WFA.
 - Ensure every direct run uses a fresh strategy instance.
 - Keep strategy execution config explicit, typed, immutable, and reportable.
 - Preserve config-less quickstarts without ceremony.
@@ -240,7 +240,7 @@ engine.run(
 The run must fail before data loading or backtest execution.
 
 Strict matching preserves the current `Strategy` contract and prevents WFA or
-`ParameterStudy` from silently running the wrong config type across many runs.
+internal validation candidate search from silently running the wrong config type across many runs.
 
 ### Validation And Loading Order
 
@@ -289,25 +289,24 @@ Invalid public call shapes must fail clearly before backtest execution:
 Stage 3.5 should not add a special "forbidden legacy mode" layer. The
 implementation should naturally enforce the new public type contract.
 
-## ParameterStudy Alignment
+## Internal Candidate-Search Alignment
 
-Stage 3.5 changes `ParameterStudy` to call the direct backtest API with the
-strategy class and materialized config:
+After the validation-pipeline beta reset, standalone public internal validation candidate search is
+retired. Internal candidate search used by validation flows should call the
+direct backtest API with the strategy class and materialized config:
 
 ```python
 backtest = self.engine.run(
     bars=self.bars,
     strategy=self.strategy,
     config=prepared.config,
-    label=f"grid-search-{prepared.run_index}",
+    label=f"candidate-search-{prepared.run_index}",
 )
 ```
 
-`ParameterStudy` should no longer construct the strategy instance itself before
-calling the engine.
-
-This keeps direct backtests, grid search, and future WFA on one execution entry
-path.
+Candidate search should not construct strategy instances itself before calling
+the engine. This keeps direct backtests and validation flows on one execution
+entry path without preserving a public study compatibility surface.
 
 ## Documentation And Example Policy
 
@@ -350,7 +349,7 @@ Stage 3.5 must have a separate test-scenarios spec:
 
 - [direct-backtest-class-config-api-test-scenarios.md](direct-backtest-class-config-api-test-scenarios.md)
 
-The test-scenarios spec should cover code behavior, `ParameterStudy`
+The test-scenarios spec should cover code behavior, internal validation candidate search
 integration, report snapshots, public examples, and documentation cleanup.
 
 Documentation/example checks are split into two classes:
@@ -387,7 +386,7 @@ Stage 3.5 is successful when:
 - omitted config uses the strategy's default config
 - wrong config input fails before data loading
 - report `run.strategy_config` records the materialized config snapshot
-- `ParameterStudy` uses the direct class-plus-config API
+- internal validation candidate search uses the direct class-plus-config API
 - current public docs and examples teach the new API
 - WFA can treat strategy construction as settled input for Stage 4
 

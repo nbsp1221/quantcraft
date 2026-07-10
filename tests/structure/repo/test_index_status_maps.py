@@ -60,8 +60,11 @@ def test_product_spec_routing_index_lists_governing_current_scope_specs() -> Non
     assert entries_by_target["data-ingestion.md"]["scope"] == "current implemented scope"
     assert entries_by_target["backtest-mvp.md"]["role"] == "Governing"
     assert entries_by_target["backtest-mvp.md"]["scope"] == "current implemented scope"
-    assert entries_by_target["research-ergonomics.md"]["role"] == "Governing"
-    assert entries_by_target["research-ergonomics.md"]["scope"] == "current implemented scope"
+    assert entries_by_target["validation-pipeline.md"]["role"] == "Governing"
+    assert (
+        entries_by_target["validation-pipeline.md"]["scope"]
+        == "current first-slice validation substrate and WFA public flow"
+    )
     assert entries_by_target["order-sizing.md"]["role"] == "Governing"
     assert entries_by_target["order-sizing.md"]["scope"] == "current implemented scope"
     assert entries_by_target["backtest.md"]["role"] == "Pointer"

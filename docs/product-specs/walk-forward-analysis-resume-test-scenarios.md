@@ -2,10 +2,16 @@
 
 ## Status
 
-- Status: `implemented`
+- Status: `superseded`
 - Class: `product-test-scenarios`
-- Scope: Stage 4 first-slice WFA test target after WFA resume product
-  contract
+- Scope: superseded Stage 4 first-slice WFA test target for the earlier
+  `WalkForwardStudy` contract
+
+- Superseded by:
+  [validation-pipeline.md](validation-pipeline.md). Current tests must target
+  `WalkForwardValidation`, `RollingSplitPolicy`, validation diagnostics,
+  records, artifacts, and provenance; public `ParameterStudy`, `GridSearch*`,
+  and `WalkForwardStudy` APIs are retired.
 
 Related documents:
 

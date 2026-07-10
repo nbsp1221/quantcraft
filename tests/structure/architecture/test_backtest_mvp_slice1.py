@@ -34,7 +34,7 @@ def test_current_package_skeletons_exist() -> None:
         Path("src/quantcraft/data/__init__.py"),
         Path("src/quantcraft/data/adapters/__init__.py"),
         Path("src/quantcraft/research/__init__.py"),
-        Path("src/quantcraft/research/strategy.py"),
+        Path("src/quantcraft/research/validation/__init__.py"),
         Path("src/quantcraft/backtest/__init__.py"),
         Path("src/quantcraft/integrations/venues/ccxt/__init__.py"),
         Path("src/quantcraft/trading/domain/__init__.py"),
@@ -54,15 +54,28 @@ def test_trading_to_research_dependency_is_rejected() -> None:
     assert issue == "Cross-domain dependency violation: trading cannot depend on research"
 
 
-def test_research_public_surface_exposes_slice_1_entrypoints() -> None:
+def test_research_public_surface_exposes_validation_entrypoints() -> None:
     assert {
-        "GridSearchResult",
-        "GridSearchRow",
-        "ParameterStudy",
-        "Strategy",
+        "ValidationPipeline",
+        "ValidationStep",
+        "ValidationContext",
+        "ValidationReport",
+        "ValidationStepResult",
+        "ValidationDiagnostic",
+        "ValidationProvenance",
+        "ValidationArtifact",
+        "ValidationStatus",
+        "SplitWindow",
+        "RollingSplitPolicy",
+        "WalkForwardValidation",
+        "WalkForwardValidationResult",
+        "WalkForwardFoldResult",
         "ta",
         "qc",
     }.issubset(set(research_package.__all__))
+    assert "ParameterStudy" not in research_package.__all__
+    assert "WalkForwardStudy" not in research_package.__all__
+    assert "Strategy" not in research_package.__all__
 
 
 def test_slice_1_public_trading_surface_excludes_deferred_event_types() -> None:

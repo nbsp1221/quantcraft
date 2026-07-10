@@ -5,7 +5,7 @@ import math
 import pytest
 
 from quantcraft.research import qc
-from quantcraft.research.series import OHLCVDataView, SeriesView
+from quantcraft.strategy.series import OHLCVDataView, SeriesView
 
 
 def test_series_view_uses_zero_as_current_confirmed_value() -> None:

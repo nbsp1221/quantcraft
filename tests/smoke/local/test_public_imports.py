@@ -1,4 +1,5 @@
 import importlib
+import importlib.util
 
 import pytest
 
@@ -21,23 +22,53 @@ def test_root_package_exports_no_legacy_public_symbols() -> None:
             getattr(quantcraft, name)
 
 
-def test_research_public_import_surface_exposes_strategy_and_parameter_study() -> None:
+def test_research_public_import_surface_exposes_validation_pipeline() -> None:
     research_module = importlib.import_module("quantcraft.research")
 
-    assert getattr(research_module, "Strategy", None) is not None
-    assert getattr(research_module, "ParameterStudy", None) is not None
-    assert getattr(research_module, "GridSearchResult", None) is not None
-    assert getattr(research_module, "GridSearchRow", None) is not None
-    assert getattr(research_module, "WalkForwardStudy", None) is not None
-    assert getattr(research_module, "WalkForwardResult", None) is not None
-    assert getattr(research_module, "WalkForwardFold", None) is not None
-    assert getattr(research_module, "WalkForwardDiagnostic", None) is not None
-    assert getattr(research_module, "WalkForwardOosSummary", None) is not None
-    assert getattr(research_module, "WalkForwardExecutionScale", None) is not None
-    assert getattr(research_module, "ta", None) is not None
-    assert getattr(research_module, "qc", None) is not None
-    assert not hasattr(research_module, "run_backtest")
-    assert not hasattr(research_module, "BacktestEngine")
+    for name in (
+        "ValidationPipeline",
+        "ValidationStep",
+        "ValidationContext",
+        "ValidationReport",
+        "ValidationStepResult",
+        "ValidationDiagnostic",
+        "ValidationProvenance",
+        "ValidationArtifact",
+        "ValidationStatus",
+        "SplitWindow",
+        "RollingSplitPolicy",
+        "WalkForwardValidation",
+        "WalkForwardValidationResult",
+        "WalkForwardFoldResult",
+        "ta",
+        "qc",
+    ):
+        assert getattr(research_module, name, None) is not None
+
+    for old_name in (
+        "Strategy",
+        "ParameterStudy",
+        "GridSearchResult",
+        "GridSearchRow",
+        "WalkForwardStudy",
+        "WalkForwardResult",
+        "WalkForwardFold",
+        "WalkForwardDiagnostic",
+        "WalkForwardOosSummary",
+        "WalkForwardExecutionScale",
+        "MetricSelectionPolicy",
+        "run_backtest",
+        "BacktestEngine",
+    ):
+        assert not hasattr(research_module, old_name)
+
+    for old_module in (
+        "quantcraft.research.parameter_exploration",
+        "quantcraft.research.walk_forward",
+        "quantcraft.research.strategy",
+        "quantcraft.research.series",
+    ):
+        assert importlib.util.find_spec(old_module) is None
 
 
 def test_strategy_public_import_surface_exposes_strategy_config_contract() -> None:
@@ -50,7 +81,7 @@ def test_strategy_public_import_surface_exposes_strategy_config_contract() -> No
     assert getattr(strategy_module, "StrategyConfigDeclarationError", None) is not None
     assert getattr(strategy_module, "StrategyConfigValidationError", None) is not None
     assert getattr(strategy_module, "StrategyConfigMutationError", None) is not None
-    assert research_module.Strategy is strategy_module.Strategy
+    assert not hasattr(research_module, "Strategy")
 
 
 def test_capability_public_surfaces_import_cleanly() -> None:
@@ -80,9 +111,8 @@ def test_capability_public_surfaces_import_cleanly() -> None:
     assert getattr(backtest_module, "ExposureSummary", None) is not None
     assert getattr(strategy_module, "Strategy", None) is not None
     assert getattr(strategy_module, "StrategyConfig", None) is not None
-    assert getattr(research_module, "Strategy", None) is not None
-    assert getattr(research_module, "ParameterStudy", None) is not None
-    assert getattr(research_module, "WalkForwardStudy", None) is not None
+    assert getattr(research_module, "ValidationPipeline", None) is not None
+    assert getattr(research_module, "WalkForwardValidation", None) is not None
     assert getattr(ccxt_module, "Exchange", None) is not None
     assert getattr(ccxt_module, "MarketType", None) is not None
     for name in (
